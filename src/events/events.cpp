@@ -850,6 +850,14 @@ void Events::eventConfigure(xcb_generic_event_t* event) {
     PWINDOW->setDefaultSize(Vector2D(E->width, E->height));
     PWINDOW->setEffectiveSize(PWINDOW->getDefaultSize());
     PWINDOW->setEffectivePosition(PWINDOW->getDefaultPosition());
+
+    // Docks (bars/panels) often resize themselves shortly after mapping, once their
+    // content finishes laying out (e.g. Quickshell's QML bindings resolve a tick late).
+    // The reserved workarea was computed from the dock's geometry at map time, so it
+    // needs to be recalculated here too, or a dock that grows post-map never gets its
+    // space reserved and tiled windows can end up underneath it.
+    if (PWINDOW->getDock())
+        g_pWindowManager->recalcAllDocks();
 }
 
 void Events::eventRandRScreenChange(xcb_generic_event_t* event) {

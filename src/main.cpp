@@ -6,11 +6,15 @@ Started by Vaxry on 2021 / 11 / 17
 */
 
 #include <fstream>
+#include <csignal>
 #include "windowManager.hpp"
 #include "defines.hpp"
 
 int main(int argc, char** argv) {
     clearLogs();
+
+    // Reap exec/exec-once children automatically instead of leaving zombies.
+    signal(SIGCHLD, SIG_IGN);
 
     Debug::log(LOG, "Hypr debug log. Built on " + std::string(__DATE__) + " at " + std::string(__TIME__));
 
