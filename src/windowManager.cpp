@@ -2427,17 +2427,18 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
         free(GENEV);
     } else if (E->type == HYPRATOMS["_NET_CURRENT_DESKTOP"]) {
         // request to change the workspace to something else
-        // likely a bar
-        // emitted by xcb_ewmh_request_change_current_desktop
+        // likely a bar/pager, emitted by xcb_ewmh_request_change_current_desktop
+        // data32[0] is a desktop INDEX, not a workspace ID (workspace IDs can have gaps)
 
-        const auto WORK = E->data.data32[0] + 1; // +1 because our first ID is 1 and ewmh's is 0
+        const auto DESKTOPINDEX = E->data.data32[0];
+        const auto WORK = EWMH::workspaceIDFromDesktopIndex(DESKTOPINDEX);
 
-        Debug::log(LOG, "External request to switch to workspace " + std::to_string(WORK));
-
-        if (!getWorkspaceByID(WORK)) {
-            Debug::log(ERR, "Workspace ID " + std::to_string(WORK) + " does NOT exist! Ignoring.");
+        if (WORK == -1) {
+            Debug::log(ERR, "Desktop index " + std::to_string(DESKTOPINDEX) + " does NOT map to any workspace! Ignoring.");
             return;
         }
+
+        Debug::log(LOG, "External request to switch to workspace " + std::to_string(WORK));
 
         changeWorkspaceByID(WORK);
     }

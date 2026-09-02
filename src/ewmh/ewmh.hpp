@@ -11,9 +11,11 @@ namespace EWMH {
     void 	        refreshAllExtents();
     void            updateDesktops();
     void            checkTransient(xcb_window_t);
+    int             workspaceIDFromDesktopIndex(int);
 
     namespace DesktopInfo {
         inline int lastid = 0;
+        inline int lastCount = 0;
     };
 
     inline xcb_window_t EWMHwindow = XCB_WINDOW_NONE;
