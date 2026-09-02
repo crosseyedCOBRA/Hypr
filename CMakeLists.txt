@@ -16,7 +16,7 @@ add_compile_options(-Wall -Wextra)
 find_package(Threads REQUIRED)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(deps REQUIRED IMPORTED_TARGET glib-2.0 harfbuzz cairo gtkmm-3.0 xcb-randr xcb-ewmh xcb-xinerama xcb-cursor xcb-keysyms xcb-icccm)
+pkg_check_modules(deps REQUIRED IMPORTED_TARGET glib-2.0 harfbuzz cairo gtkmm-3.0 xcb-randr xcb-ewmh xcb-xinerama xcb-cursor xcb-keysyms xcb-icccm xcb-util)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
