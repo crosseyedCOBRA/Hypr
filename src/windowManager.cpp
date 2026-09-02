@@ -24,14 +24,6 @@ void CWindowManager::setupDepth() {
     VisualType = setupColors(Depth);
 }
 
-void CWindowManager::createAndOpenAllPipes() {
-    system("mkdir -p /tmp/hypr");
-    system("cat \" \" > /tmp/hypr/hyprbarin");
-    system("cat \" \" > /tmp/hypr/hyprbarout");
-    system("cat \" \" > /tmp/hypr/hyprbarind");
-    system("cat \" \" > /tmp/hypr/hyprbaroutd");
-}
-
 void CWindowManager::updateRootCursor() {
     if (xcb_cursor_context_new(DisplayConnection, Screen, &pointerContext) < 0) {
         Debug::log(ERR, "Creating a cursor context failed!");
@@ -225,8 +217,8 @@ bool CWindowManager::handleEvent() {
         sanityCheckOnWorkspace(active);
     }
 
-    // hide ewmh bars if fullscreen
-    processBarHiding();
+    // hide docks/panels if fullscreen
+    processDockHiding();
 
     // remove unused workspaces
     cleanupUnusedWorkspaces();
@@ -236,9 +228,6 @@ bool CWindowManager::handleEvent() {
 
     // Update last window name
     updateActiveWindowName();
-
-    // Update the bar with the freshest stuff
-    updateBarInfo();
 
     // Update EWMH workspace info
     EWMH::updateDesktops();
@@ -271,10 +260,6 @@ void CWindowManager::recieveEvent() {
 
         // Set thread state, halt animations until done.
         mainThreadBusy = true;
-
-        // Read from the bar
-        if (!g_pWindowManager->statusBar)
-            IPCRecieveMessageM(m_sIPCBarPipeOut.szPipeName);
 
         const uint8_t TYPE = XCB_EVENT_RESPONSE_TYPE(ev);
         const auto EVENTCODE = ev->response_type & ~0x80;
@@ -345,7 +330,7 @@ void CWindowManager::recieveEvent() {
     }
 }
 
-void CWindowManager::processBarHiding() {
+void CWindowManager::processDockHiding() {
     for (auto& w : windows) {
         if (!w.getDock())
             continue;
@@ -391,9 +376,6 @@ void CWindowManager::cleanupUnusedWorkspaces() {
             workspaces.push_back(work);
         }
     }
-
-    // Update bar info
-    updateBarInfo();
 }
 
 void CWindowManager::refreshDirtyWindows() {
@@ -1802,11 +1784,7 @@ void CWindowManager::changeWorkspaceByID(int ID) {
             // if fullscreen, set to the fullscreen window
             focusOnWorkspace(ID);
 
-            // Update bar info, activeWorkspaceID
-            updateBarInfo();
             activeWorkspaceID = ID;
-
-            Debug::log(LOG, "Bar info updated with workspace changed.");
 
             // Wipe animation
             startWipeAnimOnWorkspace(OLDWORKSPACE, ID);
@@ -1825,8 +1803,6 @@ void CWindowManager::changeWorkspaceByID(int ID) {
     activeWorkspaces[MONITOR->ID] = workspaces[workspaces.size() - 1].getID();
     LastWindow = -1;
 
-    // Update bar info, activeWorkspaceID
-    updateBarInfo();
     activeWorkspaceID = ID;
 
     // Wipe animation
@@ -1986,90 +1962,6 @@ bool CWindowManager::isWorkspaceVisible(int workspaceID) {
     return false;
 }
 
-void CWindowManager::updateBarInfo() {
-
-    // IPC
-
-    // What we need to send:
-    // - Workspace data
-    // - Active Workspace
-
-    // If bar disabled, ignore
-    if (ConfigManager::getInt("bar:enabled") == 0)
-        return;
-
-    SIPCMessageMainToBar message;
-
-    auto PMONITOR = getMonitorFromCursor();
-    if (!PMONITOR) {
-        Debug::log(ERR, "Monitor was null! (updateBarInfo) Using 0.");
-        PMONITOR = &monitors[0];
-
-        if (monitors.size() == 0) {
-            Debug::log(ERR, "Not continuing. Monitors size 0.");
-            return;
-        }
-    }
-
-    message.activeWorkspace = activeWorkspaces[PMONITOR->ID];
-
-    auto winname = getWindowFromDrawable(LastWindow) ? getWindowFromDrawable(LastWindow)->getName() : "";
-    auto winclassname = getWindowFromDrawable(LastWindow) ? getWindowFromDrawable(LastWindow)->getClassName() : "";
-
-    for (auto& c : winname) {
-        // Remove illegal chars
-        if (c == '=' || c == '\t')
-            c = ' ';
-    }
-
-    for (auto& c : winclassname) {
-        // Remove illegal chars
-        if (c == '=' || c == '\t')
-            c = ' ';
-    }
-
-    message.lastWindowName = winname;
-
-    message.lastWindowClass = winclassname;
-
-    auto* const WORKSPACE = getWorkspaceByID(activeWorkspaces[ConfigManager::getInt("bar:monitor") > monitors.size() ? 0 : ConfigManager::getInt("bar:monitor")]);
-    if (WORKSPACE)
-        message.fullscreenOnBar = WORKSPACE->getHasFullscreenWindow();
-    else
-        message.fullscreenOnBar = false;
-
-    for (auto& workspace : workspaces) {
-        if (workspace.getID() == SCRATCHPAD_ID)
-            continue;
-
-        message.openWorkspaces.push_back(workspace.getID());
-    }
-
-    IPCSendMessage(m_sIPCBarPipeIn.szPipeName, message);
-
-
-    // Also check if the bar should be made invisibel
-    // we make it by moving it far far away
-    // the bar will also stop all updates
-    if (message.fullscreenOnBar) {
-        if (lastKnownBarPosition.x == -1 && lastKnownBarPosition.y == -1) {
-            lastKnownBarPosition = monitors[ConfigManager::getInt("bar:monitor") > monitors.size() ? 0 : ConfigManager::getInt("bar:monitor")].vecPosition;
-        }
-
-        Values[0] = (int)-99999;
-        Values[1] = (int)-99999;
-        xcb_configure_window(DisplayConnection, barWindowID, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
-    } else {
-        if (lastKnownBarPosition.x != -1 && lastKnownBarPosition.y != -1) {
-            Values[0] = (int)lastKnownBarPosition.x;
-            Values[1] = (int)lastKnownBarPosition.y;
-            xcb_configure_window(DisplayConnection, barWindowID, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, Values);
-        }
-
-        lastKnownBarPosition = Vector2D(-1, -1);
-    }
-}
-
 void CWindowManager::setAllFloatingWindowsTop() {
     for (auto& window : windows) {
         if (window.getIsFloating() && !window.getTransient()) {
@@ -2081,20 +1973,12 @@ void CWindowManager::setAllFloatingWindowsTop() {
             window.bringTopRecursiveTransients();
         }
     }
-
-    // set the bar topper jic
-    Values[0] = XCB_STACK_MODE_ABOVE;
-    xcb_configure_window(g_pWindowManager->DisplayConnection, barWindowID, XCB_CONFIG_WINDOW_STACK_MODE, Values);
 }
 
 void CWindowManager::setAWindowTop(xcb_window_t window) {
     Values[0] = XCB_STACK_MODE_ABOVE;
     const auto COOKIE = xcb_configure_window(g_pWindowManager->DisplayConnection, window, XCB_CONFIG_WINDOW_STACK_MODE, Values);
     Events::ignoredEvents.push_back(COOKIE.sequence);
-
-    // set the bar topper jic
-    Values[0] = XCB_STACK_MODE_ABOVE;
-    xcb_configure_window(g_pWindowManager->DisplayConnection, barWindowID, XCB_CONFIG_WINDOW_STACK_MODE, Values);
 }
 
 bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {

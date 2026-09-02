@@ -17,11 +17,7 @@
 #include <xcb/xcb_cursor.h>
 #include <xcb/shape.h>
 
-#include <cairo/cairo.h>
-#include <cairo/cairo-xcb.h>
 #include <glib-2.0/glib.h>
-
-#include <gtk/gtk.h>
 
 #include <memory>
 #include <string>
@@ -90,9 +86,6 @@
 #define BLUE(c) ((double)(((c)) & 0xff) / 255.0)
 
 #define CONTAINS(s, f) s.find(f) != std::string::npos
-
-#define RETURNIFBAR  if (g_pWindowManager->statusBar) return;
-#define RETURNIFMAIN if (!g_pWindowManager->statusBar) return;
 
 #define COLORDELTAOVERX(c, c1, d) (abs(RED(c) - RED(c1)) > d / 255.f || abs(GREEN(c) - GREEN(c1)) > d / 255.f || abs(BLUE(c) - BLUE(c1)) > d / 255.f || abs(ALPHA(c) - ALPHA(c1)) > d / 255.f)
 

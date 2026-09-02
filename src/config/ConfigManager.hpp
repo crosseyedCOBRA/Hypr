@@ -28,8 +28,6 @@ namespace ConfigManager {
     inline std::unordered_map<std::string, SConfigValue> configValues;
     inline time_t       lastModifyTime = 0;
 
-    inline bool         loadBar = false;
-
     inline std::string  currentCategory = "";
 
     inline bool         isFirstLaunch = false;

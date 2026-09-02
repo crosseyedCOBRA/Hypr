@@ -16,15 +16,10 @@
 #include "utilities/AnimationUtil.hpp"
 #include "utilities/XCBProps.hpp"
 #include "ewmh/ewmh.hpp"
-#include "bar/Bar.hpp"
-#include "utilities/Tray.hpp"
-
-#include "ipc/ipc.hpp"
 
 class CWindowManager {
 public:
     xcb_connection_t*           DisplayConnection = nullptr;
-    xcb_ewmh_connection_t*      EWMHConnection = nullptr; // Bar uses this
     xcb_screen_t*               Screen = nullptr;
     xcb_drawable_t              Drawable;
     int                         RandREventBase = -1;
@@ -55,16 +50,7 @@ public:
     int                         lastActiveWorkspaceID = 1;
     int                         activeWorkspaceID = 1;
 
-    // Not really pipes, but files. Oh well. Used for IPC.
-    SIPCPipe                    m_sIPCBarPipeIn = {ISDEBUG ? "/tmp/hypr/hyprbarind" : "/tmp/hypr/hyprbarin", 0};
-    SIPCPipe                    m_sIPCBarPipeOut = {ISDEBUG ? "/tmp/hypr/hyprbaroutd" : "/tmp/hypr/hyprbarout", 0};
-    // This will be nullptr on the main thread, and will hold the pointer to the bar object on the bar thread.
-    CStatusBar*                 statusBar = nullptr;
-    Vector2D                    lastKnownBarPosition = {-1,-1};
-    int64_t                     barWindowID = 0;
-    GThread*                    barThread; /* Well right now anything but the bar but lol */
-    
-    std::deque<CTrayClient>     trayclients;
+    GThread*                    tickThread; // drives animations, active window name, and periodic config checks
 
     bool                        mainThreadBusy = false;
     bool                        animationUtilBusy = false;
@@ -127,12 +113,10 @@ public:
     void                        getICCCMWMProtocols(CWindow*);
 
     void                        setupRandrMonitors();
-    void                        createAndOpenAllPipes();
     void                        setupDepth();
     void                        setupColormapAndStuff();
 
     void                        updateActiveWindowName();
-    void                        updateBarInfo();
 
     int                         getWindowsOnWorkspace(const int&);
     CWindow*                    getFullscreenWindowByWorkspace(const int&);
@@ -177,7 +161,7 @@ private:
     void                        focusOnWorkspace(const int&);
     void                        dispatchQueuedWarp();
     CWindow*                    getMasterForWorkspace(const int&);
-    void                        processBarHiding();
+    void                        processDockHiding();
 };
 
 inline std::unique_ptr<CWindowManager> g_pWindowManager = std::make_unique<CWindowManager>();
@@ -232,10 +216,4 @@ inline std::map<std::string, xcb_atom_t> HYPRATOMS = {
     HYPRATOM("_NET_REQUEST_FRAME_EXTENTS"),
     HYPRATOM("_NET_FRAME_EXTENTS"),
     HYPRATOM("_MOTIF_WM_HINTS"),
-    HYPRATOM("WM_CHANGE_STATE"),
-    HYPRATOM("_NET_SYSTEM_TRAY_OPCODE"),
-    HYPRATOM("_NET_SYSTEM_TRAY_COLORS"),
-    HYPRATOM("_NET_SYSTEM_TRAY_VISUAL"),
-    HYPRATOM("_NET_SYSTEM_TRAY_ORIENTATION"),
-    HYPRATOM("_XEMBED_INFO"),
-    HYPRATOM("MANAGER")};
+    HYPRATOM("WM_CHANGE_STATE")};
