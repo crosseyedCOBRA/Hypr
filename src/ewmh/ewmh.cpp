@@ -69,9 +69,6 @@ void EWMH::setupInitEWMH() {
 
     xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_SUPPORTED"], XCB_ATOM_ATOM, 32, sizeof(supportedAtoms) / sizeof(xcb_atom_t), supportedAtoms);
 
-    // delete workarea
-    xcb_delete_property(g_pWindowManager->DisplayConnection, g_pWindowManager->Screen->root, HYPRATOMS["_NET_WORKAREA"]);
-
     Debug::log(LOG, "EWMH init done.");
 }
 
@@ -126,36 +123,54 @@ void EWMH::updateDesktops() {
     const int ACTIVEDESKTOPINDEX = desktopIndexForWorkspaceID(SORTEDIDS, activeWorkspaceID);
     const int ALLDESKTOPS = SORTEDIDS.size();
 
-    // Skip the (relatively expensive) property updates if nothing pagers/bars
-    // care about has actually changed since last tick.
-    if (DesktopInfo::lastid == ACTIVEDESKTOPINDEX && DesktopInfo::lastCount == ALLDESKTOPS)
-        return;
+    // Skip the (relatively expensive) desktop-metadata updates if nothing pagers/bars
+    // care about here has changed since last tick. _NET_WORKAREA below is refreshed
+    // unconditionally since dock/panel reservations can change independent of this.
+    if (DesktopInfo::lastid != ACTIVEDESKTOPINDEX || DesktopInfo::lastCount != ALLDESKTOPS) {
+        DesktopInfo::lastid = ACTIVEDESKTOPINDEX;
+        DesktopInfo::lastCount = ALLDESKTOPS;
 
-    DesktopInfo::lastid = ACTIVEDESKTOPINDEX;
-    DesktopInfo::lastCount = ALLDESKTOPS;
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_CURRENT_DESKTOP"], XCB_ATOM_CARDINAL, 32, 1, &ACTIVEDESKTOPINDEX);
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_NUMBER_OF_DESKTOPS"], XCB_ATOM_CARDINAL, 32, 1, &ALLDESKTOPS);
 
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_CURRENT_DESKTOP"], XCB_ATOM_CARDINAL, 32, 1, &ACTIVEDESKTOPINDEX);
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_NUMBER_OF_DESKTOPS"], XCB_ATOM_CARDINAL, 32, 1, &ALLDESKTOPS);
+        // Desktop names: workspace IDs stringified, in sorted order, NUL-separated (UTF8_STRING per EWMH spec)
+        std::string namesBlob;
+        for (const auto& id : SORTEDIDS) {
+            namesBlob += std::to_string(id);
+            namesBlob += '\0';
+        }
 
-    // Desktop names: workspace IDs stringified, in sorted order, NUL-separated (UTF8_STRING per EWMH spec)
-    std::string namesBlob;
-    for (const auto& id : SORTEDIDS) {
-        namesBlob += std::to_string(id);
-        namesBlob += '\0';
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_DESKTOP_NAMES"], HYPRATOMS["UTF8_STRING"], 8, namesBlob.size(), namesBlob.data());
+
+        // Desktop viewport: top-left of the monitor each desktop currently lives on
+        std::vector<uint32_t> workspaceCoords;
+        workspaceCoords.reserve(SORTEDIDS.size() * 2);
+        for (const auto& id : SORTEDIDS) {
+            const auto PMONITOR = monitorForWorkspaceID(id);
+            workspaceCoords.push_back(PMONITOR ? (uint32_t)PMONITOR->vecPosition.x : 0);
+            workspaceCoords.push_back(PMONITOR ? (uint32_t)PMONITOR->vecPosition.y : 0);
+        }
+
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_DESKTOP_VIEWPORT"], XCB_ATOM_CARDINAL, 32, workspaceCoords.size(), workspaceCoords.data());
     }
 
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_DESKTOP_NAMES"], HYPRATOMS["UTF8_STRING"], 8, namesBlob.size(), namesBlob.data());
-
-    // Desktop viewport: top-left of the monitor each desktop currently lives on
-    std::vector<uint32_t> workspaceCoords;
-    workspaceCoords.reserve(SORTEDIDS.size() * 2);
+    // Work area: usable space per desktop after dock/panel (_NET_WM_STRUT_PARTIAL) reservations
+    std::vector<uint32_t> workarea;
+    workarea.reserve(SORTEDIDS.size() * 4);
     for (const auto& id : SORTEDIDS) {
         const auto PMONITOR = monitorForWorkspaceID(id);
-        workspaceCoords.push_back(PMONITOR ? (uint32_t)PMONITOR->vecPosition.x : 0);
-        workspaceCoords.push_back(PMONITOR ? (uint32_t)PMONITOR->vecPosition.y : 0);
+        if (!PMONITOR) {
+            workarea.insert(workarea.end(), {0, 0, 0, 0});
+            continue;
+        }
+
+        workarea.push_back((uint32_t)(PMONITOR->vecPosition.x + PMONITOR->vecReservedTopLeft.x));
+        workarea.push_back((uint32_t)(PMONITOR->vecPosition.y + PMONITOR->vecReservedTopLeft.y));
+        workarea.push_back((uint32_t)(PMONITOR->vecSize.x - PMONITOR->vecReservedTopLeft.x - PMONITOR->vecReservedBottomRight.x));
+        workarea.push_back((uint32_t)(PMONITOR->vecSize.y - PMONITOR->vecReservedTopLeft.y - PMONITOR->vecReservedBottomRight.y));
     }
 
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_DESKTOP_VIEWPORT"], XCB_ATOM_CARDINAL, 32, workspaceCoords.size(), workspaceCoords.data());
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_WORKAREA"], XCB_ATOM_CARDINAL, 32, workarea.size(), workarea.data());
 }
 
 void EWMH::updateWindow(xcb_window_t win) {
