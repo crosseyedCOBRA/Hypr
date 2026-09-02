@@ -1788,11 +1788,15 @@ void CWindowManager::changeWorkspaceByID(int ID) {
             Debug::log(LOG, "Workspace open, bringing to active.");
 
             // set workspaces dirty
-            setAllWorkspaceWindowsDirtyByID(activeWorkspaces[workspace.getMonitor()]);
             setAllWorkspaceWindowsDirtyByID(ID);
 
-            OLDWORKSPACE = activeWorkspaces[workspace.getMonitor()];
-            activeWorkspaces[workspace.getMonitor()] = workspace.getID();
+            // pull the workspace onto the currently focused monitor (global workspace pool)
+            const bool MOVEDMONITORS = workspace.getMonitor() != MONITOR->ID;
+            workspace.setMonitor(MONITOR->ID);
+            activeWorkspaces[MONITOR->ID] = workspace.getID();
+
+            if (MOVEDMONITORS)
+                recalcEntireWorkspace(ID);
 
             // if not fullscreen set the focus to any window on that workspace
             // if fullscreen, set to the fullscreen window
