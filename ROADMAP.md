@@ -19,6 +19,7 @@ Tracking what's done, what's planned, and what's still undecided for this fork.
 - **True live drag-and-drop retiling.** Other windows should visibly reshuffle in real time while a window is being dragged over them, not just snap into place on release. This is genuinely new work — even Hyprland doesn't fully do this today.
 - **Bundled compositor.** Blur, shadows, real rounded corners, and animations via XComposite/XDamage + GLX/EGL, likely adapting picom's (MIT-licensed) blur/rounded-corner shader code. This is the single biggest remaining piece of work and isn't sequenced or scoped yet.
 - **GUI settings app.** A graphical tool for configuring the WM so users aren't limited to hand-editing the config file. Deliberately deferred until just before release.
+- **Bar visual fixes.** Icons, layout, and general polish pass on the Quickshell bar.
 
 ## Open decisions
 
