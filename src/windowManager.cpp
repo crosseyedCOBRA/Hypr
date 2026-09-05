@@ -1998,6 +1998,10 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
 
     Debug::log(LOG, "New window got class " + (std::string)CLASSINSTANCE + " -> " + CLASSNAME);
 
+    // Grab the title before we stomp WM_NAME below, so title: window rules see the
+    // app's real title and not our placeholder.
+    const auto WINNAME = getWindowName(window);
+
     xcb_change_property(DisplayConnection, XCB_PROP_MODE_REPLACE, window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen("hypr"), "hypr");
 
     // Role stuff
@@ -2008,6 +2012,7 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
     // Set it in the pwindow
     PWINDOW->setClassName(CLASSNAME);
     PWINDOW->setRoleName(WINROLE);
+    PWINDOW->setName(WINNAME);
 
     //
     // Type stuff

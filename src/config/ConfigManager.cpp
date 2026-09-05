@@ -412,6 +412,15 @@ std::vector<SWindowRule> ConfigManager::getMatchingRules(xcb_window_t w) {
             } catch (...) {
                 Debug::log(ERR, "Regex error at " + rule.szValue);
             }
+        } else if (rule.szValue.find("title:") == 0) {
+            try {
+                std::regex titleCheck(rule.szValue.substr(strlen("title:")));
+
+                if (!std::regex_search(PWINDOW->getName(), titleCheck))
+                    continue;
+            } catch (...) {
+                Debug::log(ERR, "Regex error at " + rule.szValue);
+            }
         } else {
             continue;
         }
