@@ -115,16 +115,6 @@ void CWindowManager::setupRandrMonitors() {
 
     free(MONITORS);
 
-    const auto EXTENSIONREPLY = xcb_get_extension_data(DisplayConnection, &xcb_randr_id);
-    if (!EXTENSIONREPLY->present)
-        Debug::log(ERR, "RandR extension missing");
-    else {
-        //listen for screen change events
-        xcb_randr_select_input(DisplayConnection, Screen->root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
-        RandREventBase = EXTENSIONREPLY->first_event;
-        Debug::log(LOG, "RandR first event base found at " + std::to_string(RandREventBase) + ".");
-    }
-
     xcb_flush(DisplayConnection);
 
     if (monitors.size() == 0) {
@@ -149,6 +139,24 @@ void CWindowManager::setupManager() {
 
     // ---- RANDR ----- //
     setupRandrMonitors();
+
+    // Select for screen-change events exactly once, here at startup - not inside
+    // setupRandrMonitors() itself, which also gets called again from the RandR
+    // change handler to re-detect monitors. RRSelectInput synchronously fires an
+    // immediate ScreenChangeNotify reflecting current state, so re-selecting from
+    // inside the handler that responds to that very event created an infinite
+    // self-triggering loop (notify -> handler -> re-select -> new notify -> ...).
+    // Every other client watching for RandR changes (Quickshell/Qt included) kept
+    // reacting to that flood even after our own "suspicious event" cutoff gave up
+    // on it, which is what was actually behind windows never finishing init.
+    const auto RANDREXTENSION = xcb_get_extension_data(DisplayConnection, &xcb_randr_id);
+    if (!RANDREXTENSION->present)
+        Debug::log(ERR, "RandR extension missing");
+    else {
+        xcb_randr_select_input(DisplayConnection, Screen->root, XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE);
+        RandREventBase = RANDREXTENSION->first_event;
+        Debug::log(LOG, "RandR first event base found at " + std::to_string(RandREventBase) + ".");
+    }
 
     Debug::log(LOG, "RandR done.");
 
