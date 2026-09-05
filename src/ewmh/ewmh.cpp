@@ -170,7 +170,16 @@ void EWMH::updateDesktops() {
         workarea.push_back((uint32_t)(PMONITOR->vecSize.y - PMONITOR->vecReservedTopLeft.y - PMONITOR->vecReservedBottomRight.y));
     }
 
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_WORKAREA"], XCB_ATOM_CARDINAL, 32, workarea.size(), workarea.data());
+    // Guard against redundant writes: xcb_change_property fires a PropertyNotify on the
+    // root window on every call regardless of whether the value actually differs, and
+    // the WM itself has PropertyChangeMask selected on root. updateDesktops() runs after
+    // every single event, so an unconditional write here is a guaranteed self-triggering
+    // infinite loop (write -> PropertyNotify -> event loop wakes -> write again -> ...)
+    // that pegs the CPU and locks up the whole desktop.
+    if (workarea != DesktopInfo::lastWorkarea) {
+        DesktopInfo::lastWorkarea = workarea;
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_WORKAREA"], XCB_ATOM_CARDINAL, 32, workarea.size(), workarea.data());
+    }
 }
 
 void EWMH::updateWindow(xcb_window_t win) {

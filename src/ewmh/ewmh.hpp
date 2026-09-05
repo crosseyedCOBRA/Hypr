@@ -14,8 +14,9 @@ namespace EWMH {
     int             workspaceIDFromDesktopIndex(int);
 
     namespace DesktopInfo {
-        inline int lastid = 0;
-        inline int lastCount = 0;
+        inline int                   lastid = 0;
+        inline int                   lastCount = 0;
+        inline std::vector<uint32_t> lastWorkarea;
     };
 
     inline xcb_window_t EWMHwindow = XCB_WINDOW_NONE;

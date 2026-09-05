@@ -316,6 +316,11 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
                 } else {
                     Debug::log(LOG, "Couldn't guess dock's monitor. Leaving at " + std::to_string(PWINDOWINARR->getMonitor()) + ".");
                 }
+
+                // Reserve its workarea immediately - otherwise nothing reserves space for
+                // this dock until (and unless) it later sends a resize request, and tiled
+                // windows spawn underneath it in the meantime.
+                g_pWindowManager->recalcAllDocks();
             }
         }
     }
@@ -837,7 +842,25 @@ void Events::eventConfigure(xcb_generic_event_t* event) {
     auto *const PWINDOW = g_pWindowManager->getWindowFromDrawable(E->window);
 
     if (!PWINDOW) {
-        Debug::log(LOG, "CONFIGURE: Window doesn't exist, ignoring.");
+        // Not managed yet - most commonly because the client is configuring itself
+        // before mapping (completely normal ICCCM behavior: create, configure, then
+        // map). We still own SubstructureRedirect on root, so nobody else will ever
+        // grant this request - if we don't, the window sits at whatever geometry it
+        // had at creation (often a tiny placeholder) until it maps, and we'll end up
+        // managing it at the wrong initial size.
+        uint32_t values[7];
+        int      i = 0;
+        if (E->value_mask & XCB_CONFIG_WINDOW_X) values[i++] = E->x;
+        if (E->value_mask & XCB_CONFIG_WINDOW_Y) values[i++] = E->y;
+        if (E->value_mask & XCB_CONFIG_WINDOW_WIDTH) values[i++] = E->width;
+        if (E->value_mask & XCB_CONFIG_WINDOW_HEIGHT) values[i++] = E->height;
+        if (E->value_mask & XCB_CONFIG_WINDOW_BORDER_WIDTH) values[i++] = E->border_width;
+        if (E->value_mask & XCB_CONFIG_WINDOW_SIBLING) values[i++] = E->sibling;
+        if (E->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) values[i++] = E->stack_mode;
+
+        xcb_configure_window(g_pWindowManager->DisplayConnection, E->window, E->value_mask, values);
+
+        Debug::log(LOG, "CONFIGURE: Window not yet managed, granting pre-map request as-is.");
         return;
     }
 
@@ -845,6 +868,9 @@ void Events::eventConfigure(xcb_generic_event_t* event) {
         Debug::log(LOG, "CONFIGURE: Window isn't floating, ignoring.");
         return;
     }
+
+    const auto OLDDEFAULTPOS = PWINDOW->getDefaultPosition();
+    const auto OLDDEFAULTSIZE = PWINDOW->getDefaultSize();
 
     PWINDOW->setDefaultPosition(Vector2D(E->x, E->y));
     PWINDOW->setDefaultSize(Vector2D(E->width, E->height));
@@ -856,7 +882,16 @@ void Events::eventConfigure(xcb_generic_event_t* event) {
     // The reserved workarea was computed from the dock's geometry at map time, so it
     // needs to be recalculated here too, or a dock that grows post-map never gets its
     // space reserved and tiled windows can end up underneath it.
-    if (PWINDOW->getDock())
+    //
+    // Only do this if the geometry actually changed: recalcAllDocks() re-asserts the
+    // dock's geometry via xcb_configure_window, which itself can nudge a reactive QML
+    // layout to re-request the "same" size a fraction of a pixel off. Recalculating on
+    // every request regardless of whether anything changed turns that into a
+    // self-sustaining request/grant loop that pegs the WM and locks up the desktop.
+    const bool GEOMETRYCHANGED = OLDDEFAULTPOS.x != PWINDOW->getDefaultPosition().x || OLDDEFAULTPOS.y != PWINDOW->getDefaultPosition().y ||
+                                  OLDDEFAULTSIZE.x != PWINDOW->getDefaultSize().x || OLDDEFAULTSIZE.y != PWINDOW->getDefaultSize().y;
+
+    if (PWINDOW->getDock() && GEOMETRYCHANGED)
         g_pWindowManager->recalcAllDocks();
 }
 
