@@ -58,6 +58,22 @@ void Events::eventEnter(xcb_generic_event_t* event) {
 
     if (!PENTERWINDOW){
 
+        // We only get here for a window we've never tracked - most commonly a
+        // popup/dropdown menu (bookmark menus, right-click context menus, combo
+        // box lists, ...), which toolkits almost always create override-redirect
+        // specifically so the WM won't touch them. Blindly trying to "manage"
+        // any such window regardless of that flag - the bug this guard fixes -
+        // stole focus away from the menu's actual parent window the instant the
+        // mouse entered it, and most toolkits auto-dismiss a menu the moment its
+        // parent loses focus: reported live as bookmark/dropdown menus in Zen
+        // Browser closing themselves instantly on hover, "like a double click."
+        // shouldBeManaged() is the same check eventMapWindow() already applies
+        // for exactly this reason - apply it here too instead of skipping it.
+        if (!g_pWindowManager->shouldBeManaged(E->event)) {
+            Debug::log(LOG, "Entered a window that shouldn't be managed (e.g. override-redirect popup/menu) - leaving it alone.");
+            return;
+        }
+
         // we entered an unknown window to us. Let's manage it.
         Debug::log(LOG, "Entered an unmanaged window. Trying to manage it!");
 
