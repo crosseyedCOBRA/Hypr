@@ -34,8 +34,8 @@ void ConfigManager::init() {
     configValues["col.inactive_border"].intValue = 0x77222222;
 
     // animations
-    configValues["animations:speed"].floatValue = 1;
-    configValues["animations:window_resize_speed"].floatValue = 1;
+    configValues["animations:speed"].floatValue = 20;
+    configValues["animations:window_resize_speed"].floatValue = 20;
     configValues["animations:enabled"].intValue = 0;
     configValues["animations:cheap"].intValue = 1;
     configValues["animations:borders"].intValue = 1;

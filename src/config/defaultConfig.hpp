@@ -35,8 +35,8 @@ col.inactive_border=0x77222222
 # animations
 Animations {
     enabled=1
-    speed=5 # for workspaces
-    window_resize_speed=5 # for windows
+    speed=20 # for workspaces
+    window_resize_speed=20 # for windows
     cheap=1 # highly recommended
     borders=0
     workspaces=0 # not really recommended
