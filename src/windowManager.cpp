@@ -558,6 +558,11 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window) {
 
         const auto LASTWINID = LastWindow;
 
+        if (LASTWINID != window && LASTWINID > 0) {
+            LastDefocusedWindow = LASTWINID;
+            LastDefocusTime = std::chrono::steady_clock::now();
+        }
+
         LastWindow = window;
 
         if (PNEWFOCUS) {
@@ -2287,6 +2292,25 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
 
         if (!PWINDOW) {
             Debug::log(ERR, "Requested _NET_ACTIVE_WINDOW with an invalid window ID! Ignoring.");
+            return;
+        }
+
+        // EWMH's source-indication field (0 = unspecified, 1 = application, 2 = pager/
+        // user-initiated) turned out unreliable in practice for telling a legitimate
+        // activation apart from focus-stealing - wmctrl itself sends 0, not 2, so
+        // trusting only source==2 broke ordinary external activation. Instead, reject
+        // a request specifically from whichever window most recently LOST focus, if
+        // that happened very recently: that's the actual signature of a misbehaving
+        // client (a fullscreen game demanding its focus back the instant the user
+        // clicks elsewhere) - reported live as "I click away and it snaps right back
+        // to the game" - regardless of what source value it sends. A request from any
+        // other window, or from this one after the cooldown, is still honored.
+        const auto SOURCE = E->data.data32[0];
+        const bool RECENTLYDEFOCUSED = PWINDOW->getDrawable() == LastDefocusedWindow &&
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - LastDefocusTime).count() < 1000;
+
+        if (SOURCE != 2 && RECENTLYDEFOCUSED) {
+            Debug::log(LOG, "Ignoring _NET_ACTIVE_WINDOW from " + std::to_string(PWINDOW->getDrawable()) + " (source " + std::to_string(SOURCE) + ") - it just lost focus, this looks like focus-stealing.");
             return;
         }
 

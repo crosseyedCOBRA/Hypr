@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <thread>
+#include <chrono>
 #include <xcb/xcb.h>
 #include <deque>
 
@@ -42,6 +43,12 @@ public:
     std::deque<CWindow>         windows; // windows never left. It has always been hiding amongst us.
     std::deque<CWindow>         unmappedWindows;
     xcb_drawable_t              LastWindow = -1;
+    // Tracks whichever window most recently LOST focus, and when, so a stray
+    // _NET_ACTIVE_WINDOW request from that same window shortly after can be
+    // recognized as focus-stealing (e.g. a fullscreen game demanding its
+    // focus back the instant the user clicks elsewhere) rather than honored.
+    xcb_drawable_t              LastDefocusedWindow = -1;
+    std::chrono::time_point<std::chrono::steady_clock> LastDefocusTime;
 
     // holds the objects representing every open workspace
     std::deque<CWorkspace>      workspaces;
