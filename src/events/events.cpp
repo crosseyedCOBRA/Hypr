@@ -199,7 +199,11 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
         if (rule.szRule.find("fullscreen") == 0) {
             PWINDOWINARR->setFullscreen(true);
         }
-        
+
+        if (rule.szRule.find("center") == 0) {
+            nextWindowCentered = true;
+        }
+
         if (rule.szRule.find("workspace") == 0) {
             try {
                 const auto WORKSPACE = stoi(rule.szRule.substr(rule.szRule.find(" ") + 1));
