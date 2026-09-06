@@ -4,7 +4,12 @@
 void AnimationUtil::move() {
 
     static std::chrono::time_point lastFrame = std::chrono::high_resolution_clock::now();
-    const double DELTA = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - lastFrame).count();
+    // Fractional milliseconds, not truncated to whole ones: ANIMATIONSPEED below is
+    // 1/DELTA, so integer-truncating DELTA turned normal tick-to-tick scheduling
+    // jitter (e.g. 15ms vs 17ms) into visibly uneven step sizes, and any two ticks
+    // landing under 1ms apart truncated DELTA to exactly 0, silently stalling that
+    // frame's animation entirely (division by zero -> infinite speed -> zero step).
+    const double DELTA = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(std::chrono::high_resolution_clock::now() - lastFrame).count();
     lastFrame = std::chrono::high_resolution_clock::now();
 
     const double ANIMATIONSPEED = std::max(1.f / ((double)ConfigManager::getFloat("animations:speed") * DELTA) * 462.f, (double)1.f);

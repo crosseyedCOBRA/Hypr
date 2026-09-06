@@ -14,6 +14,7 @@ Tracking what's done, what's planned, and what's still undecided for this fork.
 - Window rules extended with `title:` matching (upstream Hypr only had `class:` / `role:`)
 - Fullscreen window rule for games — turned out to already be fully implemented upstream (`windowrule=fullscreen,class:...`), just undocumented; verified live and added an example to `example/hypr.conf`
 - Launcher positioning — added a new `center` window rule (reuses the existing dialog/modal auto-centering math, now available to any window via config) and applied it to the launcher; verified it lands pixel-exact in the center of the screen
+- Animations fix — the animation speed formula (`1/DELTA`) used an integer-truncated millisecond delta; any two ticks landing under 1ms apart truncated to exactly `0`, causing a division-by-zero (infinite speed) that silently stalled that frame. Measured this actually happening (~1 in 221 idle ticks). Switched to a fractional-millisecond delta; confirmed empirically over hundreds of ticks that the stall case no longer occurs.
 - Bug fixes along the way: missing `xcb-util` build dependency, dock/workarea reservation race at map time, an EWMH `_NET_WORKAREA` infinite-loop freeze, a RandR screen-change notification feedback loop, and a broken session launcher that was silently running a stale system-wide binary instead of the real one
 
 ## Backlog — discussed, not started
@@ -22,7 +23,6 @@ Tracking what's done, what's planned, and what's still undecided for this fork.
 - **Bundled compositor.** Blur, shadows, and real anti-aliased rounded corners via XComposite/XDamage + GLX/EGL, likely adapting picom's (MIT-licensed) blur/rounded-corner shader code. (Animations and basic X-Shape-based rounded corners already work today without a compositor — this is about blur/shadows specifically, plus a visual upgrade to rounding.) This is the single biggest remaining piece of work and isn't sequenced or scoped yet.
 - **GUI settings app.** A graphical tool for configuring the WM so users aren't limited to hand-editing the config file. Deliberately deferred until just before release.
 - **Bar visual fixes.** Icons, layout, and general polish pass on the Quickshell bar.
-- **Animations fix.** Something's currently off with Hypr's native window/workspace animations; needs investigation.
 
 ## Open decisions
 
