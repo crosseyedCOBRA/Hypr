@@ -38,6 +38,12 @@ Tracking what's done, what's planned, and what's still undecided for this fork.
 - **MPRIS "now playing" widget.** Bar module showing/controlling whatever's playing (Spotify, browser media, etc.) — standard in Noctalia/DankMaterialShell-style shells.
 - **Clipboard manager.** Clipboard history with a rofi-style picker.
 - **Wallpaper picker/rotation.** Wallpaper is currently a single static `xwallpaper` call in `exec-once`.
+- **Quick settings panel.** A single flyout (WiFi/Bluetooth/DND/brightness/volume) rather than a separate bar module per thing — the direction Noctalia/DankMaterialShell actually go, and it'd tie together the notification daemon's DND, a future Bluetooth toggle, and brightness in one place instead of three.
+- **Screen recording.** Natural pair with `screenshot.sh` — same ffmpeg-family tooling, just recording instead of a single frame.
+- **Night light / color temperature.** Redshift-style time-of-day blue light filter.
+- **Bluetooth applet.** Toggle/pair devices from the bar.
+- **Keybind cheat-sheet overlay.** Press a key, see all current keybinds — useful once the binds list grows.
+- **First-run setup + config export/import.** A different kind of item than the rest — about *shipping* the project rather than day-to-day use. This project's own roadmap already targets a public release (final name TBD), but there's currently no path for someone else to pick this up cleanly beyond hand-copying dotfiles.
 - **Fullscreen rule for non-Steam-launcher games.** Lutris/Heroic don't relabel `WM_CLASS` the way Steam does (no `lutris_*`/`heroic_*` equivalent), so the one-rule-covers-everything trick doesn't carry over. Need to test an actual Lutris/Heroic game to find out whether it already goes fullscreen on its own (via its own EWMH fullscreen request, a separate pre-existing code path) or needs a per-game rule. Also worth testing whether adding a Lutris/Heroic game to Steam as a non-Steam shortcut and launching it through Steam picks up the same `steam_app_*` class (likely, since that's Steam's own overlay/launch wrapper doing the relabeling — but unconfirmed).
 
 ## Open decisions
