@@ -9,6 +9,6 @@ First off, make sure there is no PR for what you are planning to make.
 
 Second, make double and triple sure that what you want to make is *actually useful*. Please do not open a PR for a typo. Open an issue for such things instead.
 
-That's it for now I guess. Thanks for considering contributing to Hypr!
+That's it for now I guess. Thanks for considering contributing to ZarisWM!
 
 ## =)

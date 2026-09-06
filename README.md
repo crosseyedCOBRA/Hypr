@@ -1,85 +1,43 @@
-<p align="center">
-  <img src="https://i.imgur.com/LtC153m.png" />
-  <img src="https://github.com/vaxerski/Hypr/actions/workflows/c-cpp.yml/badge.svg" />
-  <a href="https://discord.gg/hQ9XvMUjjr"><img src="https://img.shields.io/badge/Join%20the-Discord%20server-6666ff" /></a>
-  <img src="https://img.shields.io/github/issues/vaxerski/Hypr" />
-  <img src="https://img.shields.io/github/issues-pr/vaxerski/Hypr" />
-  <img src="https://img.shields.io/github/languages/top/vaxerski/Hypr" />
-  <img src="https://img.shields.io/github/license/vaxerski/Hypr" />
-  <img src="https://img.shields.io/tokei/lines/github/vaxerski/Hypr" />
-  <img src="https://img.shields.io/badge/Standard-C%2B%2B20-success" />
-  <img src="https://img.shields.io/badge/Hi-mom!-ff69b4" />
-</p>
-<br/><br/>
-Hypr is a dynamic Linux tiling window manager for Xorg. It's written in XCB with modern C++ and aims to provide easily readable and expandable code.
-<br/><br/>
+# ZarisWM
 
-For Hypr with `land`, see [Hyprland](https://github.com/vaxerski/Hyprland), the Wayland Compositor.
+ZarisWM is a dynamic tiling window manager for Xorg/X11, written in XCB with
+modern C++.
 
-<br/>
-Hypr is _only_ a window manager. It is not a compositor and does not implement a compositor's functionality. You can run it without one (e.g. Picom) though, since it runs on Xorg, which doesn't require a compositor.
-<br/>
+It started as a fork of [vaxerski/Hypr](https://github.com/vaxerski/Hypr) —
+vaxry's dormant, pre-[Hyprland](https://github.com/vaxerski/Hyprland) X11
+window manager — and has since diverged with its own bar/launcher shell,
+window management fixes, and features. See [ROADMAP.md](ROADMAP.md) for the
+full, ongoing list of what's done, what's planned, and what's still
+undecided.
 
-# Key Features
-- True parabolic animations
-- Rounded corners and borders
-- Config reloaded instantly upon saving
-- A built-in status bar with modules
-- Easily expandable and readable codebase
-- Pseudotiling
-- Multiple tiling modes (dwindling and master)
-- Window rules
-- Intelligent transients
-- Support for EWMH-compatible bars (e.g. Polybar)
-- Keybinds config
-- Tiling windows
-- Floating windows
-- Workspaces
-- Moving / Fullscreening windows
-- Mostly EWMH and ICCCM compliant
+## Features
 
-# Installation
-I do not maintain any packages, but some kind people have made them for me. If I missed any, please let me know.
+- Dynamic tiling (dwindle + master layouts)
+- Multi-monitor support, with a global workspace pool
+- An external EWMH-compatible bar/launcher built with [Quickshell](https://quickshell.outfoxxed.me/) — workspaces, clock, system tray, CPU/GPU temperature, network status, volume, a "stay awake" toggle, and a configurable "hidden tray" for modules you don't want always visible
+- A GUI settings window for the bar's module configuration
+- Idle-based screen lock (`xautolock` + `betterlockscreen`)
+- Window rules, including `class:`/`role:`/`title:` matching and per-app fullscreen/floating/centering behavior
+- Parabolic animations, rounded corners and borders
+- Config reloaded instantly on save
 
-IMPORTANT: Hypr **requires** xmodmap to correctly apply keybinds. Make sure you have it installed.
+## Building
 
-For stable releases, use the Releases tab here on github, and follow the instructions to install it in the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) 
-
-*Arch (AUR)*
 ```
-yay -S hypr-git
+git clone <this repo> zaris
+cd zaris
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make -j$(nproc)
 ```
 
-*Void Linux*
+The built binary is `build/zaris`.
 
-[https://github.com/Flammable-Duck/hypr-template](https://github.com/Flammable-Duck/hypr-template)
+## Configuring
 
-## Manual building
-If your distro doesn't have Hypr in its repositories, or you want to modify hypr,
+Place your config at `~/.config/zaris/zaris.conf` — see
+[example/zaris.conf](example/zaris.conf) for a documented starting point.
 
-see the [Wiki](https://github.com/vaxerski/Hypr/wiki/Building) to see build and installation instructions.
+## Contributing
 
-# Configuring
-See the [Wiki Page](https://github.com/vaxerski/Hypr/wiki/Configuring-Hypr) for a detailed overview on the config, or refer to the example config in examples/hypr.conf.
-
-You have to use a config, place it in ~/.config/hypr/hypr.conf
-
-# Screenshot Gallery
-
-![One](https://i.imgur.com/ygked0M.png)
-![Two](https://i.imgur.com/HLukmeA.png)
-![Three](https://i.imgur.com/B0MDTu2.png)
-
-# Known issues
-- Picom's shadow and effects do not update for cheap animations while animating
-- Non-cheap animations are choppy (duh!)
-
-# Contributions
-Refer to [CONTRIBUTING.md](https://github.com/vaxerski/Hypr/blob/main/CONTRIBUTING.md) and the [Wiki](https://github.com/vaxerski/Hypr/wiki/Contributing-&-Debugging) for contributing instructions and guidelines.
-
-
-# Stars over time
-
-[![Stars over time](https://starchart.cc/vaxerski/Hypr.svg)](https://starchart.cc/vaxerski/Hypr)
-
-
+See [CONTRIBUTING.md](CONTRIBUTING.md).

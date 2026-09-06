@@ -37,7 +37,7 @@ gpointer handle(gpointer data) {
 }
 
 void Events::setThread() {
-    g_pWindowManager->tickThread = g_thread_new("HyprTick", handle, nullptr);
+    g_pWindowManager->tickThread = g_thread_new("ZarisTick", handle, nullptr);
 
     if (!g_pWindowManager->tickThread) {
         Debug::log(ERR, "Gthread failed!");

@@ -1,7 +1,7 @@
 /*
 
-Hypr Window Manager for X.
-Started by Vaxry on 2021 / 11 / 17
+ZarisWM Window Manager for X.
+Forked from Hypr, started by Vaxry on 2021 / 11 / 17
 
 */
 
@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
     // Reap exec/exec-once children automatically instead of leaving zombies.
     signal(SIGCHLD, SIG_IGN);
 
-    Debug::log(LOG, "Hypr debug log. Built on " + std::string(__DATE__) + " at " + std::string(__TIME__));
+    Debug::log(LOG, "ZarisWM debug log. Built on " + std::string(__DATE__) + " at " + std::string(__TIME__));
 
     g_pWindowManager->DisplayConnection = xcb_connect(NULL, NULL);
     if (const auto RET = xcb_connection_has_error(g_pWindowManager->DisplayConnection); RET != 0) {
@@ -46,13 +46,13 @@ int main(int argc, char** argv) {
 
     g_pWindowManager->setupManager();
 
-    Debug::log(LOG, "Hypr Started!");
+    Debug::log(LOG, "ZarisWM Started!");
 
     while (g_pWindowManager->handleEvent()) {
         ;
     }
 
-    Debug::log(LOG, "Hypr reached the end! Exiting...");
+    Debug::log(LOG, "ZarisWM reached the end! Exiting...");
 
     xcb_disconnect(g_pWindowManager->DisplayConnection);
 

@@ -1,9 +1,9 @@
 ---
 name: Feature request
-about: Suggest a feature idea for Hypr
+about: Suggest a feature idea for ZarisWM
 title: ''
 labels: enhancement
-assignees: vaxerski
+assignees: crosseyedCOBRA
 
 ---
 

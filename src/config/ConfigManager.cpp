@@ -235,7 +235,7 @@ void ConfigManager::loadConfigLoadVars() {
 
     const char* const ENVHOME = getenv("HOME");
 
-    const std::string CONFIGPATH = ENVHOME + (ISDEBUG ? (std::string) "/.config/hypr/hyprd.conf" : (std::string) "/.config/hypr/hypr.conf");
+    const std::string CONFIGPATH = ENVHOME + (ISDEBUG ? (std::string) "/.config/zaris/zarisd.conf" : (std::string) "/.config/zaris/zaris.conf");
 
     std::ifstream ifs;
     ifs.open(CONFIGPATH.c_str());
@@ -351,7 +351,7 @@ void ConfigManager::applyKeybindsToX() {
 void ConfigManager::tick() {
     const char* const ENVHOME = getenv("HOME");
 
-    const std::string CONFIGPATH = ENVHOME + (ISDEBUG ? (std::string) "/.config/hypr/hyprd.conf" : (std::string) "/.config/hypr/hypr.conf");
+    const std::string CONFIGPATH = ENVHOME + (ISDEBUG ? (std::string) "/.config/zaris/zarisd.conf" : (std::string) "/.config/zaris/zaris.conf");
 
     struct stat fileStat;
     int err = stat(CONFIGPATH.c_str(), &fileStat);

@@ -3,7 +3,7 @@ name: Report a Bug
 about: Report a bug in order to get it fixed.
 title: ''
 labels: bug
-assignees: vaxerski
+assignees: crosseyedCOBRA
 
 ---
 
@@ -22,17 +22,20 @@ If applicable, add screenshots to help explain your problem.
 **Anything else?**
 
 **Log:**
-Please attach a log. (paste it into pastebin and paste here the url) The log can be found in a temp file located in /tmp/hypr/hypr.log.
+Please attach a log. (paste it into pastebin and paste here the url) The log can be found in a temp file located in /tmp/zaris/zaris.log.
 
 **Coredump:**
-If Hypr crashed, please attach a coredump. (paste into pastebind and paste here the url)
+If ZarisWM crashed, please attach a coredump. (paste into pastebind and paste here the url)
 
 How to?
 
 Systemd instructions:
 `coredumpctl`
-find the last ocurrence of Hypr and note the PID.
+find the last ocurrence of Zaris and note the PID.
 `coredumpctl info <PID>`
 will print the coredump.
 `coredumpctl info <PID> --no-pager | xclip -sel clip`
 will copy it to the clipboard.
+
+On non-systemd inits (e.g. OpenRC), enable core dumps yourself
+(`ulimit -c unlimited`) and inspect the resulting core file with `gdb`.

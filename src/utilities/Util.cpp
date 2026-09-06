@@ -18,8 +18,8 @@ std::string exec(const char* cmd) {
 
 void clearLogs() {
     std::ofstream logs;
-    const std::string DEBUGPATH = "/tmp/hypr/hypr.log";
-    const std::string DEBUGPATH2 = "/tmp/hypr/hyprd.log";
+    const std::string DEBUGPATH = "/tmp/zaris/zaris.log";
+    const std::string DEBUGPATH2 = "/tmp/zaris/zarisd.log";
     unlink(DEBUGPATH2.c_str());
     unlink(DEBUGPATH.c_str());
 }

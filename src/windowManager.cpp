@@ -2310,7 +2310,7 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
         // trusted user action" - for its OWN internal foreground-window reclaims. That
         // made every previous version of this check a no-op against the actual game
         // causing the problem, since it always qualified for the trusted carve-out.
-        // Hypr has no legitimate feature today that activates a window via this
+        // ZarisWM has no legitimate feature today that activates a window via this
         // ClientMessage (workspace switching uses _NET_CURRENT_DESKTOP, not this), so
         // there's no real activation to protect by trusting any source value. Only a
         // genuine X11 input event (a real click or hover, via eventButtonPress/
