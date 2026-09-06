@@ -12,6 +12,7 @@ Tracking what's done, what's planned, and what's still undecided for this fork.
 - Quickshell bar (workspaces, clock, system tray, CPU/GPU temp, network status, volume)
 - Audio (pipewire / pipewire-pulse / wireplumber) autostart on session launch
 - Window rules extended with `title:` matching (upstream Hypr only had `class:` / `role:`)
+- Fullscreen window rule for games — turned out to already be fully implemented upstream (`windowrule=fullscreen,class:...`), just undocumented; verified live and added an example to `example/hypr.conf`
 - Bug fixes along the way: missing `xcb-util` build dependency, dock/workarea reservation race at map time, an EWMH `_NET_WORKAREA` infinite-loop freeze, a RandR screen-change notification feedback loop, and a broken session launcher that was silently running a stale system-wide binary instead of the real one
 
 ## Backlog — discussed, not started
@@ -22,7 +23,6 @@ Tracking what's done, what's planned, and what's still undecided for this fork.
 - **Bar visual fixes.** Icons, layout, and general polish pass on the Quickshell bar.
 - **Animations fix.** Something's currently off with Hypr's native window/workspace animations; needs investigation.
 - **Launcher positioning.** The launcher floats correctly now, but isn't landing in the right place on screen (should be centered).
-- **Fullscreen window rule for games.** A window rule so games launch fullscreen instead of getting tiled.
 
 ## Open decisions
 
