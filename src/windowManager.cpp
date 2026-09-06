@@ -558,12 +558,19 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window, bool userInitiated)
 
         const auto LASTWINID = LastWindow;
 
-        // Only a genuine change of focus target updates this - a redundant
-        // reclaim of the window that already has focus (e.g. a self-request
-        // that's trivially allowed because it's already the current window)
-        // must not silently clear the flag for whatever comes next.
-        if (LASTWINID != window)
-            CurrentFocusIsUserChosen = userInitiated;
+        // A genuine user interaction (click/hover) always confirms the user's choice,
+        // even if the window already happened to have focus for some other reason -
+        // e.g. it was just auto-focused at creation (non-user-initiated), and the user
+        // then deliberately hovers into it, confirming they actually want it. That
+        // must upgrade it to user-chosen, not be treated as a no-op. A non-user-
+        // initiated call, on the other hand, should only clear the flag if it's an
+        // actual change of target - a redundant programmatic reclaim of the window
+        // that already has focus must not silently erase existing protection for
+        // whatever comes next.
+        if (userInitiated)
+            CurrentFocusIsUserChosen = true;
+        else if (LASTWINID != window)
+            CurrentFocusIsUserChosen = false;
 
         LastWindow = window;
 
@@ -2298,31 +2305,28 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
         }
 
         // EWMH's source-indication field (0 = unspecified, 1 = application, 2 = pager/
-        // user-initiated) turned out unreliable in practice for telling a legitimate
-        // activation apart from focus-stealing - wmctrl itself sends 0, not 2, so
-        // trusting only source==2 broke ordinary external activation. Tracking "the
-        // specific window the user moved away from" turned out unreliable too:
-        // eventEnter fires on every window the pointer crosses en route to its actual
-        // target, not just where it settles, so that tracked value kept getting
-        // overwritten by incidental pass-through crossings before the real offender's
-        // reclaim attempt ever arrived. Instead, ask a simpler question: does the
-        // CURRENT focus belong to the user by deliberate choice at all? If so, no
-        // other window gets to self-activate over it, regardless of source, timing, or
-        // how it got there - only another real click/hover (or an explicit source-2
-        // request) can hand focus onward from here.
+        // user-initiated) is untrustworthy: confirmed live via diagnostic logging that
+        // Wine/Proton sends source=2 - the value this code used to treat as "explicit,
+        // trusted user action" - for its OWN internal foreground-window reclaims. That
+        // made every previous version of this check a no-op against the actual game
+        // causing the problem, since it always qualified for the trusted carve-out.
+        // Hypr has no legitimate feature today that activates a window via this
+        // ClientMessage (workspace switching uses _NET_CURRENT_DESKTOP, not this), so
+        // there's no real activation to protect by trusting any source value. Only a
+        // genuine X11 input event (a real click or hover, via eventButtonPress/
+        // eventEnter) ever counts as user-initiated - no EWMH message does, regardless
+        // of what it claims. Any self-activation request while the current focus is
+        // the user's own deliberate choice is rejected outright.
         const auto SOURCE = E->data.data32[0];
-        const bool ISUSERSOURCE = SOURCE == 2;
 
-        if (!ISUSERSOURCE && CurrentFocusIsUserChosen && PWINDOW->getDrawable() != LastWindow) {
+        if (CurrentFocusIsUserChosen && PWINDOW->getDrawable() != LastWindow) {
             Debug::log(LOG, "Ignoring _NET_ACTIVE_WINDOW from " + std::to_string(PWINDOW->getDrawable()) + " (source " + std::to_string(SOURCE) + ") - current focus (" + std::to_string(LastWindow) + ") is the user's own deliberate choice.");
             return;
         }
 
         Debug::log(LOG, "Request to change active window to " + std::to_string(PWINDOW->getDrawable()));
 
-        // source 2 (pager/explicit user action) counts as genuine user intent, same as
-        // a real click or hover.
-        setFocusedWindow(PWINDOW->getDrawable(), ISUSERSOURCE);
+        setFocusedWindow(PWINDOW->getDrawable(), false);
 
         Debug::log(LOG, "Message recieved to set active for " + std::to_string(PWINDOW->getDrawable()));
     } else if (E->type == HYPRATOMS["_NET_MOVERESIZE_WINDOW"]) {
