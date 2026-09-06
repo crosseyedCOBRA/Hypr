@@ -393,6 +393,13 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     g_pWindowManager->Values[0] = XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_FOCUS_CHANGE;
     xcb_change_window_attributes_checked(g_pWindowManager->DisplayConnection, windowID, XCB_CW_EVENT_MASK, g_pWindowManager->Values);
 
+    // Focus - remapWindow (tiled path) already does this; floating windows never did,
+    // so a floating window (e.g. the Quickshell launcher) never got real X input focus
+    // on creation/reshow, even though it might grab focus internally within its own
+    // toolkit. Docks/panels shouldn't steal focus though.
+    if (!PWINDOWINARR->getDock() && !PWINDOWINARR->getNoInterventions())
+        g_pWindowManager->setFocusedWindow(windowID);
+
     // Fix docks
     if (PWINDOWINARR->getDock())
         g_pWindowManager->recalcAllDocks();
