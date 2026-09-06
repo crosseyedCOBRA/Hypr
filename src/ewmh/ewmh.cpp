@@ -200,8 +200,24 @@ void EWMH::updateWindow(xcb_window_t win) {
         xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, HYPRATOMS["WM_STATE"], HYPRATOMS["WM_STATE"], 32, 2, data);
 
         if (PWINDOW->getDrawable() == g_pWindowManager->LastWindow) {
-            uint32_t dataa[] = {HYPRATOMS["_NET_WM_STATE_FOCUSED"]};
-            xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_APPEND, PWINDOW->getDrawable(), HYPRATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 32, 1, dataa);
+            // updateWindow() runs on every dirty-refresh tick for the focused window, not
+            // just on an actual focus change - APPEND unconditionally piles up a fresh
+            // duplicate _NET_WM_STATE_FOCUSED atom on every single call. For a window
+            // that stays dirty continuously (e.g. a game redrawing/resizing constantly
+            // while focused) this grows the property without bound, and each subsequent
+            // xcb_change_property call gets slower as the list grows - left running it
+            // degrades into exactly the kind of freeze this project keeps running into.
+            // Only append if it isn't already there.
+            const auto EXISTINGSTATE = xcb_get_property_reply(g_pWindowManager->DisplayConnection,
+                xcb_get_property(g_pWindowManager->DisplayConnection, false, PWINDOW->getDrawable(), HYPRATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 0, 4096), NULL);
+
+            const bool ALREADYFOCUSED = EXISTINGSTATE && xcbContainsAtom(EXISTINGSTATE, HYPRATOMS["_NET_WM_STATE_FOCUSED"]);
+            free(EXISTINGSTATE);
+
+            if (!ALREADYFOCUSED) {
+                uint32_t dataa[] = {HYPRATOMS["_NET_WM_STATE_FOCUSED"]};
+                xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_APPEND, PWINDOW->getDrawable(), HYPRATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 32, 1, dataa);
+            }
         } else {
             removeAtom(PWINDOW->getDrawable(), HYPRATOMS["_NET_WM_STATE"], HYPRATOMS["_NET_WM_STATE_FOCUSED"]);
         }
