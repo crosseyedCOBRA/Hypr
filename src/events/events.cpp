@@ -86,7 +86,7 @@ void Events::eventEnter(xcb_generic_event_t* event) {
     if (ConfigManager::getInt("focus_when_hover") == 1
         || PENTERWINDOW->getIsFloating()
         || (g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow) && g_pWindowManager->getWindowFromDrawable(g_pWindowManager->LastWindow)->getIsFloating()))
-            g_pWindowManager->setFocusedWindow(E->event);
+            g_pWindowManager->setFocusedWindow(E->event, true);
 
     PENTERWINDOW->setDirty(true);
 
@@ -724,7 +724,7 @@ void Events::eventButtonPress(xcb_generic_event_t* event) {
                 KeybindManager::toggleActiveWindowFloating("");
 
             // refocus
-            g_pWindowManager->setFocusedWindow(PDRAWABLE);
+            g_pWindowManager->setFocusedWindow(PDRAWABLE, true);
         }
     }
 

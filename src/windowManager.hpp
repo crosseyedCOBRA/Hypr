@@ -43,12 +43,15 @@ public:
     std::deque<CWindow>         windows; // windows never left. It has always been hiding amongst us.
     std::deque<CWindow>         unmappedWindows;
     xcb_drawable_t              LastWindow = -1;
-    // Tracks whichever window most recently LOST focus, and when, so a stray
-    // _NET_ACTIVE_WINDOW request from that same window shortly after can be
-    // recognized as focus-stealing (e.g. a fullscreen game demanding its
-    // focus back the instant the user clicks elsewhere) rather than honored.
-    xcb_drawable_t              LastDefocusedWindow = -1;
-    std::chrono::time_point<std::chrono::steady_clock> LastDefocusTime;
+    // The window the user last deliberately moved focus AWAY from via a real
+    // click or hover (not a window the WM focused on its own, e.g. at
+    // creation). A stray _NET_ACTIVE_WINDOW request from exactly this window
+    // is focus-stealing - it's asking to undo the user's own choice - and is
+    // rejected regardless of timing or how many other focus changes happened
+    // in between (e.g. an unrelated Wine helper window briefly stealing
+    // focus shouldn't reset this). It's cleared the moment the user
+    // themselves deliberately refocuses that window again.
+    xcb_drawable_t              UserAbandonedWindow = -1;
 
     // holds the objects representing every open workspace
     std::deque<CWorkspace>      workspaces;
@@ -76,7 +79,7 @@ public:
     void                        recieveEvent();
     void                        refreshDirtyWindows();
 
-    void                        setFocusedWindow(xcb_drawable_t);
+    void                        setFocusedWindow(xcb_drawable_t, bool userInitiated = false);
     void                        refocusWindowOnClosed();
 
     void                        calculateNewWindowParams(CWindow*);
