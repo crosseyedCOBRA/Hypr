@@ -274,7 +274,7 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
     //
     // Dock Checks
     //
-    const auto wm_type_cookie = xcb_get_property(g_pWindowManager->DisplayConnection, false, windowID, HYPRATOMS["_NET_WM_WINDOW_TYPE"], XCB_GET_PROPERTY_TYPE_ANY, 0, (4294967295U));
+    const auto wm_type_cookie = xcb_get_property(g_pWindowManager->DisplayConnection, false, windowID, ZARISATOMS["_NET_WM_WINDOW_TYPE"], XCB_GET_PROPERTY_TYPE_ANY, 0, (4294967295U));
     const auto wm_type_cookiereply = xcb_get_property_reply(g_pWindowManager->DisplayConnection, wm_type_cookie, NULL);
     xcb_atom_t TYPEATOM = NULL;
     if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
@@ -284,7 +284,7 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
         if (!ATOMS) {
             Debug::log(ERR, "Atoms not found in preferred type!");
         } else {
-            if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_DOCK"])) {
+            if (xcbContainsAtom(wm_type_cookiereply, ZARISATOMS["_NET_WM_WINDOW_TYPE_DOCK"])) {
                 // set to floating and set the immovable and nointerventions flag
                 PWINDOWINARR->setImmovable(true);
                 PWINDOWINARR->setNoInterventions(true);
@@ -295,7 +295,7 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
                 PWINDOWINARR->setDockAlign(DOCK_TOP);
 
                 // Check reserved
-                const auto STRUTREPLY = xcb_get_property_reply(g_pWindowManager->DisplayConnection, xcb_get_property(g_pWindowManager->DisplayConnection, false, windowID, HYPRATOMS["_NET_WM_STRUT_PARTIAL"], XCB_GET_PROPERTY_TYPE_ANY, 0, (4294967295U)), NULL);
+                const auto STRUTREPLY = xcb_get_property_reply(g_pWindowManager->DisplayConnection, xcb_get_property(g_pWindowManager->DisplayConnection, false, windowID, ZARISATOMS["_NET_WM_STRUT_PARTIAL"], XCB_GET_PROPERTY_TYPE_ANY, 0, (4294967295U)), NULL);
 
                 if (!STRUTREPLY || xcb_get_property_value_length(STRUTREPLY) == 0) {
                     Debug::log(ERR, "Couldn't get strut for dock.");

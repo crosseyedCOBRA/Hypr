@@ -136,9 +136,9 @@ void KeybindManager::killactive(std::string args) {
         bzero(&event, sizeof(event));
         event.response_type = XCB_CLIENT_MESSAGE;
         event.window = PLASTWINDOW->getDrawable();
-        event.type = HYPRATOMS["WM_PROTOCOLS"];
+        event.type = ZARISATOMS["WM_PROTOCOLS"];
         event.format = 32;
-        event.data.data32[0] = HYPRATOMS["WM_DELETE_WINDOW"];
+        event.data.data32[0] = ZARISATOMS["WM_DELETE_WINDOW"];
         event.data.data32[1] = 0;
 
         xcb_send_event(g_pWindowManager->DisplayConnection, 0, PLASTWINDOW->getDrawable(), XCB_EVENT_MASK_NO_EVENT, (const char*)&event);

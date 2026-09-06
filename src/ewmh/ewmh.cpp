@@ -52,28 +52,28 @@ void EWMH::setupInitEWMH() {
     xcb_create_window(g_pWindowManager->DisplayConnection, XCB_COPY_FROM_PARENT, EWMHwindow, g_pWindowManager->Screen->root,
         -1, -1, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_ONLY, XCB_COPY_FROM_PARENT, 0, values);
 
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, EWMHwindow, HYPRATOMS["_NET_SUPPORTING_WM_CHECK"], XCB_ATOM_WINDOW, 32, 1, &EWMHwindow);
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, EWMHwindow, HYPRATOMS["_NET_WM_NAME"], HYPRATOMS["UTF8_STRING"], 8, strlen("ZarisWM"), "ZarisWM");
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, EWMHwindow, ZARISATOMS["_NET_SUPPORTING_WM_CHECK"], XCB_ATOM_WINDOW, 32, 1, &EWMHwindow);
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, EWMHwindow, ZARISATOMS["_NET_WM_NAME"], ZARISATOMS["UTF8_STRING"], 8, strlen("ZarisWM"), "ZarisWM");
     
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_WM_NAME"], HYPRATOMS["UTF8_STRING"], 8, strlen("ZarisWM"), "ZarisWM");
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_SUPPORTING_WM_CHECK"], XCB_ATOM_WINDOW, 32, 1, &EWMHwindow);
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_WM_NAME"], ZARISATOMS["UTF8_STRING"], 8, strlen("ZarisWM"), "ZarisWM");
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_SUPPORTING_WM_CHECK"], XCB_ATOM_WINDOW, 32, 1, &EWMHwindow);
     
     // Atoms EWMH
 
-    xcb_atom_t supportedAtoms[HYPRATOMS.size()];
+    xcb_atom_t supportedAtoms[ZARISATOMS.size()];
     int i = 0;
-    for (auto& a : HYPRATOMS) {
+    for (auto& a : ZARISATOMS) {
         supportedAtoms[i] = a.second;
         i++;
     }
 
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_SUPPORTED"], XCB_ATOM_ATOM, 32, sizeof(supportedAtoms) / sizeof(xcb_atom_t), supportedAtoms);
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_SUPPORTED"], XCB_ATOM_ATOM, 32, sizeof(supportedAtoms) / sizeof(xcb_atom_t), supportedAtoms);
 
     Debug::log(LOG, "EWMH init done.");
 }
 
 void EWMH::updateCurrentWindow(xcb_window_t w) {
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_ACTIVE_WINDOW"], XCB_ATOM_WINDOW, 32, 1, &w);
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_ACTIVE_WINDOW"], XCB_ATOM_WINDOW, 32, 1, &w);
 }
 
 void EWMH::updateClientList() {
@@ -86,10 +86,10 @@ void EWMH::updateClientList() {
     // hack
     xcb_window_t* ArrWindowList = &windowsList[0];
 
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_CLIENT_LIST"], XCB_ATOM_WINDOW,
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_CLIENT_LIST"], XCB_ATOM_WINDOW,
         32, windowsList.size(), ArrWindowList);
 
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_CLIENT_LIST_STACKING"], XCB_ATOM_WINDOW,
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_CLIENT_LIST_STACKING"], XCB_ATOM_WINDOW,
         32, windowsList.size(), ArrWindowList);
 }
 
@@ -102,7 +102,7 @@ void EWMH::refreshAllExtents() {
 void EWMH::setFrameExtents(xcb_window_t w) {
     const auto BORDERSIZE = ConfigManager::getInt("border_size");
     uint32_t extents[4] = {BORDERSIZE,BORDERSIZE,BORDERSIZE,BORDERSIZE};
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, w, HYPRATOMS["_NET_FRAME_EXTENTS"], XCB_ATOM_CARDINAL, 32, 4, &extents);
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, w, ZARISATOMS["_NET_FRAME_EXTENTS"], XCB_ATOM_CARDINAL, 32, 4, &extents);
 }
 
 void EWMH::updateDesktops() {
@@ -130,8 +130,8 @@ void EWMH::updateDesktops() {
         DesktopInfo::lastid = ACTIVEDESKTOPINDEX;
         DesktopInfo::lastCount = ALLDESKTOPS;
 
-        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_CURRENT_DESKTOP"], XCB_ATOM_CARDINAL, 32, 1, &ACTIVEDESKTOPINDEX);
-        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_NUMBER_OF_DESKTOPS"], XCB_ATOM_CARDINAL, 32, 1, &ALLDESKTOPS);
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_CURRENT_DESKTOP"], XCB_ATOM_CARDINAL, 32, 1, &ACTIVEDESKTOPINDEX);
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_NUMBER_OF_DESKTOPS"], XCB_ATOM_CARDINAL, 32, 1, &ALLDESKTOPS);
 
         // Desktop names: workspace IDs stringified, in sorted order, NUL-separated (UTF8_STRING per EWMH spec)
         std::string namesBlob;
@@ -140,7 +140,7 @@ void EWMH::updateDesktops() {
             namesBlob += '\0';
         }
 
-        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_DESKTOP_NAMES"], HYPRATOMS["UTF8_STRING"], 8, namesBlob.size(), namesBlob.data());
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_DESKTOP_NAMES"], ZARISATOMS["UTF8_STRING"], 8, namesBlob.size(), namesBlob.data());
 
         // Desktop viewport: top-left of the monitor each desktop currently lives on
         std::vector<uint32_t> workspaceCoords;
@@ -151,7 +151,7 @@ void EWMH::updateDesktops() {
             workspaceCoords.push_back(PMONITOR ? (uint32_t)PMONITOR->vecPosition.y : 0);
         }
 
-        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_DESKTOP_VIEWPORT"], XCB_ATOM_CARDINAL, 32, workspaceCoords.size(), workspaceCoords.data());
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_DESKTOP_VIEWPORT"], XCB_ATOM_CARDINAL, 32, workspaceCoords.size(), workspaceCoords.data());
     }
 
     // Work area: usable space per desktop after dock/panel (_NET_WM_STRUT_PARTIAL) reservations
@@ -178,7 +178,7 @@ void EWMH::updateDesktops() {
     // that pegs the CPU and locks up the whole desktop.
     if (workarea != DesktopInfo::lastWorkarea) {
         DesktopInfo::lastWorkarea = workarea;
-        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, HYPRATOMS["_NET_WORKAREA"], XCB_ATOM_CARDINAL, 32, workarea.size(), workarea.data());
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_WORKAREA"], XCB_ATOM_CARDINAL, 32, workarea.size(), workarea.data());
     }
 }
 
@@ -192,12 +192,12 @@ void EWMH::updateWindow(xcb_window_t win) {
     if (PWINDOW->getWorkspaceID() != SCRATCHPAD_ID)
         desktopIndex = desktopIndexForWorkspaceID(sortedDesktopWorkspaceIDs(), PWINDOW->getWorkspaceID());
 
-    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, HYPRATOMS["_NET_WM_DESKTOP"], XCB_ATOM_CARDINAL, 32, 1, &desktopIndex);
+    xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, ZARISATOMS["_NET_WM_DESKTOP"], XCB_ATOM_CARDINAL, 32, 1, &desktopIndex);
 
     // ICCCM State Normal
     if (!PWINDOW->getDock()) {
         long data[] = {XCB_ICCCM_WM_STATE_NORMAL, XCB_NONE};
-        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, HYPRATOMS["WM_STATE"], HYPRATOMS["WM_STATE"], 32, 2, data);
+        xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, win, ZARISATOMS["WM_STATE"], ZARISATOMS["WM_STATE"], 32, 2, data);
 
         if (PWINDOW->getDrawable() == g_pWindowManager->LastWindow) {
             // updateWindow() runs on every dirty-refresh tick for the focused window, not
@@ -209,17 +209,17 @@ void EWMH::updateWindow(xcb_window_t win) {
             // degrades into exactly the kind of freeze this project keeps running into.
             // Only append if it isn't already there.
             const auto EXISTINGSTATE = xcb_get_property_reply(g_pWindowManager->DisplayConnection,
-                xcb_get_property(g_pWindowManager->DisplayConnection, false, PWINDOW->getDrawable(), HYPRATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 0, 4096), NULL);
+                xcb_get_property(g_pWindowManager->DisplayConnection, false, PWINDOW->getDrawable(), ZARISATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 0, 4096), NULL);
 
-            const bool ALREADYFOCUSED = EXISTINGSTATE && xcbContainsAtom(EXISTINGSTATE, HYPRATOMS["_NET_WM_STATE_FOCUSED"]);
+            const bool ALREADYFOCUSED = EXISTINGSTATE && xcbContainsAtom(EXISTINGSTATE, ZARISATOMS["_NET_WM_STATE_FOCUSED"]);
             free(EXISTINGSTATE);
 
             if (!ALREADYFOCUSED) {
-                uint32_t dataa[] = {HYPRATOMS["_NET_WM_STATE_FOCUSED"]};
-                xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_APPEND, PWINDOW->getDrawable(), HYPRATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 32, 1, dataa);
+                uint32_t dataa[] = {ZARISATOMS["_NET_WM_STATE_FOCUSED"]};
+                xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_APPEND, PWINDOW->getDrawable(), ZARISATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 32, 1, dataa);
             }
         } else {
-            removeAtom(PWINDOW->getDrawable(), HYPRATOMS["_NET_WM_STATE"], HYPRATOMS["_NET_WM_STATE_FOCUSED"]);
+            removeAtom(PWINDOW->getDrawable(), ZARISATOMS["_NET_WM_STATE"], ZARISATOMS["_NET_WM_STATE_FOCUSED"]);
         }
     }
 }

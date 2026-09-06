@@ -45,7 +45,7 @@ Animations {
 # keybinds
 bind=SUPER,R,exec,dmenu_run
 bind=SUPER,T,exec,alacritty
-bind=SUPER,M,exec,pkill Hypr
+bind=SUPER,M,exec,pkill zaris
 bind=SUPER,RETURN,exec,xterm
 bind=SUPER,G,exec,google-chrome-stable
 

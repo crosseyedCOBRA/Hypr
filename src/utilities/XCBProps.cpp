@@ -37,7 +37,7 @@ std::pair<std::string, std::string> getClassName(int64_t window) {
 }
 
 std::string getRoleName(int64_t window) {
-    PROP(role_cookie, HYPRATOMS["WM_WINDOW_ROLE"], 128);
+    PROP(role_cookie, ZARISATOMS["WM_WINDOW_ROLE"], 128);
 
     if (!role_cookiereply)
         return "Error";
@@ -63,7 +63,7 @@ std::string getRoleName(int64_t window) {
 }
 
 std::string getWindowName(uint64_t window) {
-    PROP(name_cookie, HYPRATOMS["_NET_WM_NAME"], 128);
+    PROP(name_cookie, ZARISATOMS["_NET_WM_NAME"], 128);
 
     if (!name_cookiereply)
         return "Error";
@@ -115,10 +115,10 @@ void removeAtom(const int& window, xcb_atom_t prop, xcb_atom_t atom) {
 uint8_t getWindowState(const int& win) {
     uint32_t returns = 0;
 
-    const auto COOKIE = xcb_get_property(DisplayConnection, 0, win, HYPRATOMS["_NET_WM_STATE"], HYPRATOMS["_NET_WM_STATE"], 0L, 2L);
+    const auto COOKIE = xcb_get_property(DisplayConnection, 0, win, ZARISATOMS["_NET_WM_STATE"], ZARISATOMS["_NET_WM_STATE"], 0L, 2L);
     const auto REPLY = xcb_get_property_reply(DisplayConnection, COOKIE, NULL);
     if (REPLY) {
-        if (REPLY->type == HYPRATOMS["_NET_WM_STATE"] && REPLY->format == 32 && REPLY->length == 2) {
+        if (REPLY->type == ZARISATOMS["_NET_WM_STATE"] && REPLY->format == 32 && REPLY->length == 2) {
             returns = *((uint32_t*)xcb_get_property_value(REPLY));
         }
             

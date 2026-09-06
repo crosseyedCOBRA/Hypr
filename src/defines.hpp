@@ -78,7 +78,7 @@
 
 
 
-#define HYPRATOM(name) {name, 0}
+#define ZARISATOM(name) {name, 0}
 
 #define ALPHA(c) ((double)(((c) >> 24) & 0xff) / 255.0)
 #define RED(c) ((double)(((c) >> 16) & 0xff) / 255.0)

@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     }
 
     // get atoms
-    for (auto& ATOM : HYPRATOMS) {
+    for (auto& ATOM : ZARISATOMS) {
         xcb_intern_atom_cookie_t cookie = xcb_intern_atom(g_pWindowManager->DisplayConnection, 0, ATOM.first.length(), ATOM.first.c_str());
         xcb_intern_atom_reply_t* reply = xcb_intern_atom_reply(g_pWindowManager->DisplayConnection, cookie, NULL);
 

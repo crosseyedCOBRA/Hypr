@@ -1,9 +1,9 @@
 [Desktop Entry]
-Name=Hypr
+Name=ZarisWM
 Comment=A tiling window manager written in modern C++
-Exec=Hypr
-TryExec=Hypr
+Exec=zaris
+TryExec=zaris
 Type=Application
-X-LightDM-DesktopName=Hypr
-DesktopNames=Hypr
-Keywords=tiling;wm;window;manager;Hypr;
+X-LightDM-DesktopName=ZarisWM
+DesktopNames=ZarisWM
+Keywords=tiling;wm;window;manager;Zaris;

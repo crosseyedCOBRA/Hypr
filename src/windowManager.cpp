@@ -2024,7 +2024,7 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
     // app's real title and not our placeholder.
     const auto WINNAME = getWindowName(window);
 
-    xcb_change_property(DisplayConnection, XCB_PROP_MODE_REPLACE, window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen("hypr"), "hypr");
+    xcb_change_property(DisplayConnection, XCB_PROP_MODE_REPLACE, window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen("zaris"), "zaris");
 
     // Role stuff
     const auto WINROLE = getRoleName(window);
@@ -2039,7 +2039,7 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
     //
     // Type stuff
     //
-    PROP(wm_type_cookie, HYPRATOMS["_NET_WM_WINDOW_TYPE"], UINT32_MAX);
+    PROP(wm_type_cookie, ZARISATOMS["_NET_WM_WINDOW_TYPE"], UINT32_MAX);
 
     if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
         Debug::log(LOG, "No preferred type found. (shouldBeFloatedOnInit)");
@@ -2048,14 +2048,14 @@ bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
         if (!ATOMS) {
             Debug::log(ERR, "Atoms not found in preferred type!");
         } else {
-            if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_DOCK"])) {
+            if (xcbContainsAtom(wm_type_cookiereply, ZARISATOMS["_NET_WM_WINDOW_TYPE_DOCK"])) {
                 free(wm_type_cookiereply);
                 return true;
-            } else if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_DIALOG"])
-                || xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_TOOLBAR"])
-                || xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_UTILITY"])
-                || xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_STATE_MODAL"])
-                || xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_WINDOW_TYPE_SPLASH"])) {
+            } else if (xcbContainsAtom(wm_type_cookiereply, ZARISATOMS["_NET_WM_WINDOW_TYPE_DIALOG"])
+                || xcbContainsAtom(wm_type_cookiereply, ZARISATOMS["_NET_WM_WINDOW_TYPE_TOOLBAR"])
+                || xcbContainsAtom(wm_type_cookiereply, ZARISATOMS["_NET_WM_WINDOW_TYPE_UTILITY"])
+                || xcbContainsAtom(wm_type_cookiereply, ZARISATOMS["_NET_WM_STATE_MODAL"])
+                || xcbContainsAtom(wm_type_cookiereply, ZARISATOMS["_NET_WM_WINDOW_TYPE_SPLASH"])) {
                 
                 Events::nextWindowCentered = true;
                 free(wm_type_cookiereply);
@@ -2103,7 +2103,7 @@ void CWindowManager::doPostCreationChecks(CWindow* pWindow) {
 
     const auto window = pWindow->getDrawable();
 
-    PROP(wm_type_cookie, HYPRATOMS["_NET_WM_WINDOW_TYPE"], UINT32_MAX);
+    PROP(wm_type_cookie, ZARISATOMS["_NET_WM_WINDOW_TYPE"], UINT32_MAX);
 
     if (wm_type_cookiereply == NULL || xcb_get_property_value_length(wm_type_cookiereply) < 1) {
         Debug::log(LOG, "No preferred type found. (doPostCreationChecks)");
@@ -2112,7 +2112,7 @@ void CWindowManager::doPostCreationChecks(CWindow* pWindow) {
         if (!ATOMS) {
             Debug::log(ERR, "Atoms not found in preferred type!");
         } else {
-            if (xcbContainsAtom(wm_type_cookiereply, HYPRATOMS["_NET_WM_STATE_FULLSCREEN"])) {
+            if (xcbContainsAtom(wm_type_cookiereply, ZARISATOMS["_NET_WM_STATE_FULLSCREEN"])) {
                 // set it fullscreen
                 pWindow->setFullscreen(true);
 
@@ -2137,11 +2137,11 @@ void CWindowManager::doPostCreationChecks(CWindow* pWindow) {
 void CWindowManager::getICCCMWMProtocols(CWindow* pWindow) {
     xcb_icccm_get_wm_protocols_reply_t WMProtocolsReply;
     if (!xcb_icccm_get_wm_protocols_reply(DisplayConnection,
-        xcb_icccm_get_wm_protocols(DisplayConnection, pWindow->getDrawable(), HYPRATOMS["WM_PROTOCOLS"]), &WMProtocolsReply, NULL))
+        xcb_icccm_get_wm_protocols(DisplayConnection, pWindow->getDrawable(), ZARISATOMS["WM_PROTOCOLS"]), &WMProtocolsReply, NULL))
         return;
 
     for (auto i = 0; i < (int)WMProtocolsReply.atoms_len; i++) {
-        if (WMProtocolsReply.atoms[i] == HYPRATOMS["WM_DELETE_WINDOW"])
+        if (WMProtocolsReply.atoms[i] == ZARISATOMS["WM_DELETE_WINDOW"])
             pWindow->setCanKill(true);
     }
     
@@ -2260,11 +2260,11 @@ void CWindowManager::toggleWindowFullscrenn(const int& window) {
         setAllWorkspaceWindowsAboveFullscreen(activeWorkspaces[MONITOR->ID]);
 
     // EWMH 
-    Values[0] = HYPRATOMS["_NET_WM_STATE_FULLSCREEN"];
+    Values[0] = ZARISATOMS["_NET_WM_STATE_FULLSCREEN"];
     if (PWINDOW->getFullscreen())
-        xcb_change_property(DisplayConnection, XCB_PROP_MODE_APPEND, window, HYPRATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 32, 1, Values);
+        xcb_change_property(DisplayConnection, XCB_PROP_MODE_APPEND, window, ZARISATOMS["_NET_WM_STATE"], XCB_ATOM_ATOM, 32, 1, Values);
     else
-        removeAtom(window, HYPRATOMS["_NET_WM_STATE"], HYPRATOMS["_NET_WM_STATE_FULLSCREEN"]);
+        removeAtom(window, ZARISATOMS["_NET_WM_STATE"], ZARISATOMS["_NET_WM_STATE_FULLSCREEN"]);
 
     EWMH::updateWindow(window);
 
@@ -2275,7 +2275,7 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
 
     const auto PWINDOW = getWindowFromDrawable(E->window);
 
-    if (E->type == HYPRATOMS["_NET_WM_STATE"]) {
+    if (E->type == ZARISATOMS["_NET_WM_STATE"]) {
         // The window wants to change its' state.
         // For now we only support FULLSCREEN
 
@@ -2284,7 +2284,7 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
             return;
         }
 
-        if (E->data.data32[1] == HYPRATOMS["_NET_WM_STATE_FULLSCREEN"]) {
+        if (E->data.data32[1] == ZARISATOMS["_NET_WM_STATE_FULLSCREEN"]) {
             if ((PWINDOW->getFullscreen() && (E->data.data32[0] == 0 || E->data.data32[0] == 2))
                 || (!PWINDOW->getFullscreen() && (E->data.data32[0] == 1 || E->data.data32[0] == 2))) {
 
@@ -2294,7 +2294,7 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
 
             Debug::log(LOG, "Message recieved to toggle fullscreen for " + std::to_string(PWINDOW->getDrawable()));
         }
-    } else if (E->type == HYPRATOMS["_NET_ACTIVE_WINDOW"]) {
+    } else if (E->type == ZARISATOMS["_NET_ACTIVE_WINDOW"]) {
         // Change the focused window
         if (E->format != 32)
             return;
@@ -2329,7 +2329,7 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
         setFocusedWindow(PWINDOW->getDrawable(), false);
 
         Debug::log(LOG, "Message recieved to set active for " + std::to_string(PWINDOW->getDrawable()));
-    } else if (E->type == HYPRATOMS["_NET_MOVERESIZE_WINDOW"]) {
+    } else if (E->type == ZARISATOMS["_NET_MOVERESIZE_WINDOW"]) {
         void *const PEVENT = calloc(32, 1);
         xcb_configure_request_event_t* const GENEV = (xcb_configure_request_event_t*)PEVENT;
 
@@ -2356,7 +2356,7 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
 
         Events::eventConfigure((xcb_generic_event_t*)GENEV);
         free(GENEV);
-    } else if (E->type == HYPRATOMS["_NET_CURRENT_DESKTOP"]) {
+    } else if (E->type == ZARISATOMS["_NET_CURRENT_DESKTOP"]) {
         // request to change the workspace to something else
         // likely a bar/pager, emitted by xcb_ewmh_request_change_current_desktop
         // data32[0] is a desktop INDEX, not a workspace ID (workspace IDs can have gaps)
