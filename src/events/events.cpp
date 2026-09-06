@@ -388,6 +388,26 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
             } catch (...) {
                 Debug::log(LOG, "Rule move failed, rule: " + rule.szRule + "=" + rule.szValue);
             }
+        } else if (rule.szRule.find("topright") == 0) {
+            // Like "move", but relative to the monitor's top-right corner instead
+            // of its top-left - for a flyout that wants to sit under a bar icon
+            // near that corner (e.g. Overflow.qml's "More" chevron) regardless of
+            // the monitor's actual resolution. marginX/marginY are the gap from
+            // the monitor's right/top edges to the window's right/top edges.
+            try {
+                const auto VALUE = rule.szRule.substr(rule.szRule.find(" ") + 1);
+                const auto MARGINX = stoi(VALUE.substr(0, VALUE.find(" ")));
+                const auto MARGINY = stoi(VALUE.substr(VALUE.find(" ") + 1));
+
+                Debug::log(LOG, "Rule topright, applying to window " + std::to_string(windowID));
+
+                const auto& MONITOR = g_pWindowManager->monitors[CURRENTSCREEN];
+                PWINDOWINARR->setDefaultPosition(Vector2D(
+                    MONITOR.vecPosition.x + MONITOR.vecSize.x - PWINDOWINARR->getDefaultSize().x - MARGINX,
+                    MONITOR.vecPosition.y + MARGINY));
+            } catch (...) {
+                Debug::log(LOG, "Rule topright failed, rule: " + rule.szRule + "=" + rule.szValue);
+            }
         }
     }
 
