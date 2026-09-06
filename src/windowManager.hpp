@@ -43,15 +43,19 @@ public:
     std::deque<CWindow>         windows; // windows never left. It has always been hiding amongst us.
     std::deque<CWindow>         unmappedWindows;
     xcb_drawable_t              LastWindow = -1;
-    // The window the user last deliberately moved focus AWAY from via a real
-    // click or hover (not a window the WM focused on its own, e.g. at
-    // creation). A stray _NET_ACTIVE_WINDOW request from exactly this window
-    // is focus-stealing - it's asking to undo the user's own choice - and is
-    // rejected regardless of timing or how many other focus changes happened
-    // in between (e.g. an unrelated Wine helper window briefly stealing
-    // focus shouldn't reset this). It's cleared the moment the user
-    // themselves deliberately refocuses that window again.
-    xcb_drawable_t              UserAbandonedWindow = -1;
+    // Whether LastWindow's focus is attributable to the user themselves
+    // deliberately clicking/hovering it, as opposed to the WM or some other
+    // window's own request. Tracking *which specific window* the user moved
+    // away from (an earlier attempt) broke under real testing: eventEnter
+    // fires on every window the pointer crosses en route to its actual
+    // target, not just where it settles, so the tracked window kept getting
+    // overwritten by incidental pass-through crossings before the real
+    // offender's reclaim attempt ever arrived. Tracking only "is the CURRENT
+    // focus one the user actually chose" sidesteps that entirely: any
+    // self-requested activation is rejected as long as this is true,
+    // regardless of who's asking or what noisy history led here, and it's
+    // naturally cleared the instant the user interacts with anything else.
+    bool                        CurrentFocusIsUserChosen = false;
 
     // holds the objects representing every open workspace
     std::deque<CWorkspace>      workspaces;

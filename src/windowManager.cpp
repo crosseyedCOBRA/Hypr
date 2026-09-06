@@ -558,15 +558,12 @@ void CWindowManager::setFocusedWindow(xcb_drawable_t window, bool userInitiated)
 
         const auto LASTWINID = LastWindow;
 
-        if (userInitiated) {
-            if (window == UserAbandonedWindow) {
-                // The user deliberately came back to it themselves - the window
-                // regains standing to ask for its own focus again.
-                UserAbandonedWindow = -1;
-            } else if (LASTWINID != window && LASTWINID > 0) {
-                UserAbandonedWindow = LASTWINID;
-            }
-        }
+        // Only a genuine change of focus target updates this - a redundant
+        // reclaim of the window that already has focus (e.g. a self-request
+        // that's trivially allowed because it's already the current window)
+        // must not silently clear the flag for whatever comes next.
+        if (LASTWINID != window)
+            CurrentFocusIsUserChosen = userInitiated;
 
         LastWindow = window;
 
@@ -2303,29 +2300,28 @@ void CWindowManager::handleClientMessage(xcb_client_message_event_t* E) {
         // EWMH's source-indication field (0 = unspecified, 1 = application, 2 = pager/
         // user-initiated) turned out unreliable in practice for telling a legitimate
         // activation apart from focus-stealing - wmctrl itself sends 0, not 2, so
-        // trusting only source==2 broke ordinary external activation. A time-based
-        // cooldown on "whatever most recently lost focus" turned out unreliable too:
-        // live testing showed a game reclaim its focus 7+ seconds after losing it (well
-        // past any reasonable cooldown), and an unrelated Wine helper window briefly
-        // stealing focus in between overwrote that single tracked slot before the
-        // game's actual reclaim attempt ever arrived. Instead, reject a request
-        // specifically from the window the user themselves last deliberately moved
-        // focus AWAY from (UserAbandonedWindow) - that's the real signature of focus-
-        // stealing regardless of timing or intervening churn, and it's only cleared by
-        // the user themselves choosing to go back to that window.
+        // trusting only source==2 broke ordinary external activation. Tracking "the
+        // specific window the user moved away from" turned out unreliable too:
+        // eventEnter fires on every window the pointer crosses en route to its actual
+        // target, not just where it settles, so that tracked value kept getting
+        // overwritten by incidental pass-through crossings before the real offender's
+        // reclaim attempt ever arrived. Instead, ask a simpler question: does the
+        // CURRENT focus belong to the user by deliberate choice at all? If so, no
+        // other window gets to self-activate over it, regardless of source, timing, or
+        // how it got there - only another real click/hover (or an explicit source-2
+        // request) can hand focus onward from here.
         const auto SOURCE = E->data.data32[0];
         const bool ISUSERSOURCE = SOURCE == 2;
 
-        if (!ISUSERSOURCE && PWINDOW->getDrawable() == UserAbandonedWindow) {
-            Debug::log(LOG, "Ignoring _NET_ACTIVE_WINDOW from " + std::to_string(PWINDOW->getDrawable()) + " (source " + std::to_string(SOURCE) + ") - the user deliberately moved away from it, this looks like focus-stealing.");
+        if (!ISUSERSOURCE && CurrentFocusIsUserChosen && PWINDOW->getDrawable() != LastWindow) {
+            Debug::log(LOG, "Ignoring _NET_ACTIVE_WINDOW from " + std::to_string(PWINDOW->getDrawable()) + " (source " + std::to_string(SOURCE) + ") - current focus (" + std::to_string(LastWindow) + ") is the user's own deliberate choice.");
             return;
         }
 
         Debug::log(LOG, "Request to change active window to " + std::to_string(PWINDOW->getDrawable()));
 
         // source 2 (pager/explicit user action) counts as genuine user intent, same as
-        // a real click or hover - it should be able to override an abandoned window's
-        // protection, and clears that protection the same way a real click would.
+        // a real click or hover.
         setFocusedWindow(PWINDOW->getDrawable(), ISUSERSOURCE);
 
         Debug::log(LOG, "Message recieved to set active for " + std::to_string(PWINDOW->getDrawable()));
