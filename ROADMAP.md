@@ -32,6 +32,12 @@ Tracking what's done, what's planned, and what's still undecided for this fork.
 - **GUI settings app, full WM config.** The bar's own module config now has a GUI (see Done above); `hypr.conf` itself (keybinds, window rules, gaps/borders, etc.) is still hand-edit-only. Extending the GUI to cover that is still deferred until just before release.
 - **Dock.** A macOS/Plank-style app dock — pinned + running-app icons, click to launch/focus. Not scoped yet.
 - **Bar visual fixes.** Icons, layout, and general polish pass on the Quickshell bar. Includes: the "hidden tray" overflow flyout (`Overflow.qml`) currently opens screen-centered (via the same `windowrule=center` trick the launcher uses) — should instead anchor directly below the chevron icon that opened it, like a real dropdown.
+- **Idle-based screen lock.** There's currently no lock mechanism at all — no `xautolock`/`xss-lock`/equivalent, nothing under OpenRC (confirmed while building the stay-awake toggle). The screen blanks after 10 min but isn't password-protected. Natural pair with stay-awake: lock after N minutes idle.
+- **Volume/brightness OSD.** A transient on-screen popup when volume/brightness keys are pressed. The volume module and Pipewire wiring already exist in the bar; this is mostly new UI.
+- **Notification daemon.** No popup notification system exists yet — `screenshot.sh`'s `notify-send` call is currently a no-op unless something's listening for it.
+- **MPRIS "now playing" widget.** Bar module showing/controlling whatever's playing (Spotify, browser media, etc.) — standard in Noctalia/DankMaterialShell-style shells.
+- **Clipboard manager.** Clipboard history with a rofi-style picker.
+- **Wallpaper picker/rotation.** Wallpaper is currently a single static `xwallpaper` call in `exec-once`.
 - **Fullscreen rule for non-Steam-launcher games.** Lutris/Heroic don't relabel `WM_CLASS` the way Steam does (no `lutris_*`/`heroic_*` equivalent), so the one-rule-covers-everything trick doesn't carry over. Need to test an actual Lutris/Heroic game to find out whether it already goes fullscreen on its own (via its own EWMH fullscreen request, a separate pre-existing code path) or needs a per-game rule. Also worth testing whether adding a Lutris/Heroic game to Steam as a non-Steam shortcut and launching it through Steam picks up the same `steam_app_*` class (likely, since that's Steam's own overlay/launch wrapper doing the relabeling — but unconfirmed).
 
 ## Open decisions
