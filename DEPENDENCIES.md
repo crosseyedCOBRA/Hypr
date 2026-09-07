@@ -5,15 +5,14 @@ This is a living document — as the WM or shell gains/drops a dependency,
 this needs updating alongside it.
 
 **Status**: All three of Arch/pacman, Debian/apt, and Fedora/dnf now have
-package names filled in below. Confidence differs, though: Arch got a
-full from-scratch `cmake` configure + build against exactly the listed
-package set. Debian/apt's names are confirmed against real apt metadata
-(Devuan Excalibur, a Debian 13/trixie base) — every name resolves to a
-real candidate — but hasn't had that same from-scratch build attempt.
-Fedora/dnf's names are confirmed against real packages.fedoraproject.org
-listings, same caveat as Debian: no from-scratch build attempted yet, no
-Fedora box available to do one on. See [ROADMAP.md](ROADMAP.md)'s
-dependency-list beta blocker for what "done" still requires.
+package names filled in below. Arch and Debian have both had the real
+test: a from-scratch `cmake` configure + build against exactly the
+listed package set, confirmed clean on Artix and on a Devuan Excalibur
+VM. Fedora/dnf's names are confirmed against real
+packages.fedoraproject.org listings but haven't had that same
+from-scratch build attempt — no Fedora box available to do one on yet.
+See [ROADMAP.md](ROADMAP.md)'s dependency-list beta blocker for what
+"done" still requires.
 
 ## Build dependencies
 
@@ -37,7 +36,7 @@ which it links directly without a pkg-config check for either.
 # Arch — verified by an actual clean configure + build against exactly this set
 sudo pacman -S --needed gcc cmake pkgconf glib2 libxcb xcb-util xcb-util-wm xcb-util-keysyms xcb-util-cursor
 
-# Debian/apt — names verified against real apt metadata, build not yet attempted end to end
+# Debian/apt — verified by an actual clean configure + build against exactly this set, on a real Devuan Excalibur VM
 sudo apt-get install build-essential cmake pkg-config git \
   libglib2.0-dev libxcb1-dev libxcb-randr0-dev libxcb-ewmh-dev \
   libxcb-xinerama0-dev libxcb-cursor-dev libxcb-keysyms1-dev \
