@@ -16,7 +16,7 @@ undecided.
 - Multi-monitor support, with a global workspace pool
 - An external EWMH-compatible bar/launcher built with [Quickshell](https://quickshell.outfoxxed.me/) — workspaces, clock, system tray, CPU/GPU temperature, network status, volume, a "stay awake" toggle, and a configurable "hidden tray" for modules you don't want always visible
 - A GUI settings window for the bar's module configuration
-- Idle-based screen lock (`xautolock` + `betterlockscreen`)
+- Idle-based screen lock (`xautolock` + `i3lock`)
 - Window rules, including `class:`/`role:`/`title:` matching and per-app fullscreen/floating/centering behavior
 - Parabolic animations, rounded corners and borders
 - Config reloaded instantly on save

@@ -143,14 +143,19 @@ step_shell() {
         exit 1
     fi
     # Runtime deps available in Debian/Devuan repos (shell/README.md's
-    # full list). Not here: quickshell itself (see the `nix` step),
-    # betterlockscreen/i3lock-color (not packaged for Debian — install
-    # from https://github.com/pystardust/betterlockscreen manually), and
-    # a Nerd Font (also easiest via Nix, e.g.
+    # full list). Not here: quickshell itself (see the `nix` step) and a
+    # Nerd Font (also easiest via Nix, e.g.
     # `nix profile install nixpkgs#nerd-fonts.jetbrains-mono`).
+    #
+    # NOTE: xautolock is deliberately NOT in this list — it isn't packaged
+    # for Debian under any name (confirmed via `apt-cache search`), so
+    # zaris.conf's idle-lock exec-once line (which calls it) won't work
+    # out of the box here. i3lock itself (the locker xautolock hands off
+    # to) installs fine — see DEPENDENCIES.md for the open question on
+    # what replaces xautolock's idle-timer role on Debian.
     sudo apt-get -y install \
         pipewire pipewire-pulse wireplumber \
-        dunst rofi maim xclip xautolock \
+        dunst rofi maim xclip i3lock \
         x11-xserver-utils papirus-icon-theme
 
     for d in quickshell zaris dunst rofi; do

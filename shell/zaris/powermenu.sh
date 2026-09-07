@@ -11,10 +11,10 @@ chosen=$(echo -e "$options" | rofi -dmenu -i -p "Power" -theme "$theme")
 
 case "$chosen" in
     Lock)
-        # Swap for whatever locker you actually have installed --
-        # betterlockscreen, physlock, and slock are common OpenRC-friendly
-        # choices. Example shown: betterlockscreen.
-        betterlockscreen -l blur
+        # Matches zaris.conf's idle-lock locker -- plain i3lock, chosen for
+        # being packaged natively on Arch, Debian, and Fedora alike. Swap
+        # for a different locker here if you have one you prefer.
+        i3lock
         ;;
     Logout)
         pkill zaris

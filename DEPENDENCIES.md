@@ -60,8 +60,8 @@ itself.
 | Notification daemon | `dunst` | `dunst` |
 | Power menu's picker | `rofi` | `rofi` |
 | Screenshots (+ clipboard copy) | `maim`, `xclip` | `maim`, `xclip` |
-| Idle-based screen lock timer | `xautolock` — **official on Artix's `galaxy` repo; looks AUR-only on stock Arch**, worth re-checking against archlinux.org before relying on it there | **Not packaged under any name** — confirmed via `apt-cache search`, nothing matches. Debian's closest equivalent is `xss-lock`, which drives locking off logind DBus signals instead of an idle timer — a real mechanism swap, not a drop-in replacement, and not yet done anywhere in this project |
-| Screen locker (wraps `i3lock-color`) | `betterlockscreen`, `i3lock-color` — both AUR, not official | **Neither exists in Debian's repos at all** — only plain `i3lock` (no color/background-image support) is packaged. Worse off than Arch here, where at least the AUR has them |
+| Idle-based screen lock timer | `xautolock` — **official on Artix's `galaxy` repo; looks AUR-only on stock Arch**, worth re-checking against archlinux.org before relying on it there | **Not packaged under any name** — confirmed via `apt-cache search`, nothing matches. Debian's closest equivalent is `xss-lock`, which drives locking off logind DBus signals instead of an idle timer — a real mechanism swap, not a drop-in replacement, and not yet resolved (still open) |
+| Screen locker | `i3lock` | `i3lock` |
 | Default background color | `xorg-xsetroot` (or `xwallpaper` for an actual image) | `x11-xserver-utils` (provides `xsetroot`), or `xwallpaper` |
 | Bar icon glyphs (Nerd Font) | `ttf-jetbrains-mono-nerd` (official, `extra`) | **No Nerd Font-patched package** — Debian only has the unpatched `fonts-jetbrains-mono`. Install the patched version via Nix instead |
 | Notification icon theme | `papirus-icon-theme` | `papirus-icon-theme` |
@@ -69,9 +69,22 @@ itself.
 
 The Arch-side data is what's actually installed and running on this
 project's own Artix reference machine. The Debian-side data is apt
-metadata confirmed real on a live Devuan Excalibur VM, not guessed —
-including the two genuine gaps above (`xautolock`, `i3lock-color`/
-`betterlockscreen`), which aren't naming differences but actual missing
-packages that will need a real decision (build from source, or swap
-mechanism to something Debian does package) before Devuan/Debian support
-can be called done.
+metadata confirmed real on a live Devuan Excalibur VM, not guessed.
+
+**Screen locker: resolved.** Originally `betterlockscreen`/`i3lock-color`
+on Arch, neither of which exist in Debian's repos at all (and are
+AUR-only even on Arch). Swapped to plain `i3lock` instead, confirmed as
+an official package on Arch, Debian, *and* Fedora alike (the only locker
+that clears all three) — one dependency, uniform across every target
+distro, no per-distro branching needed. The tradeoff: `i3lock` has no
+built-in blur/theming, so the previous blurred-wallpaper look is gone
+for now. `zaris.conf`'s idle-lock comment block has the note for anyone
+who wants to add that back later — it'd need a small vendored script
+(screenshot via `scrot`/`import`, blur via `imagemagick`, then hand off
+to `i3lock`), since no distro packages that combination as one thing.
+
+**Idle-lock timer: still open.** `xautolock` isn't packaged for Debian
+under any name — this is a genuine remaining gap, separate from the
+locker itself, and still needs a decision (build from source, or switch
+to `xss-lock`'s different DBus-signal-driven mechanism) before Debian/
+Devuan's idle-lock feature can be called done.
