@@ -60,7 +60,7 @@ itself.
 | Notification daemon | `dunst` | `dunst` |
 | Power menu's picker | `rofi` | `rofi` |
 | Screenshots (+ clipboard copy) | `maim`, `xclip` | `maim`, `xclip` |
-| Idle-based screen lock timer | `xautolock` — **official on Artix's `galaxy` repo; looks AUR-only on stock Arch**, worth re-checking against archlinux.org before relying on it there | **Not packaged under any name** — confirmed via `apt-cache search`, nothing matches. Debian's closest equivalent is `xss-lock`, which drives locking off logind DBus signals instead of an idle timer — a real mechanism swap, not a drop-in replacement, and not yet resolved (still open) |
+| Idle-based screen lock timer | `xss-lock` | `xss-lock` |
 | Screen locker | `i3lock` | `i3lock` |
 | Default background color | `xorg-xsetroot` (or `xwallpaper` for an actual image) | `x11-xserver-utils` (provides `xsetroot`), or `xwallpaper` |
 | Bar icon glyphs (Nerd Font) | `ttf-jetbrains-mono-nerd` (official, `extra`) | **No Nerd Font-patched package** — Debian only has the unpatched `fonts-jetbrains-mono`. Install the patched version via Nix instead |
@@ -83,8 +83,27 @@ who wants to add that back later — it'd need a small vendored script
 (screenshot via `scrot`/`import`, blur via `imagemagick`, then hand off
 to `i3lock`), since no distro packages that combination as one thing.
 
-**Idle-lock timer: still open.** `xautolock` isn't packaged for Debian
-under any name — this is a genuine remaining gap, separate from the
-locker itself, and still needs a decision (build from source, or switch
-to `xss-lock`'s different DBus-signal-driven mechanism) before Debian/
-Devuan's idle-lock feature can be called done.
+**Idle-lock timer: resolved.** Originally `xautolock`, which isn't
+packaged for Debian under any name (confirmed via `apt-cache search`) and
+looks AUR-only on stock Arch too (only official via Artix's own `galaxy`
+repo). Swapped to `xss-lock`, confirmed official on Arch, Debian, *and*
+Fedora — same uniformity win as the locker swap above. Real mechanism
+difference worth knowing: `xss-lock` has no `-time` flag of its own, it
+fires off the X screensaver extension's own activation event instead, so
+the idle timeout now lives in the X server's screensaver timer (`xset q`)
+rather than a dedicated option — verified end-to-end in a Xephyr sandbox
+that `xss-lock -- i3lock` correctly spawns `i3lock` on that event.
+`xss-lock` also listens for logind's Lock signal (elogind reimplements
+this, already a shell dependency for the power menu's `loginctl` calls),
+so a suspend/lid event or manual `loginctl lock-session` locks too, not
+just idle timeout — a capability `xautolock` never had. One knock-on
+simplification: the "stay awake" toggle's `xset s off` already fully
+suppresses screensaver activation (and therefore `xss-lock`, which can't
+fire without that event) on its own, so the separate `xautolock -enable`/
+`-disable` IPC call this project's earlier setup needed is gone —
+confirmed via `xset q` showing `timeout: 0` after `s off`, though the
+actual auto-fire-vs-suppressed timing comparison didn't reproduce
+cleanly under Xephyr (nested X servers are known to be unreliable about
+real idle-timer counting), so that specific piece rests on X11's
+well-established core-protocol semantics for `timeout: 0` rather than a
+clean sandboxed reproduction.

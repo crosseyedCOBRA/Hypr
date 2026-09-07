@@ -58,7 +58,7 @@ See [../DEPENDENCIES.md](../DEPENDENCIES.md) for exact package names
 - **dunst** — notification daemon
 - **rofi** — the power menu's picker
 - **maim** — screenshots (optionally **xclip** too, to also copy to clipboard)
-- **xautolock** + **i3lock** — idle-based screen lock. Plain `i3lock` (no blur/theming) was chosen deliberately over `betterlockscreen`/`i3lock-color` since it's the only screen locker packaged natively on Arch, Debian, and Fedora alike — see `DEPENDENCIES.md`
+- **xss-lock** + **i3lock** — idle-based screen lock. Both chosen specifically for being packaged natively on Arch, Debian, and Fedora alike (this project's earlier choices, `xautolock` and `betterlockscreen`/`i3lock-color`, weren't packaged on Debian at all) — see `DEPENDENCIES.md`. Plain `i3lock` has no blur/theming built in, a deliberate portability tradeoff.
 - **xsetroot** (usually part of `xorg-xsetroot` / `x11-apps`) — sets the default solid-color background. Optionally **xwallpaper** instead, if you swap in an actual wallpaper image (see the comment in `zaris.conf`)
 - A **Nerd Font** (JetBrainsMono Nerd Font in the reference config) — the bar's icons are glyphs from it, and it's also set as dunst's font
 - An icon theme (Papirus-Dark in the reference `dunstrc`) — for notification icons
