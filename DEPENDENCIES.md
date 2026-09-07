@@ -2,16 +2,18 @@
 
 Exact package names for building and running ZarisWM, per package manager.
 This is a living document — as the WM or shell gains/drops a dependency,
-this needs updating alongside it, and it doesn't cover every distro yet.
+this needs updating alongside it.
 
-**Status**: Arch/pacman and Debian/apt are both verified below. Arch got
-a full from-scratch `cmake` configure + build against exactly the listed
-package set. Debian/apt's package names are confirmed against real apt
-metadata (Devuan Excalibur, a Debian 13/trixie base) — every build-dep
-name resolves to a real candidate — but hasn't had the same from-scratch
-build attempt yet, so treat it as one notch below Arch's confidence
-level. Fedora/dnf hasn't been started at all — see
-[ROADMAP.md](ROADMAP.md)'s dependency-list beta blocker.
+**Status**: All three of Arch/pacman, Debian/apt, and Fedora/dnf now have
+package names filled in below. Confidence differs, though: Arch got a
+full from-scratch `cmake` configure + build against exactly the listed
+package set. Debian/apt's names are confirmed against real apt metadata
+(Devuan Excalibur, a Debian 13/trixie base) — every name resolves to a
+real candidate — but hasn't had that same from-scratch build attempt.
+Fedora/dnf's names are confirmed against real packages.fedoraproject.org
+listings, same caveat as Debian: no from-scratch build attempted yet, no
+Fedora box available to do one on. See [ROADMAP.md](ROADMAP.md)'s
+dependency-list beta blocker for what "done" still requires.
 
 ## Build dependencies
 
@@ -19,17 +21,17 @@ What `cmake` needs to configure and build the `zaris` binary itself —
 see `CMakeLists.txt`'s `pkg_check_modules` call, plus `xcb`/`xcb-shape`,
 which it links directly without a pkg-config check for either.
 
-| Needed for | pkg-config module(s) | Arch/pacman | Debian/apt |
-|---|---|---|---|
-| C++17 compiler | — | `gcc` | `g++` (or just `build-essential`, which pulls it in) |
-| Build system | — | `cmake` | `cmake` |
-| `pkg-config` itself | — | `pkgconf` | `pkg-config` |
-| glib | `glib-2.0` | `glib2` | `libglib2.0-dev` |
-| Core XCB + RandR/Xinerama/Shape | `xcb`, `xcb-randr`, `xcb-xinerama`, `xcb-shape` | `libxcb` (one package covers all four) | `libxcb1-dev`, `libxcb-randr0-dev`, `libxcb-xinerama0-dev`, `libxcb-shape0-dev` (Debian splits these into separate packages) |
-| XCB utility helpers | `xcb-util` | `xcb-util` | `libxcb-util-dev` |
-| EWMH/ICCCM window-manager helpers | `xcb-ewmh`, `xcb-icccm` | `xcb-util-wm` (one package covers both) | `libxcb-ewmh-dev`, `libxcb-icccm4-dev` (Debian splits these too) |
-| Keysym helpers | `xcb-keysyms` | `xcb-util-keysyms` | `libxcb-keysyms1-dev` |
-| Cursor helpers | `xcb-cursor` | `xcb-util-cursor` | `libxcb-cursor-dev` |
+| Needed for | pkg-config module(s) | Arch/pacman | Debian/apt | Fedora/dnf |
+|---|---|---|---|---|
+| C++17 compiler | — | `gcc` | `g++` (or `build-essential`) | `gcc-c++` |
+| Build system | — | `cmake` | `cmake` | `cmake` |
+| `pkg-config` itself | — | `pkgconf` | `pkg-config` | `pkgconf-pkg-config` |
+| glib | `glib-2.0` | `glib2` | `libglib2.0-dev` | `glib2-devel` |
+| Core XCB + RandR/Xinerama/Shape | `xcb`, `xcb-randr`, `xcb-xinerama`, `xcb-shape` | `libxcb` (covers all four) | `libxcb1-dev`, `libxcb-randr0-dev`, `libxcb-xinerama0-dev`, `libxcb-shape0-dev` (split up) | `libxcb-devel` (covers all four, same as Arch) |
+| XCB utility helpers | `xcb-util` | `xcb-util` | `libxcb-util-dev` | `xcb-util-devel` |
+| EWMH/ICCCM window-manager helpers | `xcb-ewmh`, `xcb-icccm` | `xcb-util-wm` (covers both) | `libxcb-ewmh-dev`, `libxcb-icccm4-dev` (split up) | `xcb-util-wm-devel` (covers both, same as Arch) |
+| Keysym helpers | `xcb-keysyms` | `xcb-util-keysyms` | `libxcb-keysyms1-dev` | `xcb-util-keysyms-devel` |
+| Cursor helpers | `xcb-cursor` | `xcb-util-cursor` | `libxcb-cursor-dev` | `xcb-util-cursor-devel` |
 
 ```sh
 # Arch — verified by an actual clean configure + build against exactly this set
@@ -40,12 +42,20 @@ sudo apt-get install build-essential cmake pkg-config git \
   libglib2.0-dev libxcb1-dev libxcb-randr0-dev libxcb-ewmh-dev \
   libxcb-xinerama0-dev libxcb-cursor-dev libxcb-keysyms1-dev \
   libxcb-icccm4-dev libxcb-util-dev libxcb-shape0-dev
+
+# Fedora/dnf — names verified against real packages.fedoraproject.org listings, build not yet attempted
+sudo dnf install gcc-c++ cmake pkgconf-pkg-config git \
+  glib2-devel libxcb-devel xcb-util-devel xcb-util-wm-devel \
+  xcb-util-keysyms-devel xcb-util-cursor-devel
 ```
 
-The general pattern: where Arch bundles several XCB extensions/helpers
-into one package (`libxcb`, `xcb-util-wm`), Debian ships one `-dev`
+The general pattern: Arch and Fedora both bundle several XCB
+extensions/helpers into one package (`libxcb`/`libxcb-devel`,
+`xcb-util-wm`/`xcb-util-wm-devel`) — they happen to split along the same
+lines as each other. Debian is the odd one out, shipping one `-dev`
 package per pkg-config module. Worth remembering for anything new added
-later — a single new Arch dependency may turn into several Debian ones.
+later — a single new Arch/Fedora dependency may turn into several
+Debian ones.
 
 ## Shell runtime dependencies
 
@@ -53,23 +63,46 @@ What `shell/` (the Quickshell bar/launcher/OSD/lock, see
 [shell/README.md](shell/README.md)) needs at runtime, beyond the WM
 itself.
 
-| Purpose | Arch/pacman | Debian/apt |
-|---|---|---|
-| The shell runtime itself | `quickshell` (official, `extra`) | **Not packaged at all.** Install via Nix: `nix profile install nixpkgs#quickshell` (see `contrib/devuan-bootstrap.sh`) |
-| Audio stack + `wpctl` for the volume OSD | `pipewire`, `pipewire-pulse`, `wireplumber` | `pipewire`, `pipewire-pulse`, `wireplumber` |
-| Notification daemon | `dunst` | `dunst` |
-| Power menu's picker | `rofi` | `rofi` |
-| Screenshots (+ clipboard copy) | `maim`, `xclip` | `maim`, `xclip` |
-| Idle-based screen lock timer | `xss-lock` | `xss-lock` |
-| Screen locker | `i3lock` | `i3lock` |
-| Default background color | `xorg-xsetroot` (or `xwallpaper` for an actual image) | `x11-xserver-utils` (provides `xsetroot`), or `xwallpaper` |
-| Bar icon glyphs (Nerd Font) | `ttf-jetbrains-mono-nerd` (official, `extra`) | **No Nerd Font-patched package** — Debian only has the unpatched `fonts-jetbrains-mono`. Install the patched version via Nix instead |
-| Notification icon theme | `papirus-icon-theme` | `papirus-icon-theme` |
-| `loginctl` for the power menu (non-systemd only) | `elogind` (not needed at all on a systemd-default Arch install) | `elogind`, `libpam-elogind` |
+| Purpose | Arch/pacman | Debian/apt | Fedora/dnf |
+|---|---|---|---|
+| The shell runtime itself | `quickshell` (official, `extra`) | **Not packaged at all.** Install via Nix: `nix profile install nixpkgs#quickshell` | `quickshell` — official, but currently a git-snapshot build (`0.2.1^git...`), not a tagged release; worth a version sanity-check before relying on it |
+| Audio stack + `wpctl` for the volume OSD | `pipewire`, `pipewire-pulse`, `wireplumber` | `pipewire`, `pipewire-pulse`, `wireplumber` | `pipewire`, `pipewire-pulseaudio` (different name — no `-pulse` suffix), `wireplumber` |
+| Notification daemon | `dunst` | `dunst` | `dunst` |
+| Power menu's picker | `rofi` | `rofi` | `rofi` |
+| Screenshots (+ clipboard copy) | `maim`, `xclip` | `maim`, `xclip` | `maim`, `xclip` |
+| Idle-based screen lock timer | `xss-lock` | `xss-lock` | `xss-lock` |
+| Screen locker | `i3lock` | `i3lock` | `i3lock` |
+| Default background color | `xorg-xsetroot` (or `xwallpaper`) | `x11-xserver-utils` (provides `xsetroot`) | `xorg-x11-server-utils` (provides `xsetroot`, different name again) |
+| Bar icon glyphs (Nerd Font) | `ttf-jetbrains-mono-nerd` (official, `extra`) | **No Nerd Font-patched package** — only the unpatched `fonts-jetbrains-mono` | **Also no official Nerd Font package** — only unpatched `jetbrains-mono-fonts`; patched version needs a COPR (e.g. `che/nerd-fonts`) |
+| Notification icon theme | `papirus-icon-theme` | `papirus-icon-theme` | `papirus-icon-theme` — official |
+| `loginctl` for the power menu | `elogind` (Arch is systemd-default, so not actually needed there — only relevant on a non-systemd Arch-based system like Artix) | `elogind`, `libpam-elogind` | Not needed — Fedora only ships systemd, `loginctl` is native |
 
 The Arch-side data is what's actually installed and running on this
-project's own Artix reference machine. The Debian-side data is apt
-metadata confirmed real on a live Devuan Excalibur VM, not guessed.
+project's own Artix reference machine. The Debian-side and Fedora-side
+data are both confirmed against real package metadata (a live Devuan
+Excalibur VM for Debian, packages.fedoraproject.org listings for
+Fedora), not guessed.
+
+## What's still genuinely not uniform across all three
+
+After the locker and idle-timer swaps below, two real gaps remain — not
+naming differences, actual missing packages:
+
+- **`quickshell` itself.** Official on Arch and now Fedora (as a
+  git-snapshot build), but still entirely unpackaged on Debian. Nix is
+  the only path there for now (see `contrib/devuan-bootstrap.sh`).
+- **A Nerd Font.** None of the three has an official *patched* Nerd Font
+  package — Arch is actually the outlier in a good way here
+  (`ttf-jetbrains-mono-nerd` is official on Arch specifically), while
+  both Debian and Fedora only carry the *unpatched* JetBrains Mono and
+  need either a third-party source (Nix on Debian, a COPR on Fedora) or
+  a manual install from the upstream Nerd Fonts releases.
+
+Everything else in both tables above — every build dependency, and every
+shell runtime dependency except the two above — is now confirmed
+packaged natively on all three.
+
+## Resolved gaps (for reference)
 
 **Screen locker: resolved.** Originally `betterlockscreen`/`i3lock-color`
 on Arch, neither of which exist in Debian's repos at all (and are
