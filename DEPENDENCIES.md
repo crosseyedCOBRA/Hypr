@@ -73,7 +73,7 @@ itself.
 | Idle-based screen lock timer | `xss-lock` | `xss-lock` | `xss-lock` |
 | Screen locker | `i3lock` | `i3lock` | `i3lock` |
 | Default background color | `xorg-xsetroot` (or `xwallpaper`) | `x11-xserver-utils` (provides `xsetroot`) | `xorg-x11-server-utils` (provides `xsetroot`, different name again) |
-| Bar icon glyphs (Nerd Font) | `ttf-jetbrains-mono-nerd` (official, `extra`) | **No Nerd Font-patched package** — only the unpatched `fonts-jetbrains-mono` | **Also no official Nerd Font package** — only unpatched `jetbrains-mono-fonts`; patched version needs a COPR (e.g. `che/nerd-fonts`) |
+| Bar icon glyphs (Nerd Font) | `ttf-jetbrains-mono-nerd` (official, `extra`) | Not packaged, but installed the same way as Fedora — see "Installing the Nerd Font from upstream" below | Not packaged either — same upstream-download install as Debian |
 | Notification icon theme | `papirus-icon-theme` | `papirus-icon-theme` | `papirus-icon-theme` — official |
 | `loginctl` for the power menu | `elogind` (Arch is systemd-default, so not actually needed there — only relevant on a non-systemd Arch-based system like Artix) | `elogind`, `libpam-elogind` | Not needed — Fedora only ships systemd, `loginctl` is native |
 
@@ -119,21 +119,34 @@ is required for the shell to function. Quickshell's own CMake install
 rules create the `qs` symlink to `quickshell` automatically — confirmed
 present and working after `cmake --install`, no manual symlink needed.
 
-## What's still genuinely not uniform across all three
+## Installing the Nerd Font from upstream (Debian and Fedora)
 
-One real gap remains — not a naming difference, an actual missing
-package with no from-source path checked yet:
+Neither Debian nor Fedora has an official *patched* Nerd Font package
+(Arch is the outlier here — `ttf-jetbrains-mono-nerd` is official,
+`extra`). Rather than reach for a COPR on Fedora and Nix on Debian —
+two different answers for the same problem — the upstream Nerd Fonts
+project publishes ready-to-use per-font archives on GitHub releases,
+which installs identically on any distro with no package manager
+involved at all. Verified end-to-end on the Devuan VM: extracted,
+`fc-cache`'d, and `fc-match 'JetBrainsMono Nerd Font:style=SemiBold'`
+resolved correctly — the exact family+style string
+`shell/dunst/dunstrc` uses. This is what `contrib/devuan-bootstrap.sh`'s
+`nerdfont` step automates.
 
-- **A Nerd Font.** None of the three has an official *patched* Nerd Font
-  package — Arch is actually the outlier in a good way here
-  (`ttf-jetbrains-mono-nerd` is official on Arch specifically), while
-  both Debian and Fedora only carry the *unpatched* JetBrains Mono and
-  need either a third-party source (Nix on Debian, a COPR on Fedora) or
-  a manual install from the upstream Nerd Fonts releases.
+```sh
+mkdir -p ~/.local/share/fonts/JetBrainsMonoNerdFont
+curl -fsSL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz \
+  | tar -xJ -C ~/.local/share/fonts/JetBrainsMonoNerdFont
+fc-cache -f ~/.local/share/fonts
+```
 
-Everything else in both tables above — every build dependency, every
-shell runtime dependency, and now `quickshell` itself via the from-source
-build above — is confirmed working on all three.
+## Uniform across all three
+
+After the work above, every build dependency, every shell runtime
+dependency, `quickshell` itself (via the from-source build), and the
+Nerd Font (via the upstream download) are all confirmed working
+identically on Arch, Debian, and Fedora. No genuinely non-uniform gaps
+remain open at this point.
 
 ## Resolved gaps (for reference)
 
@@ -173,3 +186,17 @@ cleanly under Xephyr (nested X servers are known to be unreliable about
 real idle-timer counting), so that specific piece rests on X11's
 well-established core-protocol semantics for `timeout: 0` rather than a
 clean sandboxed reproduction.
+
+**`quickshell` itself: resolved.** Not packaged for Debian at all;
+resolved by building from source with apt-only deps (Qt6 dev packages,
+libdrm, spirv-tools, cli11, pipewire dev), Wayland/Hyprland/i3 features
+turned off since Zaris is X11-only — see "Building Quickshell from
+source" above for the full recipe and what got verified.
+
+**Nerd Font: resolved.** Not packaged for either Debian or Fedora;
+resolved by downloading the patched font directly from the upstream
+Nerd Fonts project's GitHub releases rather than reaching for a
+per-distro third-party source (Nix, a COPR) — see "Installing the Nerd
+Font from upstream" above. Same recipe works on Arch too, if you'd
+rather skip the official package there for consistency's sake, though
+there's no real need to since it's already official there.

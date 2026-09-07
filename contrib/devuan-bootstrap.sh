@@ -36,7 +36,7 @@ set -euo pipefail
 ZARIS_REPO_URL="${ZARIS_REPO_URL:-https://github.com/crosseyedcobra/zaris.git}"
 ZARIS_SRC_DIR="${ZARIS_SRC_DIR:-$HOME/src/zaris}"
 
-STEPS=(apt-base xanmod zaris-deps zaris-build quickshell shell seatd xlibre elogind nix flatpak)
+STEPS=(apt-base xanmod zaris-deps zaris-build quickshell shell nerdfont seatd xlibre elogind nix flatpak)
 
 QUICKSHELL_SRC_DIR="${QUICKSHELL_SRC_DIR:-$HOME/src/quickshell}"
 
@@ -187,8 +187,8 @@ step_shell() {
     fi
     # Runtime deps available in Debian/Devuan repos (shell/README.md's
     # full list). Not here: quickshell itself (see the `quickshell` step,
-    # which builds it from source) and a Nerd Font (easiest via Nix, e.g.
-    # `nix profile install nixpkgs#nerd-fonts.jetbrains-mono`).
+    # which builds it from source) and the Nerd Font (see `nerdfont`,
+    # which pulls it straight from upstream).
     #
     # zaris.conf's idle-lock now runs on xss-lock + i3lock rather than
     # this project's earlier xautolock + betterlockscreen — neither of
@@ -197,7 +197,7 @@ step_shell() {
     sudo apt-get -y install \
         pipewire pipewire-pulse wireplumber \
         dunst rofi maim xclip i3lock xss-lock \
-        x11-xserver-utils papirus-icon-theme
+        x11-xserver-utils papirus-icon-theme fontconfig
 
     for d in quickshell zaris dunst rofi; do
         mkdir -p "$HOME/.config/$d"
@@ -223,8 +223,8 @@ Still worth doing by hand before first launch (see shell/README.md):
   ~/.config/quickshell/Bar.qml for your own CPU/GPU
   (grep . /sys/class/hwmon/hwmon*/temp*_label).
 - Swap the bar's logo (~/.config/quickshell/assets/artix.svg).
-- Install a Nerd Font — see the 'nix' step. (quickshell itself is
-  handled by the 'quickshell' step, if you haven't run it yet.)
+(quickshell itself is handled by the 'quickshell' step, and the Nerd
+Font by 'nerdfont', if you haven't run either yet.)
 EOF
 }
 
@@ -310,11 +310,10 @@ step_nix() {
 Nix installed in single-user mode. Open a new shell (or `source
 ~/.nix-profile/etc/profile.d/nix.sh`) to pick it up.
 
-Quickshell itself no longer needs Nix — the 'quickshell' step builds it
-from source using only apt packages. Nix is still the easiest path for
-a patched Nerd Font (not officially packaged for Debian either):
-
-    nix profile install nixpkgs#nerd-fonts.jetbrains-mono
+Nothing this shell needs actually requires Nix anymore — quickshell
+builds from source (see the 'quickshell' step) and the Nerd Font comes
+straight from upstream (see the 'nerdfont' step), both without it. Nix
+is here for whatever else you want fresher/more-current packages for.
 
 Want multi-user Nix instead (build sandboxing, shared daemon across
 users)? The installer supports it, but on sysvinit you have to hand-write
@@ -322,6 +321,27 @@ the nix-daemon init script yourself — the installer only automates that
 for systemd. See the "Nix on non-systemd" thread if you want to go that
 route: https://discourse.nixos.org/t/install-nix-daemon-on-non-systemd-init/7911
 EOF
+}
+
+step_nerdfont() {
+    log "Installing the JetBrainsMono Nerd Font from upstream"
+    # No official patched Nerd Font package on Debian (or Fedora, for
+    # that matter) -- but the upstream project publishes ready-to-use
+    # per-font archives on GitHub releases, which works identically on
+    # any distro. Verified end-to-end on the Devuan VM: extracted,
+    # fc-cache'd, and `fc-match 'JetBrainsMono Nerd Font:style=SemiBold'`
+    # resolved correctly -- matching the exact family+style string
+    # shell/dunst/dunstrc uses.
+    local font_dir="$HOME/.local/share/fonts/JetBrainsMonoNerdFont"
+    if fc-list | grep -qi "JetBrainsMono Nerd Font:"; then
+        echo "JetBrainsMono Nerd Font already registered, skipping."
+        return
+    fi
+    mkdir -p "$font_dir"
+    curl -fsSL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.tar.xz \
+        | tar -xJ -C "$font_dir"
+    fc-cache -f "$HOME/.local/share/fonts" >/dev/null
+    echo "Installed. fc-match check: $(fc-match 'JetBrainsMono Nerd Font:style=SemiBold')"
 }
 
 step_flatpak() {
