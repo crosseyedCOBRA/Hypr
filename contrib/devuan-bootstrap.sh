@@ -3,8 +3,8 @@
 # devuan-bootstrap.sh — take a fresh Devuan *server* install (the minimal,
 # no-desktop ISO — no X, no display manager, often no sudo yet) all the way
 # to a working ZarisWM session: build deps, ZarisWM itself and its
-# Quickshell-based shell, XLibre (in place of stock Xorg), the Nix package
-# manager, and Flatpak/Flathub.
+# Quickshell-based shell, XLibre (in place of stock Xorg), the XanMod
+# kernel, the Nix package manager, and Flatpak/Flathub.
 #
 # Target: Devuan Excalibur (6.x, Debian 13/trixie base) on sysvinit. Run as
 # a normal user, NOT as root — steps that need root use sudo themselves.
@@ -36,7 +36,7 @@ set -euo pipefail
 ZARIS_REPO_URL="${ZARIS_REPO_URL:-https://github.com/crosseyedcobra/zaris.git}"
 ZARIS_SRC_DIR="${ZARIS_SRC_DIR:-$HOME/src/zaris}"
 
-STEPS=(apt-base zaris-deps zaris-build shell seatd xlibre elogind nix flatpak)
+STEPS=(apt-base xanmod zaris-deps zaris-build shell seatd xlibre elogind nix flatpak)
 
 log() { printf '\n\033[1;32m==>\033[0m %s\n' "$*"; }
 warn() { printf '\n\033[1;33m==> WARNING:\033[0m %s\n' "$*" >&2; }
@@ -62,6 +62,44 @@ step_apt-base() {
     sudo apt-get update
     sudo apt-get -y upgrade
     sudo apt-get -y install curl ca-certificates gnupg git build-essential
+}
+
+step_xanmod() {
+    log "Installing the XanMod kernel"
+    # The kernel package itself doesn't care about init system — this is
+    # exactly as init-agnostic on Devuan as on any other Debian derivative.
+    # The one gotcha: XanMod's repo only publishes suites named after
+    # Debian codenames, but Devuan's own /etc/os-release codename
+    # (excalibur) differs from the Debian base it tracks (trixie), so we
+    # hardcode the Debian codename rather than auto-detecting it.
+    local debian_codename="trixie"
+
+    wget -qO - https://dl.xanmod.org/archive.key \
+        | sudo gpg --dearmor -o /etc/apt/keyrings/xanmod-archive-keyring.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/xanmod-archive-keyring.gpg] http://deb.xanmod.org ${debian_codename} main" \
+        | sudo tee /etc/apt/sources.list.d/xanmod-release.list >/dev/null
+
+    local level
+    level="$(curl -fsSL https://dl.xanmod.org/check_x86-64_psabi.sh | bash 2>/dev/null | grep -o 'x86-64-v[0-9]' | tail -1)"
+    local pkg="linux-xanmod-x64v3"
+    case "$level" in
+        x86-64-v1) pkg="linux-xanmod-x64v1" ;;
+        x86-64-v2) pkg="linux-xanmod-x64v2" ;;
+        x86-64-v3|x86-64-v4) pkg="linux-xanmod-x64v3" ;;
+        *) warn "Couldn't detect CPU psABI level, defaulting to $pkg — check https://dl.xanmod.org/check_x86-64_psabi.sh yourself if unsure." ;;
+    esac
+
+    sudo apt-get update
+    sudo apt-get -y install "$pkg"
+
+    cat <<EOF
+
+Installed $pkg. This does NOT reboot you into it — your current kernel
+stays the GRUB default until you choose the XanMod entry (or reboot and
+pick it from the GRUB menu) and confirm it works before making it
+default. XanMod isn't signed for UEFI Secure Boot, so disable that in
+firmware setup first if it's on.
+EOF
 }
 
 step_zaris-deps() {
