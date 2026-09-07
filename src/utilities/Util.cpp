@@ -1,5 +1,6 @@
 #include "Util.hpp"
 #include "../windowManager.hpp"
+#include <filesystem>
 
 // Execute a shell command and get the output
 std::string exec(const char* cmd) {
@@ -17,6 +18,12 @@ std::string exec(const char* cmd) {
 }
 
 void clearLogs() {
+    // /tmp is usually tmpfs, wiped on every reboot - without this, Debug::log's
+    // ofstream::open() for either log file below fails silently (no exception,
+    // no error surfaced anywhere) on the very first run after a fresh boot,
+    // and every single log call for the rest of that session is a silent no-op.
+    std::filesystem::create_directories("/tmp/zaris");
+
     std::ofstream logs;
     const std::string DEBUGPATH = "/tmp/zaris/zaris.log";
     const std::string DEBUGPATH2 = "/tmp/zaris/zarisd.log";

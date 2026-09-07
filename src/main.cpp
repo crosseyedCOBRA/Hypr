@@ -5,12 +5,23 @@ Forked from Hypr, started by Vaxry on 2021 / 11 / 17
 
 */
 
+#include <cstdio>
 #include <fstream>
 #include <csignal>
 #include "windowManager.hpp"
 #include "defines.hpp"
 
 int main(int argc, char** argv) {
+    // stdout is fully-buffered (not line-buffered) by default whenever it's
+    // not attached to a terminal - which is always true for how this WM
+    // actually runs (launched via a session script, its own stdout usually
+    // redirected to something like ~/.xsession-errors). Without this, log
+    // output sits in libc's internal buffer until it either fills (several KB)
+    // or the process exits - for a long-lived process that logs in modest
+    // bursts, that can mean nothing ever reaches disk while it's actually
+    // useful for debugging a live problem.
+    setvbuf(stdout, nullptr, _IOLBF, 0);
+
     clearLogs();
 
     // Reap exec/exec-once children automatically instead of leaving zombies.
