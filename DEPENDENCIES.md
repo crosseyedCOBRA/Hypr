@@ -65,7 +65,7 @@ itself.
 
 | Purpose | Arch/pacman | Debian/apt | Fedora/dnf |
 |---|---|---|---|
-| The shell runtime itself | `quickshell` (official, `extra`) | **Not packaged at all.** Install via Nix: `nix profile install nixpkgs#quickshell` | `quickshell` — official, but currently a git-snapshot build (`0.2.1^git...`), not a tagged release; worth a version sanity-check before relying on it |
+| The shell runtime itself | `quickshell` (official, `extra`) | **Not packaged**, but buildable from source with apt-only deps — see "Building Quickshell from source" below | `quickshell` — official, but currently a git-snapshot build (`0.2.1^git...`), not a tagged release; worth a version sanity-check before relying on it |
 | Audio stack + `wpctl` for the volume OSD | `pipewire`, `pipewire-pulse`, `wireplumber` | `pipewire`, `pipewire-pulse`, `wireplumber` | `pipewire`, `pipewire-pulseaudio` (different name — no `-pulse` suffix), `wireplumber` |
 | Notification daemon | `dunst` | `dunst` | `dunst` |
 | Power menu's picker | `rofi` | `rofi` | `rofi` |
@@ -83,14 +83,47 @@ data are both confirmed against real package metadata (a live Devuan
 Excalibur VM for Debian, packages.fedoraproject.org listings for
 Fedora), not guessed.
 
+## Building Quickshell from source (Debian only)
+
+`quickshell` isn't packaged for Debian at all, but it builds cleanly
+from the upstream mirror with only apt-available dependencies — verified
+end-to-end on a real Devuan Excalibur VM (configure, build, install, and
+`qs --version` all confirmed working). This is what
+`contrib/devuan-bootstrap.sh`'s `quickshell` step automates.
+
+```sh
+sudo apt-get install ninja-build qt6-base-dev qt6-declarative-dev \
+  qt6-declarative-dev-tools qt6-declarative-private-dev \
+  qt6-shadertools-dev libdrm-dev spirv-tools libcli11-dev \
+  libpipewire-0.3-dev
+
+git clone --depth=1 https://github.com/quickshell-mirror/quickshell.git
+cmake -GNinja -S quickshell -B quickshell/build -DCMAKE_BUILD_TYPE=Release \
+  -DWAYLAND=OFF -DWAYLAND_WLR_LAYERSHELL=OFF -DWAYLAND_SESSION_LOCK=OFF \
+  -DWAYLAND_TOPLEVEL_MANAGEMENT=OFF -DSCREENCOPY=OFF -DHYPRLAND=OFF -DI3=OFF \
+  -DCRASH_HANDLER=OFF -DUSE_JEMALLOC=OFF -DSERVICE_PAM=OFF -DSERVICE_POLKIT=OFF \
+  -DX11=ON -DSOCKETS=ON -DSERVICE_PIPEWIRE=ON -DSERVICE_STATUS_NOTIFIER=ON \
+  -DSERVICE_MPRIS=ON
+cmake --build quickshell/build
+sudo cmake --install quickshell/build
+```
+
+The Wayland-specific flags (`WAYLAND*`, `SCREENCOPY`) and the unrelated
+`HYPRLAND`/`I3` IPC integrations are turned off since Zaris is X11-only
+and neither Hyprland nor i3 apply here — this trims the dependency list
+and avoids needing Qt6 Wayland's private headers on top of QtDeclarative's
+(Debian trixie ships Qt 6.8, and Quickshell's `BUILD.md` notes private
+headers are required for both below Qt 6.10). `CRASH_HANDLER` (needs
+`cpptrace`, unpackaged on Debian) and `USE_JEMALLOC` are off since neither
+is required for the shell to function. Quickshell's own CMake install
+rules create the `qs` symlink to `quickshell` automatically — confirmed
+present and working after `cmake --install`, no manual symlink needed.
+
 ## What's still genuinely not uniform across all three
 
-After the locker and idle-timer swaps below, two real gaps remain — not
-naming differences, actual missing packages:
+One real gap remains — not a naming difference, an actual missing
+package with no from-source path checked yet:
 
-- **`quickshell` itself.** Official on Arch and now Fedora (as a
-  git-snapshot build), but still entirely unpackaged on Debian. Nix is
-  the only path there for now (see `contrib/devuan-bootstrap.sh`).
 - **A Nerd Font.** None of the three has an official *patched* Nerd Font
   package — Arch is actually the outlier in a good way here
   (`ttf-jetbrains-mono-nerd` is official on Arch specifically), while
@@ -98,9 +131,9 @@ naming differences, actual missing packages:
   need either a third-party source (Nix on Debian, a COPR on Fedora) or
   a manual install from the upstream Nerd Fonts releases.
 
-Everything else in both tables above — every build dependency, and every
-shell runtime dependency except the two above — is now confirmed
-packaged natively on all three.
+Everything else in both tables above — every build dependency, every
+shell runtime dependency, and now `quickshell` itself via the from-source
+build above — is confirmed working on all three.
 
 ## Resolved gaps (for reference)
 

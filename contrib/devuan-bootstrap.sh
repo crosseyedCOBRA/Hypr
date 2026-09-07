@@ -36,7 +36,9 @@ set -euo pipefail
 ZARIS_REPO_URL="${ZARIS_REPO_URL:-https://github.com/crosseyedcobra/zaris.git}"
 ZARIS_SRC_DIR="${ZARIS_SRC_DIR:-$HOME/src/zaris}"
 
-STEPS=(apt-base xanmod zaris-deps zaris-build shell seatd xlibre elogind nix flatpak)
+STEPS=(apt-base xanmod zaris-deps zaris-build quickshell shell seatd xlibre elogind nix flatpak)
+
+QUICKSHELL_SRC_DIR="${QUICKSHELL_SRC_DIR:-$HOME/src/quickshell}"
 
 log() { printf '\n\033[1;32m==>\033[0m %s\n' "$*"; }
 warn() { printf '\n\033[1;33m==> WARNING:\033[0m %s\n' "$*" >&2; }
@@ -136,6 +138,47 @@ step_zaris-build() {
     echo "Installed to ~/.local/bin/zaris."
 }
 
+step_quickshell() {
+    log "Building and installing Quickshell from source"
+    # Not packaged for Debian at all (unlike Arch and, as of recently,
+    # Fedora), so this builds it directly from the upstream mirror —
+    # verified end-to-end on a real Devuan Excalibur VM: configures,
+    # builds, installs, and `qs --version` runs. See DEPENDENCIES.md.
+    if command -v qs >/dev/null 2>&1; then
+        echo "qs already installed, skipping."
+        return
+    fi
+    sudo apt-get -y install \
+        ninja-build qt6-base-dev qt6-declarative-dev \
+        qt6-declarative-dev-tools qt6-declarative-private-dev \
+        qt6-shadertools-dev libdrm-dev spirv-tools libcli11-dev \
+        libpipewire-0.3-dev
+
+    if [ -d "$QUICKSHELL_SRC_DIR/.git" ]; then
+        git -C "$QUICKSHELL_SRC_DIR" pull --ff-only
+    else
+        git clone --depth=1 https://github.com/quickshell-mirror/quickshell.git "$QUICKSHELL_SRC_DIR"
+    fi
+
+    # Zaris is X11-only, so the Wayland-specific features (and Hyprland/i3
+    # IPC integrations, irrelevant to this WM) are turned off entirely --
+    # trims the dependency list and sidesteps needing Qt6 Wayland private
+    # headers on top of the QtDeclarative ones already required below
+    # Qt 6.10 (Debian trixie ships 6.8). CRASH_HANDLER (needs cpptrace)
+    # and USE_JEMALLOC are off since neither is packaged for Debian and
+    # neither is required for Zaris's shell to function.
+    cmake -GNinja -S "$QUICKSHELL_SRC_DIR" -B "$QUICKSHELL_SRC_DIR/build" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DWAYLAND=OFF -DWAYLAND_WLR_LAYERSHELL=OFF -DWAYLAND_SESSION_LOCK=OFF \
+        -DWAYLAND_TOPLEVEL_MANAGEMENT=OFF -DSCREENCOPY=OFF -DHYPRLAND=OFF -DI3=OFF \
+        -DCRASH_HANDLER=OFF -DUSE_JEMALLOC=OFF -DSERVICE_PAM=OFF -DSERVICE_POLKIT=OFF \
+        -DX11=ON -DSOCKETS=ON -DSERVICE_PIPEWIRE=ON -DSERVICE_STATUS_NOTIFIER=ON \
+        -DSERVICE_MPRIS=ON -DDISTRIBUTOR="Devuan (devuan-bootstrap.sh)"
+    cmake --build "$QUICKSHELL_SRC_DIR/build"
+    sudo cmake --install "$QUICKSHELL_SRC_DIR/build"
+    echo "Installed: $(qs --version)"
+}
+
 step_shell() {
     log "Installing the Quickshell-based bar/launcher/OSD shell"
     if [ ! -d "$ZARIS_SRC_DIR/shell" ]; then
@@ -143,8 +186,8 @@ step_shell() {
         exit 1
     fi
     # Runtime deps available in Debian/Devuan repos (shell/README.md's
-    # full list). Not here: quickshell itself (see the `nix` step) and a
-    # Nerd Font (also easiest via Nix, e.g.
+    # full list). Not here: quickshell itself (see the `quickshell` step,
+    # which builds it from source) and a Nerd Font (easiest via Nix, e.g.
     # `nix profile install nixpkgs#nerd-fonts.jetbrains-mono`).
     #
     # zaris.conf's idle-lock now runs on xss-lock + i3lock rather than
@@ -180,7 +223,8 @@ Still worth doing by hand before first launch (see shell/README.md):
   ~/.config/quickshell/Bar.qml for your own CPU/GPU
   (grep . /sys/class/hwmon/hwmon*/temp*_label).
 - Swap the bar's logo (~/.config/quickshell/assets/artix.svg).
-- Install quickshell itself and a Nerd Font — see the 'nix' step.
+- Install a Nerd Font — see the 'nix' step. (quickshell itself is
+  handled by the 'quickshell' step, if you haven't run it yet.)
 EOF
 }
 
@@ -266,11 +310,11 @@ step_nix() {
 Nix installed in single-user mode. Open a new shell (or `source
 ~/.nix-profile/etc/profile.d/nix.sh`) to pick it up.
 
-Quickshell (the shell/bar this project uses) is packaged directly in
-nixpkgs, which sidesteps needing a rolling distro just for a fresh Qt6/
-Quickshell build:
+Quickshell itself no longer needs Nix — the 'quickshell' step builds it
+from source using only apt packages. Nix is still the easiest path for
+a patched Nerd Font (not officially packaged for Debian either):
 
-    nix profile install nixpkgs#quickshell
+    nix profile install nixpkgs#nerd-fonts.jetbrains-mono
 
 Want multi-user Nix instead (build sandboxing, shared daemon across
 users)? The installer supports it, but on sysvinit you have to hand-write
