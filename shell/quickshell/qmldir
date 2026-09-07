@@ -1,0 +1,20 @@
+singleton Colors 1.0 Colors.qml
+singleton LauncherState 1.0 LauncherState.qml
+singleton StayAwakeState 1.0 StayAwakeState.qml
+singleton ModulesConfig 1.0 ModulesConfig.qml
+singleton OverflowState 1.0 OverflowState.qml
+singleton SettingsState 1.0 SettingsState.qml
+singleton OSDState 1.0 OSDState.qml
+Launcher 1.0 Launcher.qml
+Bar 1.0 Bar.qml
+Workspaces 1.0 Workspaces.qml
+CpuLoad 1.0 CpuLoad.qml
+HwmonSensor 1.0 HwmonSensor.qml
+KernelVersion 1.0 KernelVersion.qml
+NetworkStatus 1.0 NetworkStatus.qml
+VolumeControl 1.0 VolumeControl.qml
+SystemTrayRow 1.0 SystemTrayRow.qml
+StayAwake 1.0 StayAwake.qml
+Overflow 1.0 Overflow.qml
+Settings 1.0 Settings.qml
+OSD 1.0 OSD.qml

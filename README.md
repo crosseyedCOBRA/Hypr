@@ -33,10 +33,19 @@ make -j$(nproc)
 
 The built binary is `build/zaris`.
 
+The WM binary alone has no built-in bar or launcher — see below.
+
 ## Configuring
 
 Place your config at `~/.config/zaris/zaris.conf` — see
 [example/zaris.conf](example/zaris.conf) for a documented starting point.
+
+## Shell (bar, launcher, notifications, OSD)
+
+The bar/launcher/etc. mentioned above live in [shell/](shell/) as a
+separate install step — see [shell/README.md](shell/README.md) for what's
+in it and how to install it. Without it, the WM runs but has no panel,
+launcher, or on-screen feedback of any kind.
 
 ## Contributing
 

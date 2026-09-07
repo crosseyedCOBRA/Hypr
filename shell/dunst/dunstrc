@@ -1,0 +1,101 @@
+### Cosmic theme -- matches theme.rasi / qtile bar exactly.
+### Palette: deep space navy, indigo, teal moon-glow, nebula purple, coral.
+### Keep these hex values in sync with theme.rasi and qtile's colors dict
+### if you change one -- dunstrc, rofi, and qtile don't share a format.
+
+[global]
+    monitor = 0
+    follow = mouse
+
+    ### Geometry / position ###
+    width = (0, 400)
+    height = 300
+    origin = top-right
+    offset = 16x40
+    scale = 0
+    notification_limit = 5
+
+    ### Progress bar ###
+    progress_bar = true
+    progress_bar_height = 10
+    progress_bar_frame_width = 1
+    progress_bar_min_width = 150
+    progress_bar_max_width = 300
+    progress_bar_corner_radius = 6
+
+    ### Shape ###
+    corner_radius = 10
+    transparency = 8
+    frame_width = 2
+    frame_color = "#4da4a6"
+    gap_size = 6
+    separator_color = frame
+    sort = yes
+    idle_threshold = 120
+
+    ### Text ###
+    font = JetBrainsMono Nerd Font SemiBold 11
+    line_height = 2
+    markup = full
+    format = "<b>%s</b>\n%b"
+    alignment = left
+    vertical_alignment = center
+    show_age_threshold = 60
+    ellipsize = middle
+    ignore_newline = no
+    stack_duplicates = true
+    hide_duplicate_count = false
+    show_indicators = yes
+
+    ### Icons ###
+    enable_recursive_icon_lookup = true
+    icon_theme = "Papirus-Dark"
+    icon_position = left
+    min_icon_size = 40
+    max_icon_size = 64
+    icon_corner_radius = 8
+
+    ### History ###
+    sticky_history = yes
+    history_length = 20
+
+    ### Misc/Advanced ###
+    dmenu = rofi -dmenu -p dunst
+    browser = xdg-open
+    always_run_script = true
+    title = Dunst
+    class = Dunst
+    corner_radius = 10
+    ignore_dbusclose = false
+
+    ### Mouse ###
+    mouse_left_click = close_current
+    mouse_middle_click = do_action, close_current
+    mouse_right_click = close_all
+
+# --- Base colors (deep space navy bg, indigo-alt, lavender text) ---
+[urgency_low]
+    background = "#0c0b1aee"
+    foreground = "#8890b5"
+    frame_color = "#1b204c"
+    timeout = 5
+
+[urgency_normal]
+    background = "#0c0b1aee"
+    foreground = "#e8e6f0"
+    frame_color = "#4da4a6"
+    timeout = 8
+
+[urgency_critical]
+    background = "#1b204c"
+    foreground = "#e8e6f0"
+    frame_color = "#c55a63"
+    timeout = 0
+
+# --- Optional per-app rules -- extend as you like ---
+# [volume]
+#     appname = "PulseVolume"
+#     background = "#0c0b1aee"
+#     foreground = "#e8e6f0"
+#     frame_color = "#4da4a6"
+#     timeout = 2

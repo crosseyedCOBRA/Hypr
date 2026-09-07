@@ -1,0 +1,91 @@
+/**
+ * Cosmic theme -- colors match the qtile bar exactly (same palette pulled
+ * from the wallpaper): deep space navy, indigo, teal moon-glow, nebula
+ * purple, and coral planet-pink. Keep these hex values in sync with the
+ * `colors` dict in ~/.config/qtile/config.py if you change one -- they're
+ * duplicated here since rofi and qtile don't share a config format.
+ */
+
+* {
+    bg:         #0c0b1aee;  /* bar background, with slight transparency */
+    bg-alt:     #1b204c;    /* indigo -- matches the wallpaper's cloud base */
+    bg-selected:#2d3a74;    /* brighter indigo -- selected row */
+    fg:         #e8e6f0;    /* soft lavender-white, same as bar text */
+    fg-muted:   #8890b5;
+    accent:     #4da4a6;    /* teal moon-glow -- used for selection accent/border */
+    coral:      #c55a63;    /* planet coral -- used sparingly, e.g. urgent items */
+
+    background-color: transparent;
+    text-color:        @fg;
+    font:              "JetBrainsMono Nerd Font SemiBold 12";
+}
+
+window {
+    background-color: @bg;
+    border:           2px;
+    border-color:     @accent;
+    border-radius:    10px;   /* matches the 10px window-corner rounding from picom */
+    width:            600px;
+    location:         center;
+    padding:          16px;
+}
+
+mainbox {
+    background-color: transparent;
+    children:          [ inputbar, listview ];
+    spacing:           12px;
+}
+
+inputbar {
+    background-color: @bg-alt;
+    border-radius:     8px;
+    padding:           10px 14px;
+    children:          [ prompt, entry ];
+    spacing:           8px;
+}
+
+prompt {
+    background-color: transparent;
+    text-color:        @accent;
+}
+
+entry {
+    background-color: transparent;
+    text-color:        @fg;
+    placeholder:       "Search...";
+    placeholder-color: @fg-muted;
+}
+
+listview {
+    background-color: transparent;
+    lines:             8;
+    columns:           1;
+    spacing:           4px;
+    fixed-height:      false;
+    border:            0px;
+}
+
+element {
+    background-color: transparent;
+    text-color:        @fg;
+    border-radius:     8px;
+    padding:           8px 10px;
+    orientation:       horizontal;
+    spacing:           10px;
+}
+
+element selected {
+    background-color: @bg-selected;
+    text-color:         @fg;
+    border:             0px 0px 0px 3px;
+    border-color:       @accent;
+}
+
+element-icon {
+    size:        1.6em;
+    vertical-align: 0.5;
+}
+
+element-text {
+    vertical-align: 0.5;
+}

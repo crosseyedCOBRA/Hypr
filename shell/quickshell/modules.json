@@ -1,0 +1,37 @@
+{
+    "cpu": {
+        "enabled": true,
+        "screens": "all",
+        "tray": true
+    },
+    "cpuTemp": {
+        "enabled": true,
+        "screens": "all",
+        "tray": true
+    },
+    "gpuTemp": {
+        "enabled": true,
+        "screens": "all",
+        "tray": true
+    },
+    "kernel": {
+        "enabled": true,
+        "screens": "primary",
+        "tray": false
+    },
+    "network": {
+        "enabled": true,
+        "screens": "primary",
+        "tray": true
+    },
+    "stayAwake": {
+        "enabled": true,
+        "screens": "all",
+        "tray": false
+    },
+    "volume": {
+        "enabled": true,
+        "screens": "all",
+        "tray": false
+    }
+}
