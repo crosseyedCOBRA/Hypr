@@ -23,6 +23,9 @@ undecided.
 
 ## Building
 
+See [DEPENDENCIES.md](DEPENDENCIES.md) for exact build-dependency package
+names (Arch/pacman verified; other package managers still in progress).
+
 ```
 git clone <this repo> zaris
 cd zaris

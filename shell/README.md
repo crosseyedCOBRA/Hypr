@@ -50,7 +50,8 @@ eventually customize this rather than requiring hand-edits.
 
 ## Runtime dependencies
 
-Beyond what the WM itself needs to build:
+See [../DEPENDENCIES.md](../DEPENDENCIES.md) for exact package names
+(Arch/pacman verified so far). Beyond what the WM itself needs to build:
 
 - **quickshell** (`qs`) — the shell runtime itself
 - **pipewire**, **pipewire-pulse**, **wireplumber** (includes `wpctl`) — audio + the volume OSD
