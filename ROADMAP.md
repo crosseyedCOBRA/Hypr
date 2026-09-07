@@ -2,6 +2,10 @@
 
 Tracking what's done, what's planned, and what's still undecided for this fork.
 
+## Beta target
+
+Aiming for a beta/0.1 release as early as next weekend (no hard deadline — that's an earliest-case, not a commitment). The two items marked **[Beta blocker]** in the backlog below are what's actually standing between "works great on this one machine" and something a stranger could reasonably install; everything else in the backlog (compositor, dock, MPRIS, etc.) is normal post-beta polish, not something a 0.1 needs.
+
 ## Done / working
 
 - Dynamic tiling (dwindle + master) — inherited from upstream Hypr, unchanged
@@ -33,6 +37,8 @@ Tracking what's done, what's planned, and what's still undecided for this fork.
 
 ## Backlog — discussed, not started
 
+- **[Beta blocker] Ship the Quickshell shell config in version control.** Everything built this session and in earlier sessions — the bar, launcher, notification wiring, the volume OSD, Bar Settings, the overflow flyout, `modules.json`, `Colors.qml`, all of it — lives only as live dotfiles in `~/.config/quickshell` on this one machine, entirely untracked by any git repo. This is a bigger gap than it sounds: the built-in status bar was removed from the WM itself in favor of this external Quickshell shell (see Done above), so a fresh clone of this repo today builds a WM binary with no bar, no launcher, and no OSD/notifications at all until someone hand-reconstructs everything from scratch. Needs a decision on where it lives (a `shell/` directory in this same repo vs. a separate companion repo) before it can be tracked, documented, or handed to anyone else. Higher priority than the older "First-run setup" item below, which assumes the shell config already exists somewhere trackable.
+- **[Beta blocker] Verify on a non-OpenRC (systemd) system.** Everything OpenRC-specific here looks like it was already written defensively rather than actually coupled to OpenRC: the `exec-once=pipewire`/`pipewire-pulse`/`wireplumber` lines are already documented as harmless no-ops under systemd's socket activation, `powermenu.sh` already calls `loginctl` (the actual systemd-logind tool — elogind just reimplements its interface for non-systemd boxes), and `xautolock` for idle-lock doesn't care about init system at all (it just doesn't hook logind's suspend/lid signals the way `xss-lock` would). The WM binary itself (pure XCB/X11) has no init-system awareness anywhere. So this is expected to already work unmodified on a systemd distro — but it's never actually been tried there, only ever run on this one OpenRC box. Needs one clean install on a systemd machine to confirm before calling anything beta; if that goes well, worth considering `xss-lock` as a systemd-specific alternative to `xautolock` later for tighter suspend/lid integration (a nicety, not a requirement).
 - **True live drag-and-drop retiling.** Other windows should visibly reshuffle in real time while a window is being dragged over them, not just snap into place on release. This is genuinely new work — even Hyprland doesn't fully do this today.
 - **Bundled compositor.** Blur, shadows, and real anti-aliased rounded corners via XComposite/XDamage + GLX/EGL, likely adapting picom's (MIT-licensed) blur/rounded-corner shader code. (Animations and basic X-Shape-based rounded corners already work today without a compositor — this is about blur/shadows specifically, plus a visual upgrade to rounding.) This is the single biggest remaining piece of work and isn't sequenced or scoped yet.
 - **GUI settings app, full WM config.** The bar's own module config now has a GUI (see Done above); `hypr.conf` itself (keybinds, window rules, gaps/borders, etc.) is still hand-edit-only. Extending the GUI to cover that is still deferred until just before release.
@@ -45,7 +51,7 @@ Tracking what's done, what's planned, and what's still undecided for this fork.
 - **Night light / color temperature.** Redshift-style time-of-day blue light filter.
 - **Bluetooth applet.** Toggle/pair devices from the bar.
 - **Keybind cheat-sheet overlay.** Press a key, see all current keybinds — useful once the binds list grows.
-- **First-run setup + config export/import.** A different kind of item than the rest — about *shipping* the project rather than day-to-day use. This project's own roadmap already targets a public release as ZarisWM, but there's currently no path for someone else to pick this up cleanly beyond hand-copying dotfiles.
+- **First-run setup + config export/import.** A different kind of item than the rest — about *shipping* the project rather than day-to-day use. Assumes the shell config is already trackable (see the beta-blocker item above, which needs to land first) — this is about the next step after that: a real installer/first-run flow rather than just "the files exist in the repo now."
 - **Fullscreen rule for non-Steam-launcher games.** Lutris/Heroic don't relabel `WM_CLASS` the way Steam does (no `lutris_*`/`heroic_*` equivalent), so the one-rule-covers-everything trick doesn't carry over. Need to test an actual Lutris/Heroic game to find out whether it already goes fullscreen on its own (via its own EWMH fullscreen request, a separate pre-existing code path) or needs a per-game rule. Also worth testing whether adding a Lutris/Heroic game to Steam as a non-Steam shortcut and launching it through Steam picks up the same `steam_app_*` class (likely, since that's Steam's own overlay/launch wrapper doing the relabeling — but unconfirmed).
 
 ## Open decisions
