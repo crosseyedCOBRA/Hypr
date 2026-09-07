@@ -1,9 +1,8 @@
 /**
- * Cosmic theme -- colors match the qtile bar exactly (same palette pulled
- * from the wallpaper): deep space navy, indigo, teal moon-glow, nebula
- * purple, and coral planet-pink. Keep these hex values in sync with the
- * `colors` dict in ~/.config/qtile/config.py if you change one -- they're
- * duplicated here since rofi and qtile don't share a config format.
+ * Cosmic theme -- matches the bar's own palette (../quickshell/Colors.qml):
+ * deep space navy, indigo, teal moon-glow, nebula purple, coral. Keep these
+ * hex values in sync with Colors.qml by hand if you change one -- rofi
+ * can't import a QML file, so this is a separate, duplicated copy.
  */
 
 * {

@@ -35,11 +35,11 @@ eventually customize this rather than requiring hand-edits.
 3. Point your display manager's session entry (or however you start X) at
    `~/.config/zaris/start-zaris.sh`.
 4. **Edit for your own hardware before first launch:**
-   - `zaris.conf`'s monitor-layout `exec-once` line (the `xrandr --output ...`
-     one) and `start-zaris.sh`'s own `xrandr` call both hardcode this
-     machine's specific outputs/rotations/positions (3 monitors, one
-     portrait). Replace with your own — run `xrandr --query` to see your
-     output names.
+   - If you have more than one monitor, or want a non-default
+     resolution/rotation, add your own `xrandr` call to `start-zaris.sh`
+     (commented-out example already in there) — it runs before ZarisWM
+     connects, which is where monitor layout belongs. Left as a no-op by
+     default since single-monitor setups don't need it.
    - `HwmonSensor` usages in `Bar.qml` (CPU/GPU temp) hardcode sensor labels
      (`Tctl`, `edge`) specific to this machine's CPU/GPU. Check
      `grep . /sys/class/hwmon/hwmon*/temp*_label` on your own machine and
@@ -58,7 +58,7 @@ Beyond what the WM itself needs to build:
 - **rofi** — the power menu's picker
 - **maim** — screenshots (optionally **xclip** too, to also copy to clipboard)
 - **xautolock** + **betterlockscreen** (wraps `i3lock-color`) — idle-based screen lock
-- **xwallpaper** — sets the wallpaper in the example `exec-once` line (swap for whatever you prefer)
+- **xsetroot** (usually part of `xorg-xsetroot` / `x11-apps`) — sets the default solid-color background. Optionally **xwallpaper** instead, if you swap in an actual wallpaper image (see the comment in `zaris.conf`)
 - A **Nerd Font** (JetBrainsMono Nerd Font in the reference config) — the bar's icons are glyphs from it, and it's also set as dunst's font
 - An icon theme (Papirus-Dark in the reference `dunstrc`) — for notification icons
 - `loginctl` (systemd-logind, or **elogind** on a non-systemd system) — the power menu's suspend/reboot/shutdown actions

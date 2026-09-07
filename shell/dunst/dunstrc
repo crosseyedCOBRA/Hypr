@@ -1,7 +1,7 @@
-### Cosmic theme -- matches theme.rasi / qtile bar exactly.
-### Palette: deep space navy, indigo, teal moon-glow, nebula purple, coral.
-### Keep these hex values in sync with theme.rasi and qtile's colors dict
-### if you change one -- dunstrc, rofi, and qtile don't share a format.
+### Cosmic theme -- matches the bar's own palette (../quickshell/Colors.qml)
+### and ../rofi/theme.rasi. Deep space navy, indigo, teal moon-glow, nebula
+### purple, coral. Keep these hex values in sync by hand if you change one --
+### none of these three can import from each other.
 
 [global]
     monitor = 0

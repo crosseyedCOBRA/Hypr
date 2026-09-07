@@ -1,9 +1,7 @@
 #!/bin/bash
-# Power menu for OpenRC/elogind systems -- uses loginctl (provided by
-# elogind) instead of systemctl, since there's no systemd here.
-#
-# Adapted from ~/.config/qtile/powermenu.sh: only the Logout action differs,
-# since qtile's "qtile cmd-obj -o cmd -f shutdown" is qtile-specific.
+# Power menu, using loginctl -- works identically whether it's provided by
+# systemd-logind or elogind (its standalone reimplementation for non-systemd
+# systems), so no init-system-specific branching needed here.
 
 theme="$HOME/.config/rofi/theme.rasi"
 
