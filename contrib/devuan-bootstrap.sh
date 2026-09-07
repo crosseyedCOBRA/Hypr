@@ -4,7 +4,7 @@
 # ZarisWM dev box: build deps, ZarisWM itself, XLibre (in place of stock
 # Xorg), the Nix package manager, and Flatpak/Flathub.
 #
-# Target: Devuan Daedalus (6, Debian 12/bookworm base) on sysvinit. Run as
+# Target: Devuan Excalibur (6.x, Debian 13/trixie base) on sysvinit. Run as
 # a normal sudo-capable user, NOT as root — steps that need root use sudo
 # themselves.
 #
