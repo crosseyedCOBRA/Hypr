@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
 #
-# devuan-bootstrap.sh — provision a fresh Devuan base/server install into a
-# ZarisWM dev box: build deps, ZarisWM itself, XLibre (in place of stock
-# Xorg), the Nix package manager, and Flatpak/Flathub.
+# devuan-bootstrap.sh — take a fresh Devuan *server* install (the minimal,
+# no-desktop ISO — no X, no display manager, often no sudo yet) all the way
+# to a working ZarisWM session: build deps, ZarisWM itself and its
+# Quickshell-based shell, XLibre (in place of stock Xorg), the Nix package
+# manager, and Flatpak/Flathub.
 #
 # Target: Devuan Excalibur (6.x, Debian 13/trixie base) on sysvinit. Run as
-# a normal sudo-capable user, NOT as root — steps that need root use sudo
-# themselves.
+# a normal user, NOT as root — steps that need root use sudo themselves.
+#
+# The Devuan server ISO's installer only adds your user to the `sudo`
+# group if you left the root password blank during install. If you set a
+# root password instead, `sudo` won't even be installed yet — this script
+# can't fix that from a non-root account, so as root, first run:
+#   apt-get install -y sudo && usermod -aG sudo <your-username>
+# then log out and back in before running this script.
 #
 # Usage:
 #   ./devuan-bootstrap.sh [step ...]
@@ -19,20 +27,32 @@
 # wiring for non-systemd seat management). This script installs seatd and
 # the .deb package as the fast path, and prints a fallback source-build
 # recipe if keyboard/mouse input doesn't work after switching to it.
+#
+# There's no display manager here — the `shell` step wires up ~/.xinitrc
+# so `startx` launches ZarisWM directly.
 
 set -euo pipefail
 
 ZARIS_REPO_URL="${ZARIS_REPO_URL:-https://github.com/crosseyedcobra/zaris.git}"
 ZARIS_SRC_DIR="${ZARIS_SRC_DIR:-$HOME/src/zaris}"
 
-STEPS=(apt-base zaris-deps zaris-build seatd xlibre elogind nix flatpak)
+STEPS=(apt-base zaris-deps zaris-build shell seatd xlibre elogind nix flatpak)
 
 log() { printf '\n\033[1;32m==>\033[0m %s\n' "$*"; }
 warn() { printf '\n\033[1;33m==> WARNING:\033[0m %s\n' "$*" >&2; }
 
-require_not_root() {
+preflight() {
     if [ "$(id -u)" -eq 0 ]; then
         echo "Run this as your normal user (it calls sudo itself), not as root." >&2
+        exit 1
+    fi
+    if ! command -v sudo >/dev/null 2>&1 || ! sudo -v 2>/dev/null; then
+        cat >&2 <<EOF
+sudo isn't set up for $USER yet — this is common straight after a Devuan
+server install if you set a root password during setup. As root, run:
+    apt-get install -y sudo && usermod -aG sudo $USER
+then log out and back in and re-run this script.
+EOF
         exit 1
     fi
 }
@@ -72,9 +92,55 @@ step_zaris-build() {
     fi
     cmake -S "$ZARIS_SRC_DIR" -B "$ZARIS_SRC_DIR/build" -DCMAKE_BUILD_TYPE=Release
     cmake --build "$ZARIS_SRC_DIR/build" -j"$(nproc)"
-    sudo install -Dm755 "$ZARIS_SRC_DIR/build/zaris" /usr/local/bin/zaris
-    echo "Installed to /usr/local/bin/zaris. Shell (bar/launcher) is a"
-    echo "separate step — see $ZARIS_SRC_DIR/shell/README.md."
+    # shell/zaris/start-zaris.sh execs this exact path, so match it rather
+    # than a system-wide /usr/local/bin install.
+    install -Dm755 "$ZARIS_SRC_DIR/build/zaris" "$HOME/.local/bin/zaris"
+    echo "Installed to ~/.local/bin/zaris."
+}
+
+step_shell() {
+    log "Installing the Quickshell-based bar/launcher/OSD shell"
+    if [ ! -d "$ZARIS_SRC_DIR/shell" ]; then
+        echo "No $ZARIS_SRC_DIR/shell — run the 'zaris-build' step first." >&2
+        exit 1
+    fi
+    # Runtime deps available in Debian/Devuan repos (shell/README.md's
+    # full list). Not here: quickshell itself (see the `nix` step),
+    # betterlockscreen/i3lock-color (not packaged for Debian — install
+    # from https://github.com/pystardust/betterlockscreen manually), and
+    # a Nerd Font (also easiest via Nix, e.g.
+    # `nix profile install nixpkgs#nerd-fonts.jetbrains-mono`).
+    sudo apt-get -y install \
+        pipewire pipewire-pulse wireplumber \
+        dunst rofi maim xclip xautolock \
+        x11-xserver-utils papirus-icon-theme
+
+    for d in quickshell zaris dunst rofi; do
+        mkdir -p "$HOME/.config/$d"
+        cp -r "$ZARIS_SRC_DIR/shell/$d/." "$HOME/.config/$d/"
+    done
+    chmod +x "$HOME/.config/zaris/"*.sh
+
+    cat > "$HOME/.xinitrc" <<'EOF'
+#!/bin/sh
+exec "$HOME/.config/zaris/start-zaris.sh"
+EOF
+    chmod +x "$HOME/.xinitrc"
+
+    cat <<EOF
+
+Shell config copied to ~/.config/{quickshell,zaris,dunst,rofi}, and
+~/.xinitrc wired up to launch it — 'startx' will now bring up ZarisWM.
+
+Still worth doing by hand before first launch (see shell/README.md):
+- Add your own xrandr call in ~/.config/zaris/start-zaris.sh if you have
+  more than one monitor.
+- Fix the hardcoded hwmon sensor labels in
+  ~/.config/quickshell/Bar.qml for your own CPU/GPU
+  (grep . /sys/class/hwmon/hwmon*/temp*_label).
+- Swap the bar's logo (~/.config/quickshell/assets/artix.svg).
+- Install quickshell itself and a Nerd Font — see the 'nix' step.
+EOF
 }
 
 step_seatd() {
@@ -180,7 +246,7 @@ step_flatpak() {
 }
 
 main() {
-    require_not_root
+    preflight
     local steps=("$@")
     if [ "${#steps[@]}" -eq 0 ]; then
         steps=("${STEPS[@]}")
