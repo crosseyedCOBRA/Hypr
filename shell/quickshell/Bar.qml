@@ -51,6 +51,7 @@ Variants {
         // blend alpha) rendered as an opaque black square peeking out around
         // the edges instead of true transparency.
         Rectangle {
+            id: barSurface
             anchors.fill: parent
             color: Qt.rgba(0x0c / 255, 0x0b / 255, 0x1a / 255, 0.75) // Colors.bg @ ~bf alpha
 
@@ -226,7 +227,6 @@ Variants {
                     }
 
                     Image {
-                        id: ccLauncherIcon
                         // Control Center launcher - used to be a "..."
                         // chevron hidden whenever nothing was tray-enabled
                         // (back when Control Center was just the old flat
@@ -255,7 +255,11 @@ Variants {
                             anchors.fill: parent
                             onClicked: {
                                 ControlCenterState.panel = panel
-                                ControlCenterState.launcherItem = ccLauncherIcon
+                                // barSurface (the full-width bar background,
+                                // not this icon) is what Settings.qml
+                                // anchors under - centering it under the
+                                // whole bar rather than off to one side.
+                                ControlCenterState.barItem = barSurface
                                 ControlCenterState.visible = !ControlCenterState.visible
                             }
                         }

@@ -33,18 +33,21 @@ import Quickshell
 //
 // Built on PopupWindow rather than a FloatingWindow, same reasoning as
 // CalendarFlyout.qml/Tooltip.qml: anchors directly to the bar's own
-// Control Center launcher icon (ControlCenterState.launcherItem - opened
-// by clicking the gear button inside Control Center, which sets
-// SettingsState.targetItem to that icon right before opening this and
+// full-width background surface (ControlCenterState.barItem - opened by
+// clicking the gear button inside Control Center, which sets
+// SettingsState.targetItem to that surface right before opening this and
 // closing itself) via `anchor.item`, so it opens attached to the bar
 // rather than centered on screen - needing none of Zaris's WM-side
 // windowrule system, and no `title` property to match a rule against
 // (PopupWindow doesn't expose one at all - positioning is entirely
-// anchor-based now). Deliberately anchored to the bar icon and not the
+// anchor-based now). Deliberately anchored to the bar surface and not the
 // gear button that's actually clicked - Control Center closes at the same
 // moment Settings opens, and a PopupWindow can't anchor to a target
 // inside a window that's just gone invisible; the bar itself never
 // closes, so it stays a valid anchor regardless of Control Center's state.
+// Anchoring to the full-width surface (rather than the launcher icon
+// itself, as an earlier pass did) also means the centering math below is
+// centering under the whole bar, not just under a small icon near its edge.
 PopupWindow {
     id: settingsWindow
 
@@ -52,14 +55,13 @@ PopupWindow {
     color: Colors.bg
 
     implicitWidth: 680
-    implicitHeight: 460
+    implicitHeight: 720
 
     anchor.item: SettingsState.targetItem
-    // Right-aligned under the launcher icon rather than left-aligned like
-    // CalendarFlyout's under the clock - the icon sits near the right edge
-    // of the bar, so a left-aligned anchor would run this 680px-wide
-    // window off the right side of the monitor.
-    anchor.rect.x: SettingsState.targetItem ? SettingsState.targetItem.width - implicitWidth : 0
+    // Horizontally centered under the bar, same as CalendarFlyout centers
+    // under the clock - anchor.item is now the bar's full-width surface,
+    // not a small edge icon, so centering here means centered on screen.
+    anchor.rect.x: SettingsState.targetItem ? (SettingsState.targetItem.width - implicitWidth) / 2 : 0
     anchor.rect.y: SettingsState.targetItem ? SettingsState.targetItem.height + 10 : 0
 
     property string activeCategory: "bar"

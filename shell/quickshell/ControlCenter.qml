@@ -246,9 +246,9 @@ FloatingWindow {
                         icon: ""
                         tooltipText: "Settings"
                         // Settings now opens as a PopupWindow anchored to
-                        // the bar's own Control Center launcher icon
-                        // (ControlCenterState.launcherItem, set by
-                        // Bar.qml whenever that icon is clicked) rather
+                        // the bar's own full-width surface
+                        // (ControlCenterState.barItem, set by Bar.qml
+                        // whenever the launcher icon is clicked) rather
                         // than a centered FloatingWindow - not this
                         // button itself, since Control Center closes at
                         // the same time Settings opens, and a
@@ -257,7 +257,7 @@ FloatingWindow {
                         // testing: anchoring here directly never showed
                         // anything, regardless of statement order).
                         onClicked: {
-                            SettingsState.targetItem = ControlCenterState.launcherItem
+                            SettingsState.targetItem = ControlCenterState.barItem
                             SettingsState.visible = true
                             ControlCenterState.visible = false
                         }
