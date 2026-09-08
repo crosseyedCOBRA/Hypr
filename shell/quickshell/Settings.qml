@@ -13,6 +13,20 @@ import Quickshell
 // ROADMAP.md's "GUI settings app, full WM config" backlog item, which this
 // is the first step of).
 //
+// Phase 2 of the Noctalia-port effort (see ROADMAP.md): this is the first
+// existing screen rebuilt to actually use the ported widget library rather
+// than the original hand-rolled Rectangle/Text pattern - the plain
+// Flickable is now NScrollView (real scrollbar styling + smooth wheel
+// scroll), raw Text is now NText throughout (consistent typography off
+// Style.qml's tokens), and the two-Rectangle "pill pair" selectors
+// (screens: All/Primary, dock mode: Reserved/Floating) are now
+// NTabBar/NTabButton, a genuine behavioral and visual upgrade over the
+// hand-rolled pair (proper hover states, tooltip support, shared
+// segmented-control styling used the same way a future settings row would
+// elsewhere). The sidebar nav list is intentionally left as its own
+// pattern - it's a vertical category list, not a fit for NTabBar's
+// horizontal segmented-control shape.
+//
 // Still writes straight through the same ModulesConfig/DockConfig
 // FileViews as before - same JSON files, same live-apply behavior, just
 // reorganized under a nav shell instead of one flat list. Named
@@ -95,17 +109,17 @@ FloatingWindow {
                                 anchors.leftMargin: 10
                                 spacing: 10
 
-                                Text {
-                                    text: navItem.modelData.icon
+                                NIcon {
+                                    icon: navItem.modelData.icon
                                     color: settingsWindow.activeCategory === navItem.modelData.id ? Colors.text : Colors.textMuted
-                                    font.pixelSize: 14
+                                    pointSize: 14
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
 
-                                Text {
+                                NText {
                                     text: navItem.modelData.label
                                     color: settingsWindow.activeCategory === navItem.modelData.id ? Colors.text : Colors.textMuted
-                                    font.pixelSize: 13
+                                    pointSize: Style.fontSizeM
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
                             }
@@ -124,21 +138,20 @@ FloatingWindow {
                 width: parent.width - 180
                 height: parent.height
 
-                Flickable {
+                NScrollView {
+                    id: scrollView
                     anchors.fill: parent
                     anchors.margins: 20
-                    contentHeight: contentColumn.implicitHeight
-                    clip: true
 
                     Column {
                         id: contentColumn
-                        width: parent.width
+                        width: scrollView.availableWidth
                         spacing: 4
 
-                        Text {
+                        NText {
                             text: settingsWindow.categoryLabel(settingsWindow.activeCategory)
-                            font.pixelSize: 18
-                            font.bold: true
+                            pointSize: Style.fontSizeXL
+                            font.weight: Style.fontWeightBold
                             color: Colors.text
                             bottomPadding: 16
                         }
@@ -153,10 +166,10 @@ FloatingWindow {
                                 width: parent.width
                                 height: 28
 
-                                Text { text: "Module"; width: 170; color: Colors.textMuted; font.pixelSize: 12; font.bold: true }
-                                Text { text: "Enabled"; width: 80; color: Colors.textMuted; font.pixelSize: 12; font.bold: true }
-                                Text { text: "Screens"; width: 140; color: Colors.textMuted; font.pixelSize: 12; font.bold: true }
-                                Text { text: "In tray"; width: 80; color: Colors.textMuted; font.pixelSize: 12; font.bold: true }
+                                NText { text: "Module"; width: 170; color: Colors.textMuted; pointSize: Style.fontSizeS; font.weight: Style.fontWeightBold }
+                                NText { text: "Enabled"; width: 80; color: Colors.textMuted; pointSize: Style.fontSizeS; font.weight: Style.fontWeightBold }
+                                NText { text: "Screens"; width: 140; color: Colors.textMuted; pointSize: Style.fontSizeS; font.weight: Style.fontWeightBold }
+                                NText { text: "In tray"; width: 80; color: Colors.textMuted; pointSize: Style.fontSizeS; font.weight: Style.fontWeightBold }
                             }
 
                             Repeater {
@@ -170,11 +183,11 @@ FloatingWindow {
 
                                     readonly property var entry: ModulesConfig.configFile.adapter[modelData]
 
-                                    Text {
+                                    NText {
                                         text: settingsWindow.moduleNames[row.modelData] || row.modelData
                                         width: 170
                                         color: Colors.text
-                                        font.pixelSize: 13
+                                        pointSize: Style.fontSizeM
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
 
@@ -186,47 +199,22 @@ FloatingWindow {
 
                                     Item { width: 36; height: 1 }
 
-                                    Row {
-                                        width: 140
-                                        spacing: 6
+                                    NTabBar {
                                         anchors.verticalCenter: parent.verticalCenter
+                                        tabHeight: 22
 
-                                        Rectangle {
-                                            width: 44
-                                            height: 22
-                                            radius: 6
-                                            color: row.entry.screens === "all" || row.entry.screens === undefined ? Colors.pillActive : Colors.pill
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "All"
-                                                font.pixelSize: 11
-                                                color: Colors.text
-                                            }
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                onClicked: ModulesConfig.setScreens(row.modelData, "all")
-                                            }
+                                        NTabButton {
+                                            text: "All"
+                                            pointSize: Style.fontSizeS
+                                            checked: row.entry.screens === "all" || row.entry.screens === undefined
+                                            onClicked: ModulesConfig.setScreens(row.modelData, "all")
                                         }
 
-                                        Rectangle {
-                                            width: 60
-                                            height: 22
-                                            radius: 6
-                                            color: row.entry.screens === "primary" ? Colors.pillActive : Colors.pill
-
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: "Primary"
-                                                font.pixelSize: 11
-                                                color: Colors.text
-                                            }
-
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                onClicked: ModulesConfig.setScreens(row.modelData, "primary")
-                                            }
+                                        NTabButton {
+                                            text: "Primary"
+                                            pointSize: Style.fontSizeS
+                                            checked: row.entry.screens === "primary"
+                                            onClicked: ModulesConfig.setScreens(row.modelData, "primary")
                                         }
                                     }
 
@@ -238,12 +226,12 @@ FloatingWindow {
                                 }
                             }
 
-                            Text {
+                            NText {
                                 text: "\"Screens\" here only covers All / Primary - to pin a module to specific monitors by name, edit modules.json directly (\"screens\": [\"DisplayPort-1\"], matching `xrandr` output names)."
                                 width: parent.width
                                 wrapMode: Text.WordWrap
                                 color: Colors.textMuted
-                                font.pixelSize: 11
+                                pointSize: Style.fontSizeXS
                                 topPadding: 10
                             }
                         }
@@ -259,12 +247,12 @@ FloatingWindow {
                                 height: 32
                                 spacing: 12
 
-                                Text {
+                                NText {
                                     text: "Enabled"
                                     width: 170
                                     anchors.verticalCenter: parent.verticalCenter
                                     color: Colors.text
-                                    font.pixelSize: 13
+                                    pointSize: Style.fontSizeM
                                 }
 
                                 ToggleSwitch {
@@ -280,64 +268,40 @@ FloatingWindow {
                                 spacing: 12
                                 visible: DockConfig.enabled
 
-                                Text {
+                                NText {
                                     text: "Mode"
                                     width: 170
                                     anchors.verticalCenter: parent.verticalCenter
                                     color: Colors.text
-                                    font.pixelSize: 13
+                                    pointSize: Style.fontSizeM
                                 }
 
-                                Row {
-                                    spacing: 6
+                                NTabBar {
                                     anchors.verticalCenter: parent.verticalCenter
+                                    tabHeight: 22
 
-                                    Rectangle {
-                                        width: 80
-                                        height: 22
-                                        radius: 6
-                                        color: DockConfig.mode === "reserved" ? Colors.pillActive : Colors.pill
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "Reserved"
-                                            font.pixelSize: 11
-                                            color: Colors.text
-                                        }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: DockConfig.setMode("reserved")
-                                        }
+                                    NTabButton {
+                                        text: "Reserved"
+                                        pointSize: Style.fontSizeS
+                                        checked: DockConfig.mode === "reserved"
+                                        onClicked: DockConfig.setMode("reserved")
                                     }
 
-                                    Rectangle {
-                                        width: 80
-                                        height: 22
-                                        radius: 6
-                                        color: DockConfig.mode === "floating" ? Colors.pillActive : Colors.pill
-
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "Floating"
-                                            font.pixelSize: 11
-                                            color: Colors.text
-                                        }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: DockConfig.setMode("floating")
-                                        }
+                                    NTabButton {
+                                        text: "Floating"
+                                        pointSize: Style.fontSizeS
+                                        checked: DockConfig.mode === "floating"
+                                        onClicked: DockConfig.setMode("floating")
                                     }
                                 }
                             }
 
-                            Text {
+                            NText {
                                 text: "Reserved permanently reserves screen space at the bottom of the primary monitor, like the bar does. Floating overlays on top of windows instead without reserving space - windows can tile underneath it. Pin apps to the dock via right-click on a result in the launcher."
                                 width: parent.width
                                 wrapMode: Text.WordWrap
                                 color: Colors.textMuted
-                                font.pixelSize: 11
+                                pointSize: Style.fontSizeXS
                                 topPadding: 6
                             }
                         }
