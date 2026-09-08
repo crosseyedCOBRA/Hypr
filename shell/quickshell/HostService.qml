@@ -61,7 +61,31 @@ Singleton {
 
     property string pendingLogoName: ""
 
+    // Control Center's own display-name override - separate from the real
+    // Linux account name (`username`) and its GECOS real name (`realName`)
+    // entirely, so a user can show e.g. "crosseyedCOBRA" in the shell
+    // without touching `useradd`/`chfn`/anything account-level. Same
+    // FileView+JsonAdapter pattern as modules.json/dock.json - one small
+    // JSON file, hot-reloadable, hand-editable.
+    property FileView identityFile: FileView {
+        path: Quickshell.env("HOME") + "/.config/quickshell/identity.json"
+        watchChanges: true
+        onFileChanged: reload()
+        onAdapterUpdated: writeAdapter()
+
+        adapter: JsonAdapter {
+            property string customDisplayName: ""
+        }
+    }
+
+    function setCustomDisplayName(name) {
+        identityFile.adapter.customDisplayName = name
+    }
+
     readonly property string displayName: {
+        const custom = identityFile.adapter.customDisplayName
+        if (custom && custom.length > 0)
+            return custom
         if (realName && realName.length > 0)
             return realName
         if (username && username.length > 0)

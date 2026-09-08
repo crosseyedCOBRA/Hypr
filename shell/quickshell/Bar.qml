@@ -181,6 +181,13 @@ Variants {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
+                    NotificationIndicator {
+                        visible: ModulesConfig.showInBar("notifications", panel)
+                        textColor: Colors.textMuted
+                        activeColor: Colors.purple
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                     WallpaperIndicator {
                         visible: ModulesConfig.showInBar("wallpaper", panel)
                         textColor: Colors.textMuted
@@ -195,7 +202,10 @@ Variants {
                     }
 
                     VolumeControl {
-                        visible: ModulesConfig.showInBar("volume", panel)
+                        // Deliberately not gated by ModulesConfig.showInBar
+                        // ("volume", ...) - see VolumeControl.qml's own
+                        // header comment. Falls back to its own internal
+                        // `visible: sink && sink.ready` binding.
                         textColor: Colors.purple
                         anchors.verticalCenter: parent.verticalCenter
                     }
@@ -228,14 +238,19 @@ Variants {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    NIcon {
-                        // "more" chevron - opens ControlCenter.qml showing
-                        // whatever's configured as tray:true in modules.json
-                        // for this monitor. Hidden entirely when nothing is.
-                        visible: ModulesConfig.anyTrayVisible(panel)
-                        icon: "\uf142"
-                        pointSize: Style.fontSizeL
-                        color: Colors.textMuted
+                    Image {
+                        // Control Center launcher - used to be a "..."
+                        // chevron hidden whenever nothing was tray-enabled
+                        // (back when Control Center was just the old flat
+                        // hidden-tray flyout). Now always visible: the
+                        // panel always has real content regardless of any
+                        // one module's tray setting (the profile header,
+                        // toggle grid, quick-launch tiles, and audio
+                        // section aren't tray-gated at all).
+                        source: "file://" + Quickshell.env("HOME") + "/.config/quickshell/assets/zaris-logo-square.png"
+                        width: 20
+                        height: 20
+                        fillMode: Image.PreserveAspectFit
                         anchors.verticalCenter: parent.verticalCenter
 
                         MouseArea {

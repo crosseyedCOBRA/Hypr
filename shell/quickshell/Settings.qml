@@ -44,6 +44,7 @@ FloatingWindow {
     property string activeCategory: "bar"
 
     readonly property var categories: [
+        { id: "profile", label: "Profile", icon: "" },
         { id: "bar", label: "Bar", icon: "" },
         { id: "dock", label: "Dock", icon: "" }
     ]
@@ -62,6 +63,7 @@ FloatingWindow {
         bluetooth: "Bluetooth",
         mediaPlayer: "Media player",
         clipboard: "Clipboard history",
+        notifications: "Notifications",
         wallpaper: "Wallpaper picker",
         battery: "Battery status"
     })
@@ -156,6 +158,23 @@ FloatingWindow {
                             font.weight: Style.fontWeightBold
                             color: Colors.text
                             bottomPadding: 16
+                        }
+
+                        // ==================== Profile ====================
+                        Column {
+                            width: parent.width
+                            spacing: 12
+                            visible: settingsWindow.activeCategory === "profile"
+
+                            NTextInput {
+                                width: 260
+                                label: "Display name"
+                                description: "Shown in the Control Center - separate from your actual account username, which stays " + HostService.username + "."
+                                placeholderText: HostService.username
+                                text: HostService.identityFile.adapter.customDisplayName
+                                onEditingFinished: HostService.setCustomDisplayName(text)
+                                onAccepted: HostService.setCustomDisplayName(text)
+                            }
                         }
 
                         // ==================== Bar ====================

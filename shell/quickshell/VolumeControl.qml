@@ -3,6 +3,14 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 
+// Bar icon showing only mute state (matching Noctalia's own bar - a bare
+// speaker/muted-speaker icon, no percentage; the real volume level and
+// per-device sliders live in ControlCenter.qml's audio section now).
+// Deliberately not gated by ModulesConfig's "volume" tray flag in Bar.qml -
+// same reasoning as ControlCenter.qml's media card: Noctalia's own
+// reference bar keeps a volume icon visible at the same time its Control
+// Center has the richer audio section, so this stays bar-visible
+// unconditionally rather than disappearing once "volume" is tray-enabled.
 Item {
     id: root
 
@@ -12,24 +20,14 @@ Item {
     PwObjectTracker { objects: root.sink ? [root.sink] : [] }
 
     visible: root.sink && root.sink.ready
-    implicitWidth: rowLayout.implicitWidth
-    implicitHeight: rowLayout.implicitHeight
+    implicitWidth: icon.implicitWidth
+    implicitHeight: icon.implicitHeight
 
-    Row {
-        id: rowLayout
-        spacing: 4
-
-        NText {
-            text: (root.sink && root.sink.ready && root.sink.audio.muted) ? "󰖁" : ""
-            color: root.textColor
-            pointSize: Style.fontSizeL
-        }
-
-        NText {
-            text: (root.sink && root.sink.ready) ? (root.sink.audio.muted ? "muted" : Math.round(root.sink.audio.volume * 100) + "%") : ""
-            color: root.textColor
-            pointSize: Style.fontSizeL
-        }
+    NText {
+        id: icon
+        text: (root.sink && root.sink.ready && root.sink.audio.muted) ? "󰖁" : ""
+        color: root.textColor
+        pointSize: Style.fontSizeL
     }
 
     MouseArea {

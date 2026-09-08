@@ -174,19 +174,11 @@ FloatingWindow {
                             visible: faceImage.status === Image.Ready
                         }
 
-                        Rectangle {
+                        Image {
                             anchors.fill: parent
-                            radius: width / 2
-                            color: Colors.pill
+                            source: "file://" + Quickshell.env("HOME") + "/.config/quickshell/assets/zaris-logo-circle.png"
                             visible: faceImage.status !== Image.Ready
-
-                            NText {
-                                anchors.centerIn: parent
-                                text: (HostService.displayName || "U").charAt(0).toUpperCase()
-                                color: Colors.text
-                                pointSize: Style.fontSizeXL
-                                font.weight: Style.fontWeightBold
-                            }
+                            fillMode: Image.PreserveAspectFit
                         }
                     }
 

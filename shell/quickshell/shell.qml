@@ -25,4 +25,5 @@ ShellRoot {
     ClipboardHistoryPanel {}
     WallpaperPickerPanel {}
     CalendarFlyout {}
+    NotificationHistoryPanel {}
 }

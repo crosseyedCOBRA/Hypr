@@ -10,6 +10,8 @@ singleton ModulesConfig 1.0 ModulesConfig.qml
 singleton TooltipService 1.0 TooltipService.qml
 singleton ClipboardHistoryService 1.0 ClipboardHistoryService.qml
 singleton ClipboardHistoryPanelState 1.0 ClipboardHistoryPanelState.qml
+singleton NotificationHistoryService 1.0 NotificationHistoryService.qml
+singleton NotificationHistoryPanelState 1.0 NotificationHistoryPanelState.qml
 singleton WallpaperService 1.0 WallpaperService.qml
 singleton WallpaperPickerPanelState 1.0 WallpaperPickerPanelState.qml
 singleton CalendarFlyoutState 1.0 CalendarFlyoutState.qml
@@ -69,6 +71,8 @@ NightLight 1.0 NightLight.qml
 MediaWidget 1.0 MediaWidget.qml
 ClipboardIndicator 1.0 ClipboardIndicator.qml
 ClipboardHistoryPanel 1.0 ClipboardHistoryPanel.qml
+NotificationIndicator 1.0 NotificationIndicator.qml
+NotificationHistoryPanel 1.0 NotificationHistoryPanel.qml
 WallpaperIndicator 1.0 WallpaperIndicator.qml
 WallpaperPickerPanel 1.0 WallpaperPickerPanel.qml
 CalendarFlyout 1.0 CalendarFlyout.qml
