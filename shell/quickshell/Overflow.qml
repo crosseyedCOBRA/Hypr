@@ -180,6 +180,17 @@ FloatingWindow {
                     activeColor: Colors.teal
                 }
             }
+
+            Row {
+                spacing: 10
+                visible: ModulesConfig.showInTray("battery", OverflowState.panel) && BatteryService.batteryPresent
+
+                Text { text: "Battery"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                BatteryIndicator {
+                    textColor: Colors.textMuted
+                }
+            }
         }
     }
 }

@@ -189,6 +189,12 @@ Variants {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
+                    BatteryIndicator {
+                        visible: ModulesConfig.showInBar("battery", panel) && BatteryService.batteryPresent
+                        textColor: Colors.textMuted
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                     VolumeControl {
                         visible: ModulesConfig.showInBar("volume", panel)
                         textColor: Colors.purple

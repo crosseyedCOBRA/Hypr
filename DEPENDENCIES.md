@@ -79,12 +79,26 @@ itself.
 | Bluetooth applet (daemon) | `bluez` | `bluez` | `bluez` |
 | Bluetooth applet (service enablement) | `bluez-openrc` (only needed on a non-systemd Arch-based system like Artix — `bluetoothd` has no OpenRC script of its own otherwise; `rc-update add bluetoothd default && rc-service bluetoothd start`) | Not needed — `bluez`'s own systemd unit (`bluetooth.service`) is enabled automatically | Not needed — same as Debian, systemd-native |
 | Clipboard manager (change detection) | `clipnotify` | **Not packaged** — confirmed absent from packages.debian.org/sources.debian.org; being a tiny X11+Xfixes-only C program, building from source is the likely fix (not yet done, see ROADMAP.md) | `clipnotify` — confirmed via packages.fedoraproject.org |
+| Battery status bar module | `upower` | `upower` | `upower` — official on all three; needs the `upowerd` daemon actually running (confirmed active on the Arch reference machine via `busctl list`), most full desktop environments start this automatically but a minimal X11-only install might need `rc-update add upower default`/equivalent |
 
 The Arch-side data is what's actually installed and running on this
 project's own Artix reference machine. The Debian-side and Fedora-side
 data are both confirmed against real package metadata (a live Devuan
 Excalibur VM for Debian, packages.fedoraproject.org listings for
 Fedora), not guessed.
+
+## Optional dependencies (feature-gated, not required for the shell to run)
+
+Some in-progress `shell/` features are designed to degrade gracefully
+when their backing tool isn't installed (module hides itself / reports
+"not available" rather than erroring), so these are opt-in installs for
+whoever wants the specific feature, not core runtime deps like the table
+above.
+
+| Feature | Needs | Arch/pacman | Debian/apt | Fedora/dnf | Status |
+|---|---|---|---|---|---|
+| Brightness control — external monitors (DDC/CI) | `ddcutil` | `ddcutil` | `ddcutil` | `ddcutil` | Not installed on the reference machine; `BrightnessService.qml` port confirmed portable but not yet done — see ROADMAP.md |
+| Brightness control — internal laptop backlight | `brightnessctl` | `brightnessctl` | `brightnessctl` | `brightnessctl` | Same as above — not installed here (this machine has no `/sys/class/backlight` device to control anyway) |
 
 ## Building Quickshell from source (Debian only)
 
