@@ -141,8 +141,12 @@ FloatingWindow {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: Colors.pill
+                    color: stayAwakeToggleArea.containsMouse ? Colors.pillActive : Colors.pill
                     visible: ModulesConfig.showInTray("stayAwake", ControlCenterState.panel)
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
 
                     Column {
                         anchors.centerIn: parent
@@ -165,7 +169,9 @@ FloatingWindow {
                     }
 
                     MouseArea {
+                        id: stayAwakeToggleArea
                         anchors.fill: parent
+                        hoverEnabled: true
                         onClicked: stayAwakeToggle.toggle()
                     }
                 }
@@ -174,8 +180,12 @@ FloatingWindow {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: Colors.pill
+                    color: nightLightToggleArea.containsMouse ? Colors.pillActive : Colors.pill
                     visible: ModulesConfig.showInTray("nightLight", ControlCenterState.panel)
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
 
                     Column {
                         anchors.centerIn: parent
@@ -198,7 +208,9 @@ FloatingWindow {
                     }
 
                     MouseArea {
+                        id: nightLightToggleArea
                         anchors.fill: parent
+                        hoverEnabled: true
                         onClicked: nightLightToggle.toggle()
                     }
                 }
@@ -207,8 +219,12 @@ FloatingWindow {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: Colors.pill
+                    color: dndToggleArea.containsMouse ? Colors.pillActive : Colors.pill
                     visible: ModulesConfig.showInTray("dnd", ControlCenterState.panel)
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
 
                     Column {
                         anchors.centerIn: parent
@@ -231,7 +247,9 @@ FloatingWindow {
                     }
 
                     MouseArea {
+                        id: dndToggleArea
                         anchors.fill: parent
+                        hoverEnabled: true
                         onClicked: dndToggle.toggle()
                     }
                 }
@@ -240,8 +258,12 @@ FloatingWindow {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: Colors.pill
+                    color: bluetoothToggleArea.containsMouse ? Colors.pillActive : Colors.pill
                     visible: ModulesConfig.showInTray("bluetooth", ControlCenterState.panel)
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
 
                     Column {
                         anchors.centerIn: parent
@@ -264,7 +286,9 @@ FloatingWindow {
                     }
 
                     MouseArea {
+                        id: bluetoothToggleArea
                         anchors.fill: parent
+                        hoverEnabled: true
                         onClicked: bluetoothToggle.toggle()
                     }
                 }
@@ -273,8 +297,12 @@ FloatingWindow {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: Colors.pill
+                    color: networkToggleArea.containsMouse ? Colors.pillActive : Colors.pill
                     visible: ModulesConfig.showInTray("network", ControlCenterState.panel)
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
 
                     Column {
                         anchors.centerIn: parent
@@ -297,7 +325,9 @@ FloatingWindow {
                     }
 
                     MouseArea {
+                        id: networkToggleArea
                         anchors.fill: parent
+                        hoverEnabled: true
                         onClicked: networkToggle.toggle()
                     }
                 }
@@ -306,8 +336,12 @@ FloatingWindow {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: Colors.pill
+                    color: wifiToggleArea.containsMouse ? Colors.pillActive : Colors.pill
                     visible: ModulesConfig.showInTray("wifi", ControlCenterState.panel)
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
 
                     Column {
                         anchors.centerIn: parent
@@ -330,7 +364,9 @@ FloatingWindow {
                     }
 
                     MouseArea {
+                        id: wifiToggleArea
                         anchors.fill: parent
+                        hoverEnabled: true
                         onClicked: wifiToggle.toggle()
                     }
                 }
@@ -345,8 +381,12 @@ FloatingWindow {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: Colors.pill
+                    color: clipboardTileArea.containsMouse ? Colors.pillActive : Colors.pill
                     visible: ModulesConfig.showInTray("clipboard", ControlCenterState.panel)
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
 
                     Column {
                         anchors.centerIn: parent
@@ -368,7 +408,9 @@ FloatingWindow {
                     }
 
                     MouseArea {
+                        id: clipboardTileArea
                         anchors.fill: parent
+                        hoverEnabled: true
                         onClicked: ClipboardHistoryPanelState.visible = !ClipboardHistoryPanelState.visible
                     }
                 }
@@ -377,8 +419,12 @@ FloatingWindow {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: Colors.pill
+                    color: wallpaperTileArea.containsMouse ? Colors.pillActive : Colors.pill
                     visible: ModulesConfig.showInTray("wallpaper", ControlCenterState.panel)
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
 
                     Column {
                         anchors.centerIn: parent
@@ -400,7 +446,9 @@ FloatingWindow {
                     }
 
                     MouseArea {
+                        id: wallpaperTileArea
                         anchors.fill: parent
+                        hoverEnabled: true
                         onClicked: WallpaperPickerPanelState.visible = !WallpaperPickerPanelState.visible
                     }
                 }
@@ -409,7 +457,11 @@ FloatingWindow {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: Colors.pill
+                    color: screenshotTileArea.containsMouse ? Colors.pillActive : Colors.pill
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
 
                     Column {
                         anchors.centerIn: parent
@@ -431,7 +483,9 @@ FloatingWindow {
                     }
 
                     MouseArea {
+                        id: screenshotTileArea
                         anchors.fill: parent
+                        hoverEnabled: true
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
                         onClicked: mouse => {
                             const script = Quickshell.env("HOME") + "/.config/zaris/screenshot.sh"
