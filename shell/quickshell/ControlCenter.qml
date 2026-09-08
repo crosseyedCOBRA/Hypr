@@ -82,7 +82,7 @@ FloatingWindow {
     // categories - one fixed size generous enough for the tallest state
     // this panel can be in (every optional row/dial visible at once).
     implicitWidth: 404
-    implicitHeight: 770
+    implicitHeight: 830
 
     readonly property PwNode pwSink: Pipewire.defaultAudioSink
     readonly property PwNode pwSource: Pipewire.defaultAudioSource
@@ -617,6 +617,63 @@ FloatingWindow {
                                 Quickshell.execDetached([script])
                             else
                                 Quickshell.execDetached([script, "full"])
+                        }
+                    }
+                }
+            }
+
+            // Power profile - the other half of "we can add in weather and
+            // power profiles" from the fourth pass, deferred alongside
+            // weather at the time. Backed by power-profiles-daemon's own
+            // `powerprofilesctl` - see PowerProfileState.qml's header
+            // comment for why this is safe to ship even though that daemon
+            // isn't installed on this machine yet (sits harmlessly inert,
+            // same pattern as DDC brightness detection).
+            Row {
+                width: root.contentWidth
+                spacing: 8
+
+                Repeater {
+                    model: PowerProfileState.profiles
+
+                    Rectangle {
+                        id: profileTile
+                        required property string modelData
+                        width: (root.contentWidth - 16) / 3
+                        height: 44
+                        radius: Style.radiusS
+                        color: PowerProfileState.currentProfile === modelData
+                            ? Colors.pillActive
+                            : (profileArea.containsMouse ? Colors.pillActive : Colors.pill)
+
+                        Behavior on color {
+                            ColorAnimation { duration: Style.animationFast }
+                        }
+
+                        Row {
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            NIcon {
+                                anchors.verticalCenter: parent.verticalCenter
+                                icon: PowerProfileState.profileIcon(profileTile.modelData)
+                                color: PowerProfileState.currentProfile === profileTile.modelData ? Colors.coral : Colors.textMuted
+                                pointSize: Style.fontSizeM
+                            }
+
+                            NText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: PowerProfileState.profileLabel(profileTile.modelData)
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeS
+                            }
+                        }
+
+                        MouseArea {
+                            id: profileArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: PowerProfileState.setProfile(profileTile.modelData)
                         }
                     }
                 }

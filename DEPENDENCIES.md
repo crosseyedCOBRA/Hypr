@@ -99,6 +99,7 @@ above.
 |---|---|---|---|---|---|
 | Brightness control — external monitors (DDC/CI) | `ddcutil` | `ddcutil` | `ddcutil` | `ddcutil` | **Installed and confirmed working end-to-end** against three real DDC/CI monitors — `qs ipc call brightness increase/decrease` genuinely changes hardware brightness now, keybinds uncommented in the live `zaris.conf`. Installing it surfaced a real X11-vs-DRM connector-naming bug in `BrightnessService.qml` (now fixed) — see ROADMAP.md for the full story. |
 | Brightness control — internal laptop backlight | `brightnessctl` | `brightnessctl` | `brightnessctl` | `brightnessctl` | Installed, but this machine has no `/sys/class/backlight` device to control (desktop, not a laptop) — still only degrade-gracefully verified, not end-to-end. Needs real laptop hardware to test further. |
+| Power profile switching (Control Center) | `power-profiles-daemon` (Arch also has a dedicated `-openrc` init-script package, matching this project's OpenRC-based setup) | `power-profiles-daemon` | `power-profiles-daemon` | `power-profiles-daemon` | **Not installed on this machine** — built ahead of it per this project's own established practice (see ROADMAP.md). Confirmed only that the feature degrades gracefully without it (no crash, no false-active profile shown, `Process` simply never fires when `powerprofilesctl` doesn't exist). Needs the daemon actually installed and enabled to verify the real toggle end-to-end. |
 
 ## Building Quickshell from source (Debian only)
 
