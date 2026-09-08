@@ -13,8 +13,22 @@ import Quickshell.Services.Pipewire
 // Deliberately skipped two pieces of Noctalia's version that have no Zaris
 // equivalent yet: an avatar/large clock (the bar's own clock is already
 // visible behind this panel, wherever it's opened from) and weather+
-// forecast/power-profile (no weather service or power-profile switching
-// exists here - real future features, not folded into this pass).
+// power-profile (no weather service or power-profile switching exists
+// here - weather specifically is next up, per the user, not folded into
+// this pass).
+//
+// Seventh pass: the media card is now a real "now playing" card (album art
+// as a full-bleed background behind title/artist/album, a real seek
+// scrubber via MediaService.seekByRatio(), bigger playback buttons) rather
+// than a small thumbnail+text row, matching Noctalia's reference Control
+// Center screenshot (not just its bar, which is all earlier passes had to
+// go on). The old single master-volume row is now a real audio section -
+// separate Output and Input columns, each with its own mute button,
+// elided device `description` (Quickshell's Pipewire `PwNode`, confirmed
+// via its qmltypes - `name`/`description`/`nickname` all exist, `description`
+// reads closest to Noctalia's own verbose device names), and volume
+// slider - `Pipewire.defaultAudioSource` (the input/mic device) is newly
+// tracked alongside the existing `defaultAudioSink`.
 //
 // Third pass: dropped the Home/System tab split from the second pass -
 // the user asked for the "System" section folded back into the main view
@@ -54,10 +68,13 @@ FloatingWindow {
     // categories - one fixed size generous enough for the tallest state
     // this panel can be in (every optional row/dial visible at once).
     implicitWidth: 404
-    implicitHeight: 560
+    implicitHeight: 700
 
     readonly property PwNode pwSink: Pipewire.defaultAudioSink
-    PwObjectTracker { objects: root.pwSink ? [root.pwSink] : [] }
+    readonly property PwNode pwSource: Pipewire.defaultAudioSource
+    PwObjectTracker {
+        objects: (root.pwSink ? [root.pwSink] : []).concat(root.pwSource ? [root.pwSource] : [])
+    }
 
     readonly property int labelWidth: 80
     readonly property int contentWidth: 380
@@ -500,37 +517,89 @@ FloatingWindow {
 
             Row {
                 width: root.contentWidth
-                spacing: 10
-                visible: ModulesConfig.showInTray("volume", ControlCenterState.panel) && !!root.pwSink && root.pwSink.ready
+                spacing: 14
+                visible: ModulesConfig.showInTray("volume", ControlCenterState.panel) && ((!!root.pwSink && root.pwSink.ready) || (!!root.pwSource && root.pwSource.ready))
 
-                NIconButton {
-                    baseSize: 26
-                    icon: (root.pwSink && root.pwSink.ready && root.pwSink.audio.muted) ? "󰖁" : ""
-                    anchors.verticalCenter: parent.verticalCenter
-                    onClicked: {
-                        if (root.pwSink)
-                            root.pwSink.audio.muted = !root.pwSink.audio.muted
+                Column {
+                    width: (parent.width - parent.spacing) / 2
+                    spacing: 4
+                    visible: !!root.pwSink && root.pwSink.ready
+
+                    Row {
+                        width: parent.width
+                        spacing: 6
+
+                        NIconButton {
+                            baseSize: 22
+                            icon: (root.pwSink && root.pwSink.ready && root.pwSink.audio.muted) ? "󰖁" : ""
+                            anchors.verticalCenter: parent.verticalCenter
+                            onClicked: {
+                                if (root.pwSink)
+                                    root.pwSink.audio.muted = !root.pwSink.audio.muted
+                            }
+                        }
+
+                        NText {
+                            text: root.pwSink && root.pwSink.ready ? root.pwSink.description : ""
+                            width: parent.width - 22 - parent.spacing
+                            elide: Text.ElideRight
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    NSlider {
+                        width: parent.width
+                        from: 0
+                        to: 1.0
+                        value: root.pwSink && root.pwSink.ready ? root.pwSink.audio.volume : 0
+                        onMoved: {
+                            if (root.pwSink)
+                                root.pwSink.audio.volume = value
+                        }
                     }
                 }
 
-                NSlider {
-                    width: parent.width - 26 - 40 - parent.spacing * 2
-                    anchors.verticalCenter: parent.verticalCenter
-                    from: 0
-                    to: 1.0
-                    value: root.pwSink && root.pwSink.ready ? root.pwSink.audio.volume : 0
-                    onMoved: {
-                        if (root.pwSink)
-                            root.pwSink.audio.volume = value
-                    }
-                }
+                Column {
+                    width: (parent.width - parent.spacing) / 2
+                    spacing: 4
+                    visible: !!root.pwSource && root.pwSource.ready
 
-                NText {
-                    text: root.pwSink && root.pwSink.ready ? Math.round(root.pwSink.audio.volume * 100) + "%" : ""
-                    width: 40
-                    color: Colors.textMuted
-                    pointSize: Style.fontSizeS
-                    anchors.verticalCenter: parent.verticalCenter
+                    Row {
+                        width: parent.width
+                        spacing: 6
+
+                        NIconButton {
+                            baseSize: 22
+                            icon: (root.pwSource && root.pwSource.ready && root.pwSource.audio.muted) ? "" : ""
+                            anchors.verticalCenter: parent.verticalCenter
+                            onClicked: {
+                                if (root.pwSource)
+                                    root.pwSource.audio.muted = !root.pwSource.audio.muted
+                            }
+                        }
+
+                        NText {
+                            text: root.pwSource && root.pwSource.ready ? root.pwSource.description : ""
+                            width: parent.width - 22 - parent.spacing
+                            elide: Text.ElideRight
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    NSlider {
+                        width: parent.width
+                        from: 0
+                        to: 1.0
+                        value: root.pwSource && root.pwSource.ready ? root.pwSource.audio.volume : 0
+                        onMoved: {
+                            if (root.pwSource)
+                                root.pwSource.audio.volume = value
+                        }
+                    }
                 }
             }
 
@@ -551,33 +620,62 @@ FloatingWindow {
                 spacing: 14
 
                 Column {
+                    id: mediaCard
                     width: 230
                     spacing: 8
-                    visible: ModulesConfig.showInTray("mediaPlayer", ControlCenterState.panel) && !!MediaService.currentPlayer
+                    // Deliberately not gated by ModulesConfig.showInTray("mediaPlayer", ...)
+                    // like every other tile here - Noctalia's own reference
+                    // bar screenshot shows a compact "now playing" widget in
+                    // the bar *and* this same rich card in the Control
+                    // Center simultaneously, unlike Clipboard/Wallpaper/etc.
+                    // (Control-Center-only there). Zaris's single tray
+                    // flag can't express "both places" - keeping
+                    // mediaPlayer's tray default false (bar-visible, via
+                    // Bar.qml's own MediaWidget) and just always showing
+                    // this card when something's playing gets the same
+                    // dual-display without sacrificing the bar's mini
+                    // scrubber.
+                    visible: !!MediaService.currentPlayer
 
-                    Row {
+                    Item {
                         width: parent.width
-                        spacing: 10
+                        height: 130
+                        clip: true
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Style.radiusS
+                            color: Colors.pill
+                        }
 
                         Image {
-                            width: 44
-                            height: 44
+                            anchors.fill: parent
                             source: MediaService.trackArtUrl
                             visible: MediaService.trackArtUrl !== ""
                             fillMode: Image.PreserveAspectCrop
-                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            gradient: Gradient {
+                                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.1) }
+                                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.8) }
+                            }
                         }
 
                         Column {
-                            width: parent.width - 44 - parent.spacing
-                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            anchors.bottom: parent.bottom
+                            anchors.margins: 10
+                            width: parent.width - 20
+                            spacing: 1
 
                             NText {
                                 text: MediaService.trackTitle
                                 width: parent.width
                                 elide: Text.ElideRight
                                 color: Colors.text
-                                pointSize: Style.fontSizeS
+                                pointSize: Style.fontSizeM
                                 font.weight: Style.fontWeightBold
                             }
 
@@ -585,31 +683,49 @@ FloatingWindow {
                                 text: MediaService.trackArtist
                                 width: parent.width
                                 elide: Text.ElideRight
+                                color: Colors.coral
+                                pointSize: Style.fontSizeS
+                            }
+
+                            NText {
+                                text: MediaService.trackAlbum
+                                width: parent.width
+                                visible: MediaService.trackAlbum !== ""
+                                elide: Text.ElideRight
                                 color: Colors.textMuted
                                 pointSize: Style.fontSizeXS
                             }
                         }
                     }
 
+                    NSlider {
+                        width: parent.width
+                        from: 0
+                        to: 1.0
+                        enabled: MediaService.canSeek
+                        value: MediaService.trackLength > 0 ? Math.min(1, MediaService.currentPosition / MediaService.trackLength) : 0
+                        onMoved: MediaService.seekByRatio(value)
+                    }
+
                     Row {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: 14
+                        spacing: 18
 
                         NIconButton {
-                            baseSize: 26
+                            baseSize: 28
                             icon: ""
                             enabled: MediaService.canGoPrevious
                             onClicked: MediaService.previous()
                         }
 
                         NIconButton {
-                            baseSize: 30
+                            baseSize: 34
                             icon: MediaService.isPlaying ? "" : ""
                             onClicked: MediaService.playPause()
                         }
 
                         NIconButton {
-                            baseSize: 26
+                            baseSize: 28
                             icon: ""
                             enabled: MediaService.canGoNext
                             onClicked: MediaService.next()

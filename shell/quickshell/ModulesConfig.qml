@@ -49,7 +49,7 @@ QtObject {
             property var gpuTemp: ({ enabled: true, screens: "all", tray: false })
             property var network: ({ enabled: true, screens: "primary", tray: true })
             property var wifi: ({ enabled: true, screens: "all", tray: true })
-            property var volume: ({ enabled: true, screens: "all", tray: false })
+            property var volume: ({ enabled: true, screens: "all", tray: true })
             property var stayAwake: ({ enabled: true, screens: "all", tray: false })
             property var nightLight: ({ enabled: true, screens: "all", tray: false })
             property var dnd: ({ enabled: true, screens: "all", tray: true })
