@@ -245,7 +245,22 @@ FloatingWindow {
                         baseSize: 26
                         icon: ""
                         tooltipText: "Settings"
-                        onClicked: SettingsState.visible = !SettingsState.visible
+                        // Settings now opens as a PopupWindow anchored to
+                        // the bar's own Control Center launcher icon
+                        // (ControlCenterState.launcherItem, set by
+                        // Bar.qml whenever that icon is clicked) rather
+                        // than a centered FloatingWindow - not this
+                        // button itself, since Control Center closes at
+                        // the same time Settings opens, and a
+                        // PopupWindow can't anchor to a target inside a
+                        // window that's just been hidden (confirmed by
+                        // testing: anchoring here directly never showed
+                        // anything, regardless of statement order).
+                        onClicked: {
+                            SettingsState.targetItem = ControlCenterState.launcherItem
+                            SettingsState.visible = true
+                            ControlCenterState.visible = false
+                        }
                     }
 
                     NIconButton {

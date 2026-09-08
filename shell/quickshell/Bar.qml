@@ -226,6 +226,7 @@ Variants {
                     }
 
                     Image {
+                        id: ccLauncherIcon
                         // Control Center launcher - used to be a "..."
                         // chevron hidden whenever nothing was tray-enabled
                         // (back when Control Center was just the old flat
@@ -254,6 +255,7 @@ Variants {
                             anchors.fill: parent
                             onClicked: {
                                 ControlCenterState.panel = panel
+                                ControlCenterState.launcherItem = ccLauncherIcon
                                 ControlCenterState.visible = !ControlCenterState.visible
                             }
                         }
