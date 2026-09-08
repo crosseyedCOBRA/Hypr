@@ -5,14 +5,14 @@ This is a living document — as the WM or shell gains/drops a dependency,
 this needs updating alongside it.
 
 **Status**: All three of Arch/pacman, Debian/apt, and Fedora/dnf now have
-package names filled in below. Arch and Debian have both had the real
-test: a from-scratch `cmake` configure + build against exactly the
-listed package set, confirmed clean on Artix and on a Devuan Excalibur
-VM. Fedora/dnf's names are confirmed against real
-packages.fedoraproject.org listings but haven't had that same
-from-scratch build attempt — no Fedora box available to do one on yet.
-See [ROADMAP.md](ROADMAP.md)'s dependency-list beta blocker for what
-"done" still requires.
+package names filled in below, and all three have had the real test: a
+from-scratch `cmake` configure + build against exactly the listed
+package set, confirmed clean on Artix, on a Devuan Excalibur VM (for
+Debian/apt), and now on a real Fedora Linux 44 VM too (unattended
+`virt-install` + kickstart, `dnf install` the exact list below, `cmake`
+configure, build — all clean, no gaps). See
+[ROADMAP.md](ROADMAP.md)'s dependency-list beta blocker for the full
+writeup.
 
 ## Build dependencies
 
@@ -42,7 +42,7 @@ sudo apt-get install build-essential cmake pkg-config git \
   libxcb-xinerama0-dev libxcb-cursor-dev libxcb-keysyms1-dev \
   libxcb-icccm4-dev libxcb-util-dev libxcb-shape0-dev
 
-# Fedora/dnf — names verified against real packages.fedoraproject.org listings, build not yet attempted
+# Fedora/dnf — verified by an actual clean configure + build against exactly this set, on a real Fedora Linux 44 VM
 sudo dnf install gcc-c++ cmake pkgconf-pkg-config git \
   glib2-devel libxcb-devel xcb-util-devel xcb-util-wm-devel \
   xcb-util-keysyms-devel xcb-util-cursor-devel
