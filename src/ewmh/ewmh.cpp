@@ -83,8 +83,25 @@ void EWMH::updateClientList() {
         if (w.getDrawable() > 0 && !w.getIsFloating())
             windowsList.push_back(w.getDrawable());
 
-    // hack
-    xcb_window_t* ArrWindowList = &windowsList[0];
+    // A real, previously-latent crash found while testing the fullscreen-
+    // exit dock bug below: &windowsList[0] on an empty vector is undefined
+    // behavior - silently in a Release build (this codebase's normal build
+    // type, so this was invoking UB on every affected call rather than
+    // ever visibly crashing), but caught cleanly by _GLIBCXX_ASSERTIONS in
+    // a Debug build (confirmed via gdb: SIGABRT inside
+    // std::vector::operator[], called from here via eventMapWindow).
+    // `windowsList` is empty whenever there are currently zero *tiled*
+    // (non-floating) windows tracked - not a rare edge case: it's the
+    // normal state right after login before any tiled window has opened
+    // yet (only the bar/dock, both floating), or any time the last tiled
+    // window closes while floating-only windows (a dialog, the launcher,
+    // Settings, a fullscreen game's own dock-hiding aside) remain. This
+    // function runs on essentially every window map/unmap/destroy event,
+    // so this was a real, frequently-reachable UB path, not a theoretical
+    // one - passing an empty (nullptr) array with length 0 is exactly what
+    // EWMH's own `_NET_CLIENT_LIST` semantics call for anyway when nothing
+    // tiled is open, so this is the correct behavior, not just a guard.
+    xcb_window_t* ArrWindowList = windowsList.empty() ? nullptr : &windowsList[0];
 
     xcb_change_property(g_pWindowManager->DisplayConnection, XCB_PROP_MODE_REPLACE, g_pWindowManager->Screen->root, ZARISATOMS["_NET_CLIENT_LIST"], XCB_ATOM_WINDOW,
         32, windowsList.size(), ArrWindowList);

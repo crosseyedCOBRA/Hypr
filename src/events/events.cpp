@@ -154,12 +154,51 @@ void Events::eventUnmapWindow(xcb_generic_event_t* event) {
 
     Debug::log(LOG, "Unmap called on " + std::to_string(E->window) + " -> " + PCLOSEDWINDOW->getName());
 
-    // Previously skipped entirely for dock-type windows, which meant hiding
-    // one (e.g. Dock.qml's DockConfig.enabled toggle) never released its
-    // reserved space - closeWindowAllChecks already has correct dock
-    // handling (removes it from tracking, then recalcAllDocks()), it just
-    // wasn't being called. Never mattered before since nothing ever hid a
-    // dock-type window at runtime until the dock's enable/disable toggle.
+    // Real bug fixed here: a dock-type window (bar/dock) that's currently
+    // getDockHidden() was unmapped by our OWN processDockHiding() - a
+    // fullscreen window on its monitor's active workspace, not a real
+    // close. That function relies on Events::ignoredEvents (a sequence-
+    // number match) to suppress the resulting UnmapNotify, but that list
+    // is capped at 20 entries (see recieveEvent()) and gets trimmed on
+    // every subsequent real event - under the burst of window/property
+    // events a game exiting fullscreen generates, the entry for the dock's
+    // own unmap can be evicted before its UnmapNotify actually arrives,
+    // so it falls through to here and gets treated as a genuine close:
+    // closeWindowAllChecks() removes it from tracking permanently via
+    // removeWindowFromVectorSafe(), so it's simply gone from `windows` by
+    // the time processDockHiding() later wants to re-map it once
+    // getHasFullscreenWindow() clears - explaining the reported "bar on
+    // the primary monitor never comes back after exiting a fullscreen
+    // game" (a `qs kill` + relaunch works around it only because that
+    // creates a brand new window with a fresh MapRequest, unrelated to
+    // this stale tracking entry).
+    //
+    // getDockHidden() is ONLY ever set true by that one code path (grep
+    // confirms no other setDockHidden(true) call site exists), so it's a
+    // reliable signal - independent of the racy sequence-number list -
+    // that THIS specific unmap is our own intentional, temporary hide
+    // rather than a real close or the dock's config-disable toggle (which
+    // unmaps via Quickshell's own `visible: false`, with getDockHidden()
+    // staying false throughout). Skipping closeWindowAllChecks entirely
+    // for this case leaves the window's tracking entry intact so
+    // processDockHiding()'s later xcb_map_window() call has something to
+    // act on.
+    //
+    // Previously skipped entirely for dock-type windows, which meant
+    // hiding one (e.g. Dock.qml's DockConfig.enabled toggle) never
+    // released its reserved space - closeWindowAllChecks already has
+    // correct dock handling (removes it from tracking, then
+    // recalcAllDocks()) for that genuine-close/disable case, it just
+    // wasn't being called at all before. Never mattered before since
+    // nothing ever hid a dock-type window at runtime until the dock's
+    // enable/disable toggle - this fullscreen-hide interaction is a
+    // second, later runtime source of dock unmaps that toggle didn't
+    // anticipate.
+    if (PCLOSEDWINDOW->getDock() && PCLOSEDWINDOW->getDockHidden()) {
+        Debug::log(LOG, "Unmap on " + std::to_string(E->window) + " is our own fullscreen dock-hide, not a real close - skipping closeWindowAllChecks");
+        return;
+    }
+
     g_pWindowManager->closeWindowAllChecks(E->window);
 
     // refocus on new window
