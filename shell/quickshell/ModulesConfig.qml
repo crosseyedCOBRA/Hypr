@@ -15,6 +15,17 @@ import Quickshell.Io
 //                           - "primary" matches Quickshell.screens[0]; an
 //                             array matches exact xrandr/RandR output names
 //                             (see `xrandr` output, e.g. "DisplayPort-1").
+//                             Only applies to showInBar() - the bar really
+//                             is per-monitor (Bar.qml instantiates one per
+//                             screen), so this avoids e.g. duplicating
+//                             kernel/network across every monitor's bar.
+//                             showInTray() ignores it entirely: the Control
+//                             Center is one single global window, not
+//                             per-monitor, so a module scoped "primary"
+//                             would otherwise vanish from it entirely
+//                             whenever it's opened from a non-primary
+//                             monitor's chevron - confusing for something
+//                             with no other per-monitor meaning.
 //   "tray": true/false     - false (default): shown directly in the bar.
 //                             true: still active, but tucked into the
 //                             overflow flyout (the "..." icon) instead of
@@ -22,7 +33,7 @@ import Quickshell.Io
 QtObject {
     id: root
 
-    readonly property var moduleIds: ["kernel", "cpu", "cpuTemp", "gpuTemp", "network", "volume", "stayAwake", "nightLight", "dnd", "bluetooth", "mediaPlayer", "clipboard", "wallpaper", "battery"]
+    readonly property var moduleIds: ["kernel", "cpu", "cpuTemp", "gpuTemp", "network", "wifi", "volume", "stayAwake", "nightLight", "dnd", "bluetooth", "mediaPlayer", "clipboard", "wallpaper", "battery"]
 
     property FileView configFile: FileView {
         path: Quickshell.env("HOME") + "/.config/quickshell/modules.json"
@@ -36,7 +47,8 @@ QtObject {
             property var cpu: ({ enabled: true, screens: "all", tray: false })
             property var cpuTemp: ({ enabled: true, screens: "all", tray: false })
             property var gpuTemp: ({ enabled: true, screens: "all", tray: false })
-            property var network: ({ enabled: true, screens: "primary", tray: false })
+            property var network: ({ enabled: true, screens: "primary", tray: true })
+            property var wifi: ({ enabled: true, screens: "all", tray: true })
             property var volume: ({ enabled: true, screens: "all", tray: false })
             property var stayAwake: ({ enabled: true, screens: "all", tray: false })
             property var nightLight: ({ enabled: true, screens: "all", tray: false })
@@ -71,7 +83,7 @@ QtObject {
 
     function showInTray(id, panel) {
         const e = root._entry(id)
-        return e.enabled !== false && !!e.tray && root._screenMatches(id, panel)
+        return e.enabled !== false && !!e.tray
     }
 
     function anyTrayVisible(panel) {

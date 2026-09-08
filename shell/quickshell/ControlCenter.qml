@@ -240,34 +240,165 @@ FloatingWindow {
                         }
                     }
                 }
+
+                Rectangle {
+                    width: root.tileWidth
+                    height: root.tileHeight
+                    radius: Style.radiusS
+                    color: Colors.pill
+                    visible: ModulesConfig.showInTray("network", ControlCenterState.panel)
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        NetworkToggle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            textColor: Colors.textMuted
+                            activeColor: Colors.blue
+                        }
+
+                        NText {
+                            text: "Network"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                        }
+                    }
+                }
+
+                Rectangle {
+                    width: root.tileWidth
+                    height: root.tileHeight
+                    radius: Style.radiusS
+                    color: Colors.pill
+                    visible: ModulesConfig.showInTray("wifi", ControlCenterState.panel)
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        WifiToggle {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            textColor: Colors.textMuted
+                            activeColor: Colors.blue
+                        }
+
+                        NText {
+                            text: "Wifi"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                        }
+                    }
+                }
             }
 
-            Row {
+            Grid {
                 width: root.contentWidth
+                columns: 2
                 spacing: 10
 
-                NIconButton {
-                    baseSize: 30
-                    icon: ""
-                    tooltipText: "Clipboard History"
+                Rectangle {
+                    width: root.tileWidth
+                    height: root.tileHeight
+                    radius: Style.radiusS
+                    color: Colors.pill
                     visible: ModulesConfig.showInTray("clipboard", ControlCenterState.panel)
-                    onClicked: ClipboardHistoryPanelState.visible = !ClipboardHistoryPanelState.visible
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        NIcon {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            icon: ""
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXL
+                        }
+
+                        NText {
+                            text: "Clipboard"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: ClipboardHistoryPanelState.visible = !ClipboardHistoryPanelState.visible
+                    }
                 }
 
-                NIconButton {
-                    baseSize: 30
-                    icon: ""
-                    tooltipText: "Wallpaper Picker"
+                Rectangle {
+                    width: root.tileWidth
+                    height: root.tileHeight
+                    radius: Style.radiusS
+                    color: Colors.pill
                     visible: ModulesConfig.showInTray("wallpaper", ControlCenterState.panel)
-                    onClicked: WallpaperPickerPanelState.visible = !WallpaperPickerPanelState.visible
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        NIcon {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            icon: ""
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXL
+                        }
+
+                        NText {
+                            text: "Wallpaper"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: WallpaperPickerPanelState.visible = !WallpaperPickerPanelState.visible
+                    }
                 }
 
-                NIconButton {
-                    baseSize: 30
-                    icon: ""
-                    tooltipText: "Screenshot (right-click: full)"
-                    onClicked: Quickshell.execDetached([Quickshell.env("HOME") + "/.config/zaris/screenshot.sh"])
-                    onRightClicked: Quickshell.execDetached([Quickshell.env("HOME") + "/.config/zaris/screenshot.sh", "full"])
+                Rectangle {
+                    width: root.tileWidth
+                    height: root.tileHeight
+                    radius: Style.radiusS
+                    color: Colors.pill
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        NIcon {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            icon: ""
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXL
+                        }
+
+                        NText {
+                            text: "Screenshot"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        onClicked: mouse => {
+                            const script = Quickshell.env("HOME") + "/.config/zaris/screenshot.sh"
+                            if (mouse.button === Qt.LeftButton)
+                                Quickshell.execDetached([script])
+                            else
+                                Quickshell.execDetached([script, "full"])
+                        }
+                    }
                 }
             }
 
@@ -315,18 +446,6 @@ FloatingWindow {
                 NText { text: "Kernel"; width: root.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 KernelVersion {
-                    textColor: Colors.blue
-                }
-            }
-
-            Row {
-                width: root.contentWidth
-                spacing: 10
-                visible: ModulesConfig.showInTray("network", ControlCenterState.panel)
-
-                NText { text: "Network"; width: root.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
-
-                NetworkStatus {
                     textColor: Colors.blue
                 }
             }

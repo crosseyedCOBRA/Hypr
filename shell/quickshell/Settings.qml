@@ -54,6 +54,7 @@ FloatingWindow {
         cpuTemp: "CPU temperature",
         gpuTemp: "GPU temperature",
         network: "Network status",
+        wifi: "Wifi",
         volume: "Volume",
         stayAwake: "Stay awake",
         nightLight: "Night light",

@@ -63,6 +63,8 @@ NListView 1.0 NListView.qml
 NGridView 1.0 NGridView.qml
 StayAwake 1.0 StayAwake.qml
 Dnd 1.0 Dnd.qml
+NetworkToggle 1.0 NetworkToggle.qml
+WifiToggle 1.0 WifiToggle.qml
 NightLight 1.0 NightLight.qml
 MediaWidget 1.0 MediaWidget.qml
 ClipboardIndicator 1.0 ClipboardIndicator.qml
