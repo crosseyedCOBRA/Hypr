@@ -16,7 +16,7 @@ import Quickshell
 ShellRoot {
     Launcher {}
     Bar {}
-    Overflow {}
+    ControlCenter {}
     Settings {}
     OSD {}
     Dock {}

@@ -16,7 +16,7 @@ singleton CalendarFlyoutState 1.0 CalendarFlyoutState.qml
 singleton HostService 1.0 HostService.qml
 singleton BatteryService 1.0 BatteryService.qml
 singleton BrightnessService 1.0 BrightnessService.qml
-singleton OverflowState 1.0 OverflowState.qml
+singleton ControlCenterState 1.0 ControlCenterState.qml
 singleton SettingsState 1.0 SettingsState.qml
 singleton OSDState 1.0 OSDState.qml
 singleton DockConfig 1.0 DockConfig.qml
@@ -72,7 +72,7 @@ CalendarFlyout 1.0 CalendarFlyout.qml
 BatteryIndicator 1.0 BatteryIndicator.qml
 BluetoothIndicator 1.0 BluetoothIndicator.qml
 BluetoothPanel 1.0 BluetoothPanel.qml
-Overflow 1.0 Overflow.qml
+ControlCenter 1.0 ControlCenter.qml
 Settings 1.0 Settings.qml
 OSD 1.0 OSD.qml
 DockIcons 1.0 DockIcons.qml

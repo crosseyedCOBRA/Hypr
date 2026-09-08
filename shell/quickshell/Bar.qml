@@ -273,7 +273,7 @@ Variants {
                     }
 
                     NIcon {
-                        // "more" overflow chevron - opens Overflow.qml showing
+                        // "more" chevron - opens ControlCenter.qml showing
                         // whatever's configured as tray:true in modules.json
                         // for this monitor. Hidden entirely when nothing is.
                         visible: ModulesConfig.anyTrayVisible(panel)
@@ -285,8 +285,8 @@ Variants {
                         MouseArea {
                             anchors.fill: parent
                             onClicked: {
-                                OverflowState.panel = panel
-                                OverflowState.visible = !OverflowState.visible
+                                ControlCenterState.panel = panel
+                                ControlCenterState.visible = !ControlCenterState.visible
                             }
                         }
                     }
