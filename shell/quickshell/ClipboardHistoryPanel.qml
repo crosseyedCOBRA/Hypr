@@ -8,6 +8,17 @@ import Quickshell.Io
 // of this shell rather than introducing a second, differently-styled
 // picker convention). Left-click copies an entry back to the clipboard and
 // closes the panel; right-click removes just that entry; Escape closes.
+//
+// Phase 2 of the Noctalia-port effort (see ROADMAP.md): the "Clear" button
+// is now NButton, the plain ListView is now NListView (real scrollbar
+// styling + edge-fade gradient masks), and every raw Text is now NText.
+// The search field's bordered-Rectangle+TextInput is deliberately left
+// as-is rather than switched to NTextInput - its custom Up/Down/Return/
+// Escape key handling (result-list navigation) needs `Keys.onXxx` attached
+// handlers declared directly inside the TextField itself, which isn't
+// something an external alias reference into NTextInput's own internal
+// TextField can cleanly carry, so this stays a custom field rather than
+// fighting the ported widget's shape for a feature it doesn't expose.
 FloatingWindow {
     id: panel
 
@@ -97,52 +108,40 @@ FloatingWindow {
                     }
                 }
 
-                Rectangle {
+                NButton {
                     id: clearAllButton
-                    width: 70
-                    height: 36
-                    radius: 6
-                    color: Colors.pill
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Clear"
-                        color: Colors.coral
-                        font.pixelSize: 12
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: ClipboardHistoryService.wipeAll()
-                    }
+                    text: "Clear"
+                    fontSize: Style.fontSizeS
+                    backgroundColor: Colors.pill
+                    textColor: Colors.coral
+                    onClicked: ClipboardHistoryService.wipeAll()
                 }
             }
 
-            Text {
+            NText {
                 visible: !ClipboardHistoryService.clipnotifyAvailable
                 width: parent.width
                 wrapMode: Text.WordWrap
                 text: "clipnotify isn't installed - clipboard history won't capture anything new until it is."
                 color: Colors.coral
-                font.pixelSize: 11
+                pointSize: Style.fontSizeXS
             }
 
-            ListView {
+            NListView {
                 id: resultList
                 width: parent.width
                 height: parent.height - searchField.height - parent.spacing - (ClipboardHistoryService.clipnotifyAvailable ? 0 : 20)
-                clip: true
                 model: panel.filteredItems
                 currentIndex: 0
 
                 property var currentModelData: count > 0 ? model[currentIndex] : null
 
-                Text {
+                NText {
                     visible: resultList.count === 0
                     anchors.centerIn: parent
                     text: "No clipboard history yet"
                     color: Colors.textMuted
-                    font.pixelSize: 13
+                    pointSize: Style.fontSizeM
                 }
 
                 delegate: Rectangle {
@@ -156,21 +155,21 @@ FloatingWindow {
                         anchors.margins: 8
                         spacing: 10
 
-                        Text {
+                        NText {
                             width: 20
                             anchors.verticalCenter: parent.verticalCenter
                             text: panel.glyphFor(modelData.contentType)
                             color: Colors.blue
-                            font.pixelSize: 14
+                            pointSize: Style.fontSizeM
                             horizontalAlignment: Text.AlignHCenter
                         }
 
-                        Text {
+                        NText {
                             width: parent.width - 30
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.preview
                             color: Colors.text
-                            font.pixelSize: 13
+                            pointSize: Style.fontSizeM
                             elide: Text.ElideRight
                         }
                     }
