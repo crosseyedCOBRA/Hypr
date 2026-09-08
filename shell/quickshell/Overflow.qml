@@ -70,6 +70,12 @@ FloatingWindow {
                 textColor: Colors.textMuted
                 activeColor: Colors.blue
             }
+
+            BluetoothIndicator {
+                visible: ModulesConfig.showInTray("bluetooth", OverflowState.panel)
+                textColor: Colors.textMuted
+                activeColor: Colors.blue
+            }
         }
     }
 }

@@ -21,4 +21,5 @@ ShellRoot {
     OSD {}
     Dock {}
     PinDialog {}
+    BluetoothPanel {}
 }

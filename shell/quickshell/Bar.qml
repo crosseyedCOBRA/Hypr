@@ -143,6 +143,13 @@ Variants {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
+                    BluetoothIndicator {
+                        visible: ModulesConfig.showInBar("bluetooth", panel)
+                        textColor: Colors.textMuted
+                        activeColor: Colors.blue
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                     Text {
                         text: ""
                         font.pixelSize: 16

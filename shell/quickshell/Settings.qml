@@ -27,7 +27,8 @@ FloatingWindow {
         network: "Network status",
         volume: "Volume",
         stayAwake: "Stay awake",
-        nightLight: "Night light"
+        nightLight: "Night light",
+        bluetooth: "Bluetooth"
     })
 
     Rectangle {
