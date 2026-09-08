@@ -9,15 +9,27 @@ import Quickshell.Io
 // present-but-currently-unused adapter (`ip -o link show` confirmed it
 // exists, `nmcli radio wifi` reports the radio itself as a single global
 // on/off independent of which specific wifi device is present).
+//
+// `toggle()` is exposed (see StayAwake.qml's header comment for the full
+// reasoning) so ControlCenter.qml's quick-toggle tile can drive this from
+// its own full-tile MouseArea instead of just this component's small
+// icon; `clickable: false` disables this component's own internal
+// MouseArea for that case, avoiding a double-toggle.
 Item {
     id: root
 
     property color textColor: "white"
     property color activeColor: "white"
+    property bool clickable: true
     property bool radioEnabled: true
 
     implicitWidth: icon.implicitWidth
     implicitHeight: icon.implicitHeight
+
+    function toggle() {
+        Quickshell.execDetached(["nmcli", "radio", "wifi", root.radioEnabled ? "off" : "on"])
+        root.radioEnabled = !root.radioEnabled
+    }
 
     NText {
         id: icon
@@ -28,10 +40,8 @@ Item {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: {
-            Quickshell.execDetached(["nmcli", "radio", "wifi", root.radioEnabled ? "off" : "on"])
-            root.radioEnabled = !root.radioEnabled
-        }
+        enabled: root.clickable
+        onClicked: root.toggle()
     }
 
     Process {

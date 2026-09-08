@@ -149,6 +149,8 @@ FloatingWindow {
                         spacing: 4
 
                         StayAwake {
+                            id: stayAwakeToggle
+                            clickable: false
                             anchors.horizontalCenter: parent.horizontalCenter
                             textColor: Colors.textMuted
                             activeColor: Colors.coral
@@ -160,6 +162,11 @@ FloatingWindow {
                             color: Colors.textMuted
                             pointSize: Style.fontSizeXS
                         }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: stayAwakeToggle.toggle()
                     }
                 }
 
@@ -175,6 +182,8 @@ FloatingWindow {
                         spacing: 4
 
                         NightLight {
+                            id: nightLightToggle
+                            clickable: false
                             anchors.horizontalCenter: parent.horizontalCenter
                             textColor: Colors.textMuted
                             activeColor: Colors.blue
@@ -186,6 +195,11 @@ FloatingWindow {
                             color: Colors.textMuted
                             pointSize: Style.fontSizeXS
                         }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: nightLightToggle.toggle()
                     }
                 }
 
@@ -201,6 +215,8 @@ FloatingWindow {
                         spacing: 4
 
                         Dnd {
+                            id: dndToggle
+                            clickable: false
                             anchors.horizontalCenter: parent.horizontalCenter
                             textColor: Colors.textMuted
                             activeColor: Colors.red
@@ -212,6 +228,11 @@ FloatingWindow {
                             color: Colors.textMuted
                             pointSize: Style.fontSizeXS
                         }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: dndToggle.toggle()
                     }
                 }
 
@@ -227,6 +248,8 @@ FloatingWindow {
                         spacing: 4
 
                         BluetoothIndicator {
+                            id: bluetoothToggle
+                            clickable: false
                             anchors.horizontalCenter: parent.horizontalCenter
                             textColor: Colors.textMuted
                             activeColor: Colors.blue
@@ -238,6 +261,11 @@ FloatingWindow {
                             color: Colors.textMuted
                             pointSize: Style.fontSizeXS
                         }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: bluetoothToggle.toggle()
                     }
                 }
 
@@ -253,6 +281,8 @@ FloatingWindow {
                         spacing: 4
 
                         NetworkToggle {
+                            id: networkToggle
+                            clickable: false
                             anchors.horizontalCenter: parent.horizontalCenter
                             textColor: Colors.textMuted
                             activeColor: Colors.blue
@@ -264,6 +294,11 @@ FloatingWindow {
                             color: Colors.textMuted
                             pointSize: Style.fontSizeXS
                         }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: networkToggle.toggle()
                     }
                 }
 
@@ -279,6 +314,8 @@ FloatingWindow {
                         spacing: 4
 
                         WifiToggle {
+                            id: wifiToggle
+                            clickable: false
                             anchors.horizontalCenter: parent.horizontalCenter
                             textColor: Colors.textMuted
                             activeColor: Colors.blue
@@ -290,6 +327,11 @@ FloatingWindow {
                             color: Colors.textMuted
                             pointSize: Style.fontSizeXS
                         }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: wifiToggle.toggle()
                     }
                 }
             }

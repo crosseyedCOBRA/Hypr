@@ -19,16 +19,30 @@ import Quickshell.Io
 // default`-based lookup, like NetworkStatus.qml's, would lose the
 // interface name the moment it's disconnected, since a disconnected
 // interface holds no default route).
+//
+// `toggle()` is exposed (see StayAwake.qml's header comment for the full
+// reasoning) so ControlCenter.qml's quick-toggle tile can drive this from
+// its own full-tile MouseArea instead of just this component's small
+// icon; `clickable: false` disables this component's own internal
+// MouseArea for that case, avoiding a double-toggle.
 Item {
     id: root
 
     property color textColor: "white"
     property color activeColor: "white"
+    property bool clickable: true
     property string interfaceName: ""
     property bool connected: false
 
     implicitWidth: icon.implicitWidth
     implicitHeight: icon.implicitHeight
+
+    function toggle() {
+        if (root.interfaceName === "")
+            return
+        Quickshell.execDetached(["nmcli", "device", root.connected ? "disconnect" : "connect", root.interfaceName])
+        root.connected = !root.connected
+    }
 
     NText {
         id: icon
@@ -39,12 +53,8 @@ Item {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: {
-            if (root.interfaceName === "")
-                return
-            Quickshell.execDetached(["nmcli", "device", root.connected ? "disconnect" : "connect", root.interfaceName])
-            root.connected = !root.connected
-        }
+        enabled: root.clickable
+        onClicked: root.toggle()
     }
 
     Process {
