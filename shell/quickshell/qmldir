@@ -36,6 +36,9 @@ NIconButtonHot 1.0 NIconButtonHot.qml
 NTabBar 1.0 NTabBar.qml
 NTabButton 1.0 NTabButton.qml
 NTabView 1.0 NTabView.qml
+NCollapsible 1.0 NCollapsible.qml
+NScrollText 1.0 NScrollText.qml
+NRadioButton 1.0 NRadioButton.qml
 StayAwake 1.0 StayAwake.qml
 NightLight 1.0 NightLight.qml
 BluetoothIndicator 1.0 BluetoothIndicator.qml
