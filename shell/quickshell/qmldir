@@ -3,6 +3,7 @@ singleton Style 1.0 Style.qml
 singleton LauncherState 1.0 LauncherState.qml
 singleton StayAwakeState 1.0 StayAwakeState.qml
 singleton NightLightState 1.0 NightLightState.qml
+singleton NightLightService 1.0 NightLightService.qml
 singleton MediaService 1.0 MediaService.qml
 singleton BluetoothPanelState 1.0 BluetoothPanelState.qml
 singleton ModulesConfig 1.0 ModulesConfig.qml

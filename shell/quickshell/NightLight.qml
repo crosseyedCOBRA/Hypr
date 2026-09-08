@@ -14,8 +14,6 @@ Item {
     property color textColor: "white"
     property color activeColor: "white"
 
-    readonly property int nightTemp: 4500
-
     implicitWidth: rowLayout.implicitWidth
     implicitHeight: rowLayout.implicitHeight
 
@@ -41,7 +39,7 @@ Item {
         onClicked: {
             NightLightState.active = !NightLightState.active
             if (NightLightState.active) {
-                Quickshell.execDetached(["redshift", "-O", String(root.nightTemp)])
+                Quickshell.execDetached(["redshift", "-O", String(NightLightService.nightTemp)])
             } else {
                 Quickshell.execDetached(["redshift", "-x"])
             }
