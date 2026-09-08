@@ -1,4 +1,5 @@
 singleton Colors 1.0 Colors.qml
+singleton Style 1.0 Style.qml
 singleton LauncherState 1.0 LauncherState.qml
 singleton StayAwakeState 1.0 StayAwakeState.qml
 singleton NightLightState 1.0 NightLightState.qml
@@ -18,6 +19,7 @@ KernelVersion 1.0 KernelVersion.qml
 NetworkStatus 1.0 NetworkStatus.qml
 VolumeControl 1.0 VolumeControl.qml
 SystemTrayRow 1.0 SystemTrayRow.qml
+ToggleSwitch 1.0 ToggleSwitch.qml
 StayAwake 1.0 StayAwake.qml
 NightLight 1.0 NightLight.qml
 BluetoothIndicator 1.0 BluetoothIndicator.qml

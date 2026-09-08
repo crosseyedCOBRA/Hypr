@@ -50,6 +50,19 @@ separate install step — see [shell/README.md](shell/README.md) for what's
 in it and how to install it. Without it, the WM runs but has no panel,
 launcher, or on-screen feedback of any kind.
 
+## Third-party code
+
+Some of `shell/quickshell/Style.qml`'s design-token scale (font sizes,
+radii, margins, animation durations) is adapted from
+[noctalia-dev/noctalia](https://github.com/noctalia-dev/noctalia)'s own
+`Commons/Style.qml`, as it existed at the MIT-licensed
+[v4.7.7](https://github.com/noctalia-dev/noctalia/tree/v4.7.7) release (the
+project has since been rewritten in C++ under a different architecture) —
+stripped of its dynamic per-user scale multipliers and bar-density/position
+sizing logic, which don't apply to Zaris's simpler, fixed-layout bar. See
+[ROADMAP.md](ROADMAP.md) for what else, if anything, gets adapted the same
+way going forward.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).

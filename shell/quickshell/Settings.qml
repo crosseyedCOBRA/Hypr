@@ -174,28 +174,10 @@ FloatingWindow {
                                         anchors.verticalCenter: parent.verticalCenter
                                     }
 
-                                    Rectangle {
-                                        width: 44
-                                        height: 22
-                                        radius: 11
+                                    ToggleSwitch {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        color: row.entry.enabled !== false ? Colors.pillActive : Colors.pill
-                                        border.color: Colors.textMuted
-                                        border.width: 1
-
-                                        Rectangle {
-                                            width: 16
-                                            height: 16
-                                            radius: 8
-                                            y: 2
-                                            x: (row.entry.enabled !== false) ? parent.width - width - 2 : 2
-                                            color: Colors.text
-                                        }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: ModulesConfig.setEnabled(row.modelData, row.entry.enabled === false)
-                                        }
+                                        checked: row.entry.enabled !== false
+                                        onToggled: newChecked => ModulesConfig.setEnabled(row.modelData, newChecked)
                                     }
 
                                     Item { width: 36; height: 1 }
@@ -244,28 +226,10 @@ FloatingWindow {
                                         }
                                     }
 
-                                    Rectangle {
-                                        width: 44
-                                        height: 22
-                                        radius: 11
+                                    ToggleSwitch {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        color: row.entry.tray === true ? Colors.pillActive : Colors.pill
-                                        border.color: Colors.textMuted
-                                        border.width: 1
-
-                                        Rectangle {
-                                            width: 16
-                                            height: 16
-                                            radius: 8
-                                            y: 2
-                                            x: (row.entry.tray === true) ? parent.width - width - 2 : 2
-                                            color: Colors.text
-                                        }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: ModulesConfig.setTray(row.modelData, row.entry.tray !== true)
-                                        }
+                                        checked: row.entry.tray === true
+                                        onToggled: newChecked => ModulesConfig.setTray(row.modelData, newChecked)
                                     }
                                 }
                             }
@@ -299,28 +263,10 @@ FloatingWindow {
                                     font.pixelSize: 13
                                 }
 
-                                Rectangle {
-                                    width: 44
-                                    height: 22
-                                    radius: 11
+                                ToggleSwitch {
                                     anchors.verticalCenter: parent.verticalCenter
-                                    color: DockConfig.enabled ? Colors.pillActive : Colors.pill
-                                    border.color: Colors.textMuted
-                                    border.width: 1
-
-                                    Rectangle {
-                                        width: 16
-                                        height: 16
-                                        radius: 8
-                                        y: 2
-                                        x: DockConfig.enabled ? parent.width - width - 2 : 2
-                                        color: Colors.text
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        onClicked: DockConfig.setEnabled(!DockConfig.enabled)
-                                    }
+                                    checked: DockConfig.enabled
+                                    onToggled: newChecked => DockConfig.setEnabled(newChecked)
                                 }
                             }
 

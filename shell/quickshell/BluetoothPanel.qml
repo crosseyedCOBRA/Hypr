@@ -73,28 +73,10 @@ FloatingWindow {
                         font.pixelSize: 13
                     }
 
-                    Rectangle {
-                        width: 44
-                        height: 22
-                        radius: 11
+                    ToggleSwitch {
                         anchors.verticalCenter: parent.verticalCenter
-                        color: panel.adapter && panel.adapter.enabled ? Colors.pillActive : Colors.pill
-                        border.color: Colors.textMuted
-                        border.width: 1
-
-                        Rectangle {
-                            width: 16
-                            height: 16
-                            radius: 8
-                            y: 2
-                            x: (panel.adapter && panel.adapter.enabled) ? parent.width - width - 2 : 2
-                            color: Colors.text
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: panel.adapter.enabled = !panel.adapter.enabled
-                        }
+                        checked: !!(panel.adapter && panel.adapter.enabled)
+                        onToggled: newChecked => panel.adapter.enabled = newChecked
                     }
                 }
 
