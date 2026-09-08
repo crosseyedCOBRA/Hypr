@@ -11,6 +11,14 @@ import Quickshell.Widgets
 // Usage counts are persisted to Quickshell's reserved state directory and
 // used to sort results (most-launched first), so frequently used apps rise
 // to the top over time.
+//
+// Phase 2 of the Noctalia-port effort (see ROADMAP.md): the plain ListView
+// is now NListView (real scrollbar styling + edge-fade gradient masks) and
+// the delegate's raw Text is now NText. The search field keeps its own
+// bordered-Rectangle+TextInput, same reasoning as every other search/
+// filter field in this shell - its Up/Down/Return/Escape key handling
+// isn't reachable through NTextInput's inputItem alias from outside the
+// component.
 FloatingWindow {
     id: launcherWindow
 
@@ -132,11 +140,10 @@ FloatingWindow {
                 }
             }
 
-            ListView {
+            NListView {
                 id: resultList
                 width: parent.width
                 height: parent.height - searchField.height - parent.spacing
-                clip: true
                 model: launcherWindow.filteredApps
                 currentIndex: 0
 
@@ -160,11 +167,11 @@ FloatingWindow {
                             source: Quickshell.iconPath(modelData.icon, true)
                         }
 
-                        Text {
+                        NText {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.name
                             color: Colors.text
-                            font.pixelSize: 15
+                            pointSize: Style.fontSizeL
                         }
                     }
 
