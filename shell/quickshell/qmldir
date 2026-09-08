@@ -39,6 +39,7 @@ Tooltip 1.0 Tooltip.qml
 NDivider 1.0 NDivider.qml
 NHeader 1.0 NHeader.qml
 NLinearGauge 1.0 NLinearGauge.qml
+NCircularGauge 1.0 NCircularGauge.qml
 NSettingsIndicator 1.0 NSettingsIndicator.qml
 NLabel 1.0 NLabel.qml
 NButton 1.0 NButton.qml
