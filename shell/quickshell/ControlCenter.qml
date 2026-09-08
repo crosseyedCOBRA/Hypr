@@ -82,7 +82,7 @@ FloatingWindow {
     // categories - one fixed size generous enough for the tallest state
     // this panel can be in (every optional row/dial visible at once).
     implicitWidth: 404
-    implicitHeight: 720
+    implicitHeight: 770
 
     readonly property PwNode pwSink: Pipewire.defaultAudioSink
     readonly property PwNode pwSource: Pipewire.defaultAudioSource
@@ -875,6 +875,51 @@ FloatingWindow {
                         valueText: BatteryService.batteryPercentage + "%"
                         icon: BatteryService.batteryIcon
                         fillColor: BatteryService.isCriticalBattery(BatteryService.primaryDevice) ? Colors.red : (BatteryService.isLowBattery(BatteryService.primaryDevice) ? Colors.coral : Colors.teal)
+                    }
+                }
+            }
+
+            // Weather - the one piece of the reference screenshot deferred
+            // out of the seventh Control Center pass specifically so it
+            // wouldn't be bundled into an already-large media/audio change.
+            // No ModulesConfig tray gate - unlike the toggle/quick-launch
+            // tiles above, there's no existing bar presence to preserve or
+            // hide, and a location/weather API is opt-in by nature (simply
+            // shows "Loading weather..." until the first fetch resolves,
+            // never a silent failure).
+            Row {
+                width: root.contentWidth
+                spacing: 12
+
+                NText {
+                    text: WeatherService.haveData ? WeatherService.iconGlyphCurrent : ""
+                    color: Colors.blue
+                    pointSize: Style.fontSizeXXXL
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                Column {
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 1
+
+                    NText {
+                        text: {
+                            if (WeatherService.errorText !== "")
+                                return "Weather unavailable"
+                            if (!WeatherService.haveData)
+                                return "Loading weather..."
+                            return Math.round(WeatherService.temperatureF) + "°F  " + WeatherService.conditionTextCurrent
+                        }
+                        color: Colors.text
+                        pointSize: Style.fontSizeM
+                        font.weight: Style.fontWeightBold
+                    }
+
+                    NText {
+                        visible: WeatherService.haveData
+                        text: WeatherService.locationName + "  H:" + Math.round(WeatherService.highF) + "°  L:" + Math.round(WeatherService.lowF) + "°"
+                        color: Colors.textMuted
+                        pointSize: Style.fontSizeS
                     }
                 }
             }

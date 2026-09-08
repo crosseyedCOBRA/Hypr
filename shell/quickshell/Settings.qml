@@ -175,6 +175,28 @@ FloatingWindow {
                                 onEditingFinished: HostService.setCustomDisplayName(text)
                                 onAccepted: HostService.setCustomDisplayName(text)
                             }
+
+                            NTextInput {
+                                width: 260
+                                label: "Weather location"
+                                description: WeatherService.manualLocationQuery === ""
+                                    ? "Auto-detected via your IP" + (WeatherService.haveData ? " as " + WeatherService.locationName : "") + ". Type a city to override, or leave blank."
+                                    : "Currently set to \"" + WeatherService.manualLocationQuery + "\". Clear this field to go back to auto-detection."
+                                placeholderText: "Auto (IP-based)"
+                                text: WeatherService.manualLocationQuery
+                                onEditingFinished: {
+                                    if (text.trim() === "")
+                                        WeatherService.useAutoLocation()
+                                    else
+                                        WeatherService.setManualLocation(text.trim())
+                                }
+                                onAccepted: {
+                                    if (text.trim() === "")
+                                        WeatherService.useAutoLocation()
+                                    else
+                                        WeatherService.setManualLocation(text.trim())
+                                }
+                            }
                         }
 
                         // ==================== Bar ====================
