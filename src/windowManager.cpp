@@ -164,8 +164,21 @@ void CWindowManager::setupManager() {
     //
 
     Values[0] = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
-    xcb_change_window_attributes_checked(DisplayConnection, Screen->root,
+    const auto SUBREDIRECTCOOKIE = xcb_change_window_attributes_checked(DisplayConnection, Screen->root,
                                          XCB_CW_EVENT_MASK, Values);
+
+    // SubstructureRedirect can only be selected by one client at a time - X11
+    // itself enforces this (BadAccess), not anything checked here. XCB doesn't
+    // refuse the *connection* just because another WM already holds it, so
+    // without this check a second ZarisWM instance would run as a second,
+    // real window manager silently fighting the first one over every window
+    // (confirmed live: this actually happens, briefly, if the binary is ever
+    // run while a session is already up).
+    if (const auto SUBREDIRECTERROR = xcb_request_check(DisplayConnection, SUBREDIRECTCOOKIE); SUBREDIRECTERROR != NULL) {
+        Debug::log(CRIT, "Failed to select SubstructureRedirect on the root window (X error code " + std::to_string(SUBREDIRECTERROR->error_code) + ") - is another window manager already running?");
+        free(SUBREDIRECTERROR);
+        exit(1);
+    }
 
     Debug::log(LOG, "Root done.");
 
