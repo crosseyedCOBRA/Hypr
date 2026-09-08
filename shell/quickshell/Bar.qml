@@ -165,6 +165,13 @@ Variants {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
+                    WallpaperIndicator {
+                        visible: ModulesConfig.showInBar("wallpaper", panel)
+                        textColor: Colors.textMuted
+                        activeColor: Colors.teal
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                     VolumeControl {
                         visible: ModulesConfig.showInBar("volume", panel)
                         textColor: Colors.purple

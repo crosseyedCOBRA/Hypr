@@ -23,4 +23,5 @@ ShellRoot {
     PinDialog {}
     BluetoothPanel {}
     ClipboardHistoryPanel {}
+    WallpaperPickerPanel {}
 }

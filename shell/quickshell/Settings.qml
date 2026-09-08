@@ -45,7 +45,8 @@ FloatingWindow {
         nightLight: "Night light",
         bluetooth: "Bluetooth",
         mediaPlayer: "Media player",
-        clipboard: "Clipboard history"
+        clipboard: "Clipboard history",
+        wallpaper: "Wallpaper picker"
     })
 
     function categoryLabel(id) {

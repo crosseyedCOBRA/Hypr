@@ -168,6 +168,18 @@ FloatingWindow {
                     activeColor: Colors.blue
                 }
             }
+
+            Row {
+                spacing: 10
+                visible: ModulesConfig.showInTray("wallpaper", OverflowState.panel)
+
+                Text { text: "Wallpaper"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                WallpaperIndicator {
+                    textColor: Colors.textMuted
+                    activeColor: Colors.teal
+                }
+            }
         }
     }
 }
