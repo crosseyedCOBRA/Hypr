@@ -3,15 +3,17 @@ import QtQuick.Layouts
 
 // Filled/outlined button with optional icon (adapted from
 // Widgets/NButton.qml, MIT licensed, v4.7.7 - see README.md's "Third-party
-// code" section). Tooltip support and the live color-transition guard
-// (`!Color.isTransitioning`) are stripped - Zaris has no tooltip system yet
-// and its colors are static constants, never reassigned at runtime, so
-// there's nothing to guard a transition against.
+// code" section). The live color-transition guard (`!Color.isTransitioning`)
+// is stripped - Zaris's colors are static constants, never reassigned at
+// runtime, so there's nothing to guard a transition against. Tooltip
+// support is restored (TooltipService.qml/Tooltip.qml now exist) - it was
+// stripped when this was first ported since neither existed yet.
 Item {
     id: root
 
     property string text: ""
     property string icon: ""
+    property string tooltipText: ""
     property color backgroundColor: Colors.mPrimary
     property color textColor: Colors.mOnPrimary
     property color hoverColor: Colors.mHover
@@ -124,12 +126,18 @@ Item {
             onEntered: {
                 root.hovered = root.enabled ? true : false
                 root.entered()
+                if (root.hovered && root.tooltipText !== "")
+                    TooltipService.show(root, root.tooltipText)
             }
             onExited: {
                 root.hovered = false
                 root.exited()
+                if (root.tooltipText !== "")
+                    TooltipService.hide()
             }
             onPressed: mouse => {
+                if (root.tooltipText !== "")
+                    TooltipService.hide()
                 if (mouse.button === Qt.LeftButton)
                     root.clicked()
                 else if (mouse.button === Qt.RightButton)
@@ -137,7 +145,11 @@ Item {
                 else if (mouse.button === Qt.MiddleButton)
                     root.middleClicked()
             }
-            onCanceled: root.hovered = false
+            onCanceled: {
+                root.hovered = false
+                if (root.tooltipText !== "")
+                    TooltipService.hide()
+            }
         }
     }
 }

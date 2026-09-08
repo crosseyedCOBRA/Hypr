@@ -3,12 +3,15 @@ import QtQuick.Layouts
 
 // A single tab inside an NTabBar (adapted from Widgets/NTabButton.qml, MIT
 // licensed, v4.7.7 - see README.md's "Third-party code" section). Tooltip
-// support and its hover-delay timer are stripped (no tooltip system yet).
+// support (including its hover-delay timer) is restored (TooltipService.qml/
+// Tooltip.qml now exist) - it was stripped when this was first ported since
+// neither existed yet.
 Rectangle {
     id: root
 
     property string text: ""
     property string icon: ""
+    property string tooltipText: ""
     property bool checked: false
     property int tabIndex: 0
     property real pointSize: Style.fontSizeM
@@ -70,13 +73,34 @@ Rectangle {
         }
     }
 
+    Timer {
+        id: tooltipTimer
+        interval: 500
+        onTriggered: {
+            if (root.isHovered && root.tooltipText !== "")
+                TooltipService.show(root, root.tooltipText)
+        }
+    }
+
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onEntered: root.isHovered = true
-        onExited: root.isHovered = false
+        onEntered: {
+            root.isHovered = true
+            if (root.tooltipText !== "")
+                tooltipTimer.start()
+        }
+        onExited: {
+            root.isHovered = false
+            tooltipTimer.stop()
+            if (root.tooltipText !== "")
+                TooltipService.hide()
+        }
         onClicked: {
+            tooltipTimer.stop()
+            if (root.tooltipText !== "")
+                TooltipService.hide()
             root.clicked()
             if (root.parent && root.parent.parent && root.parent.parent.currentIndex !== undefined)
                 root.parent.parent.currentIndex = root.tabIndex

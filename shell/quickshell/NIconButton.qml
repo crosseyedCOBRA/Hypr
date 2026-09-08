@@ -3,15 +3,18 @@ import QtQuick
 // Circular icon-only button (adapted from Widgets/NIconButton.qml, MIT
 // licensed, v4.7.7 - see README.md's "Third-party code" section). Dropped
 // the uiScaleRatio multiplier (Style.qml has no per-user dynamic scale
-// here), tooltip support (no tooltip system yet), and smartAlpha
-// translucency (no "translucent widgets" setting here) - colorBg is just
-// mSurfaceVariant directly.
+// here) and smartAlpha translucency (no "translucent widgets" setting here)
+// - colorBg is just mSurfaceVariant directly. Tooltip support is restored
+// (TooltipService.qml/Tooltip.qml now exist) - it was stripped when this
+// was first ported since neither existed yet.
 Item {
     id: root
 
     property real baseSize: Style.baseWidgetSize
 
     property string icon
+    property string tooltipText: ""
+    property string tooltipDirection: "auto"
     property bool allowClickWhenDisabled: false
     property bool handleWheel: false
     property bool hovering: false
@@ -79,12 +82,18 @@ Item {
         onEntered: {
             hovering = root.enabled ? true : false
             root.entered()
+            if (hovering && root.tooltipText !== "")
+                TooltipService.show(root, root.tooltipText, root.tooltipDirection)
         }
         onExited: {
             hovering = false
             root.exited()
+            if (root.tooltipText !== "")
+                TooltipService.hide(root)
         }
         onClicked: mouse => {
+            if (root.tooltipText !== "")
+                TooltipService.hide(root)
             if (!root.enabled && !allowClickWhenDisabled)
                 return
             if (mouse.button === Qt.LeftButton)
