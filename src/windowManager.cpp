@@ -393,8 +393,18 @@ void CWindowManager::refreshDirtyWindows() {
             window.setDirty(false);
 
             // Check if the window isn't a node or has the noInterventions prop
-            if (window.getChildNodeAID() != 0 || window.getNoInterventions() || window.getDock()) 
+            if (window.getChildNodeAID() != 0 || window.getNoInterventions() || window.getDock()) {
+                // Docks skip the tiling/animation-oriented logic below (none
+                // of it applies to them - they're not tiled, don't animate,
+                // don't have a meaningful "workspace visibility" the way a
+                // regular window does), but still need their shape applied
+                // for rounding - applyShapeToWindow's own check already
+                // excludes non-dock noInterventions windows, so this only
+                // actually does anything for docks.
+                if (window.getDock())
+                    applyShapeToWindow(&window);
                 continue;
+            }
                 
             setEffectiveSizePosUsingConfig(&window);
 
