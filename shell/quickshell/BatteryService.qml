@@ -24,19 +24,17 @@ import Quickshell.Services.UPower
 // left this permanently untestable and hidden on the very machine used to
 // verify it.
 //
-// Deliberately scoped down from the original in two ways: (1) dropped the
+// Deliberately scoped down from the original in one way: dropped the
 // Bluetooth-peripheral-battery merging (`qs.Services.Networking`'s
 // BluetoothService, `bluetoothBatteries`, `isBluetoothDevice`, the
 // Bluetooth-specific branches throughout) - Zaris's own Bluetooth module is
 // built directly on Quickshell's native `Quickshell.Bluetooth` rather than
 // a Noctalia-shaped wrapper, and whether its `BluetoothDevice` type exposes
 // comparable per-device battery properties hasn't been checked yet; a
-// real follow-up, not a silent drop (noted below). (2) dropped the
-// low/critical-battery toast notifications (`ToastService.showNotice(...)`
-// calls, `_hasNotified`/`checkDevice`/`notify`) since `ToastService.qml`
-// itself hasn't been ported yet (still flagged low-priority) - the
-// `isLowBattery`/`isCriticalBattery` threshold helpers are kept so a bar
-// module can still render a warning color without needing a toast system.
+// real follow-up, not a silent drop. The low/critical-battery notification
+// logic (`_hasNotified`/`checkBatteryNotification`/`notifyLevel` below) was
+// kept, but rebuilt on `notify-send` instead of Noctalia's own
+// `ToastService.showNotice(...)` - see that function's own comment for why.
 // `I18n.tr(...)` calls flattened to plain English literals; icon selection
 // returns Zaris's own raw Nerd Font glyph codepoints directly (matching
 // every other icon usage in this codebase) rather than Noctalia's semantic
@@ -60,6 +58,11 @@ Singleton {
         watchChanges: true
         onFileChanged: reload()
         onAdapterUpdated: writeAdapter()
+        // Re-check notification thresholds on every load/reload - the
+        // proven-reliable hook (see NightLightService.qml's own hot-reload
+        // verification) rather than assuming individual threshold
+        // property-changed signals fire promptly on their own.
+        onLoaded: root.checkBatteryNotification()
 
         adapter: JsonAdapter {
             property real warningThreshold: 20
@@ -130,6 +133,62 @@ Singleton {
 
     function isLowBattery(device) {
         return (!isCharging(device) && !isPluggedIn(device)) && getPercentage(device) <= warningThreshold && getPercentage(device) > criticalThreshold
+    }
+
+    // Low/critical-battery desktop notifications - NOT routed through
+    // Noctalia's own ToastService.showNotice(...) (the original file's
+    // approach), since porting that would mean also porting its entire
+    // Modules/Toast/{Toast,ToastOverlay,ToastScreen}.qml UI, and two of
+    // those three are themselves built on Quickshell.Wayland layer-shell
+    // positioning - a real Wayland-coupling gap, same category as
+    // NightLightService's wlsunset dependency. More importantly, it would
+    // be genuinely redundant infrastructure: Zaris already runs `dunst` as
+    // its notification daemon (see DEPENDENCIES.md) and already calls
+    // `notify-send` for exactly this kind of transient message
+    // (screenshot.sh's "screenshot taken" notice) - so this reuses that
+    // same established mechanism instead of building a parallel one.
+    property var _hasNotified: ({ low: false, critical: false })
+
+    function checkBatteryNotification() {
+        if (!isDeviceReady(primaryDevice))
+            return
+
+        if (isCharging(primaryDevice) || isPluggedIn(primaryDevice)) {
+            _hasNotified = { low: false, critical: false }
+            return
+        }
+
+        if (isCriticalBattery(primaryDevice)) {
+            if (!_hasNotified.critical)
+                notifyLevel("critical")
+            _hasNotified = { low: true, critical: true }
+        } else if (isLowBattery(primaryDevice)) {
+            if (!_hasNotified.low)
+                notifyLevel("low")
+            _hasNotified = { low: true, critical: false }
+        } else {
+            _hasNotified = { low: false, critical: false }
+        }
+    }
+
+    function notifyLevel(level) {
+        const name = root.getDeviceName(primaryDevice) || "Battery"
+        const title = level === "critical" ? name + " critically low" : name + " low"
+        const urgency = level === "critical" ? "critical" : "normal"
+        Quickshell.execDetached(["notify-send", "-u", urgency, "-a", "Zaris", title, root.batteryPercentage + "% remaining"])
+    }
+
+    Connections {
+        target: root
+        function onBatteryPercentageChanged() { root.checkBatteryNotification() }
+        function onBatteryChargingChanged() { root.checkBatteryNotification() }
+        function onBatteryPluggedInChanged() { root.checkBatteryNotification() }
+        // Also re-check on a hand-edited threshold change (battery.json is
+        // watchChanges-hot-reloadable, same as nightlight.json) rather than
+        // waiting for the next real percentage/state change to notice a
+        // newly-lowered threshold.
+        function onWarningThresholdChanged() { root.checkBatteryNotification() }
+        function onCriticalThresholdChanged() { root.checkBatteryNotification() }
     }
 
     function getDeviceName(device) {
