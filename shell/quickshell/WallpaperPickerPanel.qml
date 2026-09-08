@@ -7,6 +7,15 @@ import Quickshell.Io
 // examined given WallpaperService.qml itself wasn't a straight port).
 // Click a thumbnail to set it as the wallpaper and close; the currently
 // active wallpaper gets a highlighted border.
+//
+// Phase 2 of the Noctalia-port effort (see ROADMAP.md): "Rescan" is now
+// NButton, every raw Text is now NText, and the thumbnail GridView is now
+// NGridView (real scrollbar styling + edge-fade gradient masks) - the
+// exact migration flagged as a future candidate back when NGridView was
+// first ported. The directory field's bordered-Rectangle+TextInput is left
+// as-is, same reasoning as ClipboardHistoryPanel.qml's search field - its
+// Keys.onReturnPressed handling isn't reachable through NTextInput's
+// inputItem alias from outside the component.
 FloatingWindow {
     id: panel
 
@@ -66,24 +75,13 @@ FloatingWindow {
                     }
                 }
 
-                Rectangle {
+                NButton {
                     id: rescanButton
-                    width: 70
-                    height: 32
-                    radius: 6
-                    color: Colors.pill
-
-                    Text {
-                        anchors.centerIn: parent
-                        text: "Rescan"
-                        color: Colors.text
-                        font.pixelSize: 12
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: WallpaperService.setDirectory(panel.directoryInput)
-                    }
+                    text: "Rescan"
+                    fontSize: Style.fontSizeS
+                    backgroundColor: Colors.pill
+                    textColor: Colors.text
+                    onClicked: WallpaperService.setDirectory(panel.directoryInput)
                 }
             }
 
@@ -92,11 +90,11 @@ FloatingWindow {
                 height: 28
                 spacing: 12
 
-                Text {
+                NText {
                     text: "Rotate"
                     anchors.verticalCenter: parent.verticalCenter
                     color: Colors.text
-                    font.pixelSize: 13
+                    pointSize: Style.fontSizeM
                 }
 
                 ToggleSwitch {
@@ -105,27 +103,26 @@ FloatingWindow {
                     onToggled: newChecked => WallpaperService.setRotationEnabled(newChecked)
                 }
 
-                Text {
+                NText {
                     visible: WallpaperService.rotationEnabled
                     anchors.verticalCenter: parent.verticalCenter
                     text: "every " + WallpaperService.rotationIntervalMinutes + " min"
                     color: Colors.textMuted
-                    font.pixelSize: 12
+                    pointSize: Style.fontSizeS
                 }
             }
 
-            Text {
+            NText {
                 visible: !WallpaperService.scanning && WallpaperService.images.length === 0
                 text: "No images found in this folder"
                 color: Colors.textMuted
-                font.pixelSize: 13
+                pointSize: Style.fontSizeM
             }
 
-            GridView {
+            NGridView {
                 id: grid
                 width: parent.width
                 height: parent.height - y
-                clip: true
                 cellWidth: 120
                 cellHeight: 80
                 model: WallpaperService.images
