@@ -22,4 +22,5 @@ ShellRoot {
     Dock {}
     PinDialog {}
     BluetoothPanel {}
+    ClipboardHistoryPanel {}
 }

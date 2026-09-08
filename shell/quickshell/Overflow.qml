@@ -156,6 +156,18 @@ FloatingWindow {
                     activeColor: Colors.teal
                 }
             }
+
+            Row {
+                spacing: 10
+                visible: ModulesConfig.showInTray("clipboard", OverflowState.panel)
+
+                Text { text: "Clipboard"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                ClipboardIndicator {
+                    textColor: Colors.textMuted
+                    activeColor: Colors.blue
+                }
+            }
         }
     }
 }

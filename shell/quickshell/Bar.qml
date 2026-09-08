@@ -158,6 +158,13 @@ Variants {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
+                    ClipboardIndicator {
+                        visible: ModulesConfig.showInBar("clipboard", panel)
+                        textColor: Colors.textMuted
+                        activeColor: Colors.blue
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                     VolumeControl {
                         visible: ModulesConfig.showInBar("volume", panel)
                         textColor: Colors.purple

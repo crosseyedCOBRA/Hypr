@@ -78,6 +78,7 @@ itself.
 | Night light color-temperature toggle | `redshift` | `redshift` | `redshift` — confirmed official on all three (checked live via sources.debian.org and packages.fedoraproject.org) |
 | Bluetooth applet (daemon) | `bluez` | `bluez` | `bluez` |
 | Bluetooth applet (service enablement) | `bluez-openrc` (only needed on a non-systemd Arch-based system like Artix — `bluetoothd` has no OpenRC script of its own otherwise; `rc-update add bluetoothd default && rc-service bluetoothd start`) | Not needed — `bluez`'s own systemd unit (`bluetooth.service`) is enabled automatically | Not needed — same as Debian, systemd-native |
+| Clipboard manager (change detection) | `clipnotify` | **Not packaged** — confirmed absent from packages.debian.org/sources.debian.org; being a tiny X11+Xfixes-only C program, building from source is the likely fix (not yet done, see ROADMAP.md) | `clipnotify` — confirmed via packages.fedoraproject.org |
 
 The Arch-side data is what's actually installed and running on this
 project's own Artix reference machine. The Debian-side and Fedora-side

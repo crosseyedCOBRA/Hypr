@@ -7,6 +7,8 @@ singleton MediaService 1.0 MediaService.qml
 singleton BluetoothPanelState 1.0 BluetoothPanelState.qml
 singleton ModulesConfig 1.0 ModulesConfig.qml
 singleton TooltipService 1.0 TooltipService.qml
+singleton ClipboardHistoryService 1.0 ClipboardHistoryService.qml
+singleton ClipboardHistoryPanelState 1.0 ClipboardHistoryPanelState.qml
 singleton OverflowState 1.0 OverflowState.qml
 singleton SettingsState 1.0 SettingsState.qml
 singleton OSDState 1.0 OSDState.qml
@@ -45,6 +47,8 @@ NRadioButton 1.0 NRadioButton.qml
 StayAwake 1.0 StayAwake.qml
 NightLight 1.0 NightLight.qml
 MediaWidget 1.0 MediaWidget.qml
+ClipboardIndicator 1.0 ClipboardIndicator.qml
+ClipboardHistoryPanel 1.0 ClipboardHistoryPanel.qml
 BluetoothIndicator 1.0 BluetoothIndicator.qml
 BluetoothPanel 1.0 BluetoothPanel.qml
 Overflow 1.0 Overflow.qml
