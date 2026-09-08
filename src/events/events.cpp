@@ -154,8 +154,13 @@ void Events::eventUnmapWindow(xcb_generic_event_t* event) {
 
     Debug::log(LOG, "Unmap called on " + std::to_string(E->window) + " -> " + PCLOSEDWINDOW->getName());
 
-    if (!PCLOSEDWINDOW->getDock())
-        g_pWindowManager->closeWindowAllChecks(E->window);
+    // Previously skipped entirely for dock-type windows, which meant hiding
+    // one (e.g. Dock.qml's DockConfig.enabled toggle) never released its
+    // reserved space - closeWindowAllChecks already has correct dock
+    // handling (removes it from tracking, then recalcAllDocks()), it just
+    // wasn't being called. Never mattered before since nothing ever hid a
+    // dock-type window at runtime until the dock's enable/disable toggle.
+    g_pWindowManager->closeWindowAllChecks(E->window);
 
     // refocus on new window
     g_pWindowManager->refocusWindowOnClosed();
@@ -407,6 +412,24 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
                     MONITOR.vecPosition.y + MARGINY));
             } catch (...) {
                 Debug::log(LOG, "Rule topright failed, rule: " + rule.szRule + "=" + rule.szValue);
+            }
+        } else if (rule.szRule.find("bottomcenter") == 0) {
+            // Like "topright", but anchored to the bottom-center of the
+            // monitor instead - for the floating-mode dock (Dock.qml),
+            // horizontally centered regardless of the monitor's actual
+            // resolution. marginY is the gap from the monitor's bottom edge
+            // to the window's bottom edge.
+            try {
+                const auto MARGINY = stoi(rule.szRule.substr(rule.szRule.find(" ") + 1));
+
+                Debug::log(LOG, "Rule bottomcenter, applying to window " + std::to_string(windowID));
+
+                const auto& MONITOR = g_pWindowManager->monitors[CURRENTSCREEN];
+                PWINDOWINARR->setDefaultPosition(Vector2D(
+                    MONITOR.vecPosition.x + (MONITOR.vecSize.x - PWINDOWINARR->getDefaultSize().x) / 2.f,
+                    MONITOR.vecPosition.y + MONITOR.vecSize.y - PWINDOWINARR->getDefaultSize().y - MARGINY));
+            } catch (...) {
+                Debug::log(LOG, "Rule bottomcenter failed, rule: " + rule.szRule + "=" + rule.szValue);
             }
         }
     }
@@ -938,8 +961,27 @@ void Events::eventConfigure(xcb_generic_event_t* event) {
     const bool GEOMETRYCHANGED = OLDDEFAULTPOS.x != PWINDOW->getDefaultPosition().x || OLDDEFAULTPOS.y != PWINDOW->getDefaultPosition().y ||
                                   OLDDEFAULTSIZE.x != PWINDOW->getDefaultSize().x || OLDDEFAULTSIZE.y != PWINDOW->getDefaultSize().y;
 
-    if (PWINDOW->getDock() && GEOMETRYCHANGED)
+    if (PWINDOW->getDock() && GEOMETRYCHANGED) {
         g_pWindowManager->recalcAllDocks();
+    } else if (GEOMETRYCHANGED) {
+        // recalcAllDocks() above is what actually pushes a dock's granted
+        // geometry to the X server via xcb_configure_window - for any other
+        // floating window, nothing ever did that, so a non-dock floating
+        // window resizing itself post-map (e.g. Dock.qml's "floating" mode
+        // growing/shrinking as icons come and go) had its internal
+        // bookkeeping (setDefaultSize/setEffectiveSize above) updated with
+        // nothing ever applied on screen - the window just stayed its old
+        // size, matching the "resizes fine in reserved mode, not floating"
+        // report exactly, since reserved mode is dock-type and already
+        // went through recalcAllDocks().
+        uint32_t configValues[2];
+        configValues[0] = static_cast<uint32_t>(PWINDOW->getDefaultPosition().x);
+        configValues[1] = static_cast<uint32_t>(PWINDOW->getDefaultPosition().y);
+        xcb_configure_window(g_pWindowManager->DisplayConnection, E->window, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, configValues);
+        configValues[0] = static_cast<uint32_t>(PWINDOW->getDefaultSize().x);
+        configValues[1] = static_cast<uint32_t>(PWINDOW->getDefaultSize().y);
+        xcb_configure_window(g_pWindowManager->DisplayConnection, E->window, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, configValues);
+    }
 }
 
 void Events::eventRandRScreenChange(xcb_generic_event_t* event) {

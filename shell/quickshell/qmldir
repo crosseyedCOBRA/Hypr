@@ -5,6 +5,8 @@ singleton ModulesConfig 1.0 ModulesConfig.qml
 singleton OverflowState 1.0 OverflowState.qml
 singleton SettingsState 1.0 SettingsState.qml
 singleton OSDState 1.0 OSDState.qml
+singleton DockConfig 1.0 DockConfig.qml
+singleton PinDialogState 1.0 PinDialogState.qml
 Launcher 1.0 Launcher.qml
 Bar 1.0 Bar.qml
 Workspaces 1.0 Workspaces.qml
@@ -18,3 +20,7 @@ StayAwake 1.0 StayAwake.qml
 Overflow 1.0 Overflow.qml
 Settings 1.0 Settings.qml
 OSD 1.0 OSD.qml
+DockIcons 1.0 DockIcons.qml
+DockLauncherIcon 1.0 DockLauncherIcon.qml
+Dock 1.0 Dock.qml
+PinDialog 1.0 PinDialog.qml

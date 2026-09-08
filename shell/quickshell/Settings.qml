@@ -1,17 +1,20 @@
 import QtQuick
 import Quickshell
 
-// Bar module settings - a scoped-down first slice of the deferred GUI
-// settings app (see ROADMAP.md), covering just modules.json (enabled /
-// screens / tray per bar module) rather than the full WM config, which
-// stays hand-edit-only (hypr.conf) for now. Edits here write straight
-// through ModulesConfig's FileView, so they apply live and are visible
-// in modules.json immediately - same file, same effect as hand-editing it.
+// Bar module + dock settings - a scoped-down first slice of the deferred
+// GUI settings app (see ROADMAP.md), covering modules.json (enabled /
+// screens / tray per bar module) and dock.json (enabled / mode) rather than
+// the full WM config, which stays hand-edit-only (hypr.conf) for now. Edits
+// here write straight through ModulesConfig's/DockConfig's FileViews, so
+// they apply live and are visible in the underlying JSON immediately - same
+// file, same effect as hand-editing it. Named "Shell Settings" (not "Bar
+// Settings") since it covers both now - zaris.conf's window rules match on
+// this title, so keep them in sync if this changes again.
 FloatingWindow {
     id: settingsWindow
 
     visible: SettingsState.visible
-    title: "Bar Settings"
+    title: "Shell Settings"
 
     implicitWidth: 520
     implicitHeight: list.implicitHeight + 40
@@ -197,6 +200,119 @@ FloatingWindow {
                 color: Colors.textMuted
                 font.pixelSize: 11
                 topPadding: 10
+            }
+
+            Text {
+                text: "Dock"
+                font.pixelSize: 14
+                font.bold: true
+                color: Colors.text
+                topPadding: 16
+            }
+
+            Row {
+                width: parent.width
+                height: 32
+                spacing: 12
+
+                Text {
+                    text: "Enabled"
+                    width: 170
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Colors.text
+                    font.pixelSize: 13
+                }
+
+                Rectangle {
+                    width: 44
+                    height: 22
+                    radius: 11
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: DockConfig.enabled ? Colors.pillActive : Colors.pill
+                    border.color: Colors.textMuted
+                    border.width: 1
+
+                    Rectangle {
+                        width: 16
+                        height: 16
+                        radius: 8
+                        y: 2
+                        x: DockConfig.enabled ? parent.width - width - 2 : 2
+                        color: Colors.text
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: DockConfig.setEnabled(!DockConfig.enabled)
+                    }
+                }
+            }
+
+            Row {
+                width: parent.width
+                height: 32
+                spacing: 12
+                visible: DockConfig.enabled
+
+                Text {
+                    text: "Mode"
+                    width: 170
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: Colors.text
+                    font.pixelSize: 13
+                }
+
+                Row {
+                    spacing: 6
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Rectangle {
+                        width: 80
+                        height: 22
+                        radius: 6
+                        color: DockConfig.mode === "reserved" ? Colors.pillActive : Colors.pill
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Reserved"
+                            font.pixelSize: 11
+                            color: Colors.text
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: DockConfig.setMode("reserved")
+                        }
+                    }
+
+                    Rectangle {
+                        width: 80
+                        height: 22
+                        radius: 6
+                        color: DockConfig.mode === "floating" ? Colors.pillActive : Colors.pill
+
+                        Text {
+                            anchors.centerIn: parent
+                            text: "Floating"
+                            font.pixelSize: 11
+                            color: Colors.text
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            onClicked: DockConfig.setMode("floating")
+                        }
+                    }
+                }
+            }
+
+            Text {
+                text: "Reserved permanently reserves screen space at the bottom of the primary monitor, like the bar does. Floating overlays on top of windows instead without reserving space - windows can tile underneath it. Pin apps to the dock via right-click on a result in the launcher."
+                width: parent.width
+                wrapMode: Text.WordWrap
+                color: Colors.textMuted
+                font.pixelSize: 11
+                topPadding: 6
             }
         }
     }

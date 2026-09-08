@@ -22,10 +22,15 @@ Variants {
         exclusiveZone: 44
         color: "transparent"
 
+        // No margin/radius here - the WM now shape-masks dock-type windows
+        // for real rounding (see applyShapeToWindow in windowManager.cpp),
+        // so this fills the window's actual shape edge to edge (a full-width
+        // bar with just its four corners rounded) rather than approximating
+        // rounding with its own inset+radius, which (with no compositor to
+        // blend alpha) rendered as an opaque black square peeking out around
+        // the edges instead of true transparency.
         Rectangle {
             anchors.fill: parent
-            anchors.margins: 4
-            radius: 8
             color: Qt.rgba(0x0c / 255, 0x0b / 255, 0x1a / 255, 0.75) // Colors.bg @ ~bf alpha
 
             Item {

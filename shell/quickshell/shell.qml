@@ -19,4 +19,6 @@ ShellRoot {
     Overflow {}
     Settings {}
     OSD {}
+    Dock {}
+    PinDialog {}
 }

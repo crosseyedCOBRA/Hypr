@@ -780,7 +780,15 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
 
     const auto SHAPEQUERY = xcb_get_extension_data(DisplayConnection, &xcb_shape_id);
 
-    if (!SHAPEQUERY || !SHAPEQUERY->present || pWindow->getNoInterventions())
+    // Dock-type windows (bars/the app dock) are noInterventions, which used to
+    // skip shaping entirely - meaning their QML side had to fake rounding with
+    // its own decorative Rectangle inset by a margin, which (with no
+    // compositor running to actually blend alpha) rendered as a plain opaque
+    // black square peeking out around/behind the "rounded" content instead of
+    // true transparency. Letting docks through here and having their QML draw
+    // a plain full-bleed rectangle instead fixes that at the root: the real
+    // window shape is what's rounded, not just something drawn inside it.
+    if (!SHAPEQUERY || !SHAPEQUERY->present || (pWindow->getNoInterventions() && !pWindow->getDock()))
         return;
 
     Debug::log(LOG, "Applying shape to " + std::to_string(pWindow->getDrawable()));
@@ -796,7 +804,10 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
 
     const uint16_t W = pWindow->getFullscreen() ? MONITOR->vecSize.x : pWindow->getRealSize().x;
     const uint16_t H = pWindow->getFullscreen() ? MONITOR->vecSize.y : pWindow->getRealSize().y;
-    const uint16_t BORDER = pWindow->getFullscreen() || (ConfigManager::getInt("layout:no_gaps_when_only") && getWindowsOnWorkspace(pWindow->getWorkspaceID()) == 1) ? 0 : ConfigManager::getInt("border_size");
+    // Docks get rounding (above) but never a border - they're not a regular
+    // focusable window, and border_size would also expand the shape mask's
+    // bounding box beyond the dock's own real geometry for no reason.
+    const uint16_t BORDER = pWindow->getFullscreen() || pWindow->getDock() || (ConfigManager::getInt("layout:no_gaps_when_only") && getWindowsOnWorkspace(pWindow->getWorkspaceID()) == 1) ? 0 : ConfigManager::getInt("border_size");
     const uint16_t TOTALW = W + 2 * BORDER;
     const uint16_t TOTALH = H + 2 * BORDER;
 

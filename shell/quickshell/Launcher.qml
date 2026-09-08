@@ -170,7 +170,12 @@ FloatingWindow {
 
                     MouseArea {
                         anchors.fill: parent
-                        onClicked: {
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        onClicked: function (mouse) {
+                            if (mouse.button === Qt.RightButton) {
+                                PinDialogState.open(modelData.id, modelData.name, modelData.icon)
+                                return
+                            }
                             resultList.currentIndex = index
                             launcherWindow.launch(modelData)
                         }
