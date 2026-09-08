@@ -16,6 +16,12 @@ import Quickshell
 // BluetoothIndicator all have real click behavior) is untouched - the label
 // is just a sibling Text to its left, never something layered on top of it
 // that could shadow its hit region.
+//
+// Phase 2 of the Noctalia-port effort (see ROADMAP.md): every row's label
+// Text is now NText (consistent typography off Style.qml's tokens instead
+// of a hardcoded font.pixelSize: 12). The individual module components
+// (KernelVersion, CpuLoad, etc.) are untouched here - each is its own file
+// with its own styling, out of scope for this pass.
 FloatingWindow {
     id: overflowWindow
 
@@ -40,7 +46,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("kernel", OverflowState.panel)
 
-                Text { text: "Kernel"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "Kernel"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 KernelVersion {
                     textColor: Colors.blue
@@ -51,7 +57,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("cpu", OverflowState.panel)
 
-                Text { text: "CPU"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "CPU"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 CpuLoad {
                     textColor: Colors.coral
@@ -62,7 +68,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("cpuTemp", OverflowState.panel)
 
-                Text { text: "CPU Temp"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "CPU Temp"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 HwmonSensor {
                     sensorLabel: "Tctl"
@@ -75,7 +81,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("gpuTemp", OverflowState.panel)
 
-                Text { text: "GPU Temp"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "GPU Temp"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 HwmonSensor {
                     sensorLabel: "edge"
@@ -88,7 +94,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("network", OverflowState.panel)
 
-                Text { text: "Network"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "Network"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 NetworkStatus {
                     textColor: Colors.blue
@@ -99,7 +105,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("volume", OverflowState.panel)
 
-                Text { text: "Volume"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "Volume"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 VolumeControl {
                     textColor: Colors.purple
@@ -110,7 +116,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("stayAwake", OverflowState.panel)
 
-                Text { text: "Stay Awake"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "Stay Awake"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 StayAwake {
                     textColor: Colors.textMuted
@@ -122,7 +128,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("nightLight", OverflowState.panel)
 
-                Text { text: "Night Light"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "Night Light"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 NightLight {
                     textColor: Colors.textMuted
@@ -134,7 +140,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("bluetooth", OverflowState.panel)
 
-                Text { text: "Bluetooth"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "Bluetooth"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 BluetoothIndicator {
                     textColor: Colors.textMuted
@@ -149,7 +155,7 @@ FloatingWindow {
                 // would look broken otherwise.
                 visible: ModulesConfig.showInTray("mediaPlayer", OverflowState.panel) && !!MediaService.currentPlayer
 
-                Text { text: "Media"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "Media"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 MediaWidget {
                     textColor: Colors.textMuted
@@ -161,7 +167,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("clipboard", OverflowState.panel)
 
-                Text { text: "Clipboard"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "Clipboard"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 ClipboardIndicator {
                     textColor: Colors.textMuted
@@ -173,7 +179,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("wallpaper", OverflowState.panel)
 
-                Text { text: "Wallpaper"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "Wallpaper"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 WallpaperIndicator {
                     textColor: Colors.textMuted
@@ -185,7 +191,7 @@ FloatingWindow {
                 spacing: 10
                 visible: ModulesConfig.showInTray("battery", OverflowState.panel) && BatteryService.batteryPresent
 
-                Text { text: "Battery"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+                NText { text: "Battery"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
 
                 BatteryIndicator {
                     textColor: Colors.textMuted
