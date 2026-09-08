@@ -83,12 +83,12 @@ Item {
                     radius: 6
                     color: Colors.pill
 
-                    Text {
+                    NText {
                         anchors.centerIn: parent
                         text: (iconItem.modelData.name || "?").charAt(0).toUpperCase()
                         color: Colors.text
-                        font.pixelSize: 14
-                        font.bold: true
+                        pointSize: Style.fontSizeL
+                        font.weight: Style.fontWeightBold
                     }
                 }
             }

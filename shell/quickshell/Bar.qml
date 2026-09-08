@@ -84,13 +84,13 @@ Variants {
                 }
 
                 // --- center: clock ---
-                Text {
+                NText {
                     id: clockText
                     anchors.centerIn: parent
                     text: Qt.formatDateTime(clock.date, "dddd MMMM d yyyy HH:mm")
                     color: Colors.text
-                    font.pixelSize: 13
-                    font.bold: true
+                    pointSize: Style.fontSizeL
+                    font.weight: Style.fontWeightBold
 
                     SystemClock {
                         id: clock
@@ -222,9 +222,9 @@ Variants {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    Text {
-                        text: ""
-                        font.pixelSize: 16
+                    NIcon {
+                        icon: ""
+                        pointSize: Style.fontSizeXL
                         color: Colors.blue
                         anchors.verticalCenter: parent.verticalCenter
 
@@ -241,9 +241,9 @@ Variants {
                         }
                     }
 
-                    Text {
-                        text: ""
-                        font.pixelSize: 16
+                    NIcon {
+                        icon: ""
+                        pointSize: Style.fontSizeXL
                         color: Colors.coral
                         anchors.verticalCenter: parent.verticalCenter
 
@@ -253,9 +253,9 @@ Variants {
                         }
                     }
 
-                    Text {
-                        text: "\uf013"
-                        font.pixelSize: 14
+                    NIcon {
+                        icon: "\uf013"
+                        pointSize: Style.fontSizeL
                         color: Colors.textMuted
                         anchors.verticalCenter: parent.verticalCenter
 
@@ -265,13 +265,13 @@ Variants {
                         }
                     }
 
-                    Text {
+                    NIcon {
                         // "more" overflow chevron - opens Overflow.qml showing
                         // whatever's configured as tray:true in modules.json
                         // for this monitor. Hidden entirely when nothing is.
                         visible: ModulesConfig.anyTrayVisible(panel)
-                        text: "\uf142"
-                        font.pixelSize: 14
+                        icon: "\uf142"
+                        pointSize: Style.fontSizeL
                         color: Colors.textMuted
                         anchors.verticalCenter: parent.verticalCenter
 

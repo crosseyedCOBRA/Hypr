@@ -13,16 +13,16 @@ Row {
 
     spacing: 4
 
-    Text {
+    NText {
         text: "" // nf-fa-microchip
         color: root.textColor
-        font.pixelSize: 13
+        pointSize: Style.fontSizeL
     }
 
-    Text {
+    NText {
         text: Math.round(root.percent) + "%"
         color: root.textColor
-        font.pixelSize: 13
+        pointSize: Style.fontSizeL
     }
 
     Process {

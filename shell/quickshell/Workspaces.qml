@@ -48,12 +48,12 @@ Row {
             radius: 4
             color: modelData.active ? Colors.pillActive : Colors.pill
 
-            Text {
+            NText {
                 id: label
                 anchors.centerIn: parent
                 text: pill.modelData.name
                 color: pill.modelData.active ? Colors.teal : Colors.textMuted
-                font.pixelSize: 13
+                pointSize: Style.fontSizeL
             }
 
             MouseArea {

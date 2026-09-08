@@ -29,16 +29,16 @@ Item {
         id: row
         spacing: 4
 
-        Text {
+        NText {
             text: BatteryService.batteryIcon
             color: root.effectiveColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
         }
 
-        Text {
+        NText {
             text: BatteryService.batteryPercentage + "%"
             color: root.effectiveColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
         }
     }
 

@@ -22,10 +22,10 @@ Item {
         id: rowLayout
         spacing: 6
 
-        Text {
+        NText {
             text: MediaService.isPlaying ? "" : ""
             color: MediaService.isPlaying ? root.activeColor : root.textColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
             anchors.verticalCenter: parent.verticalCenter
 
             MouseArea {
@@ -34,14 +34,14 @@ Item {
             }
         }
 
-        Text {
+        NText {
             text: {
                 const title = MediaService.trackTitle
                 const artist = MediaService.trackArtist
                 return artist ? (artist + " - " + title) : title
             }
             color: root.textColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
             elide: Text.ElideRight
             width: Math.min(implicitWidth, root.maxTitleWidth)
             anchors.verticalCenter: parent.verticalCenter

@@ -24,16 +24,16 @@ Item {
         id: rowLayout
         spacing: 4
 
-        Text {
+        NText {
             text: ""
             color: StayAwakeState.awake ? root.activeColor : root.textColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
         }
 
-        Text {
+        NText {
             text: StayAwakeState.awake ? "awake" : ""
             color: root.activeColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
         }
     }
 

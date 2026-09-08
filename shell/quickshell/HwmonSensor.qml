@@ -17,16 +17,16 @@ Row {
     property real tempC: 0
     property bool haveReading: false
 
-    Text {
+    NText {
         text: root.iconGlyph
         color: root.textColor
-        font.pixelSize: 13
+        pointSize: Style.fontSizeL
     }
 
-    Text {
+    NText {
         text: root.haveReading ? Math.round(root.tempC) + "°C" : "--"
         color: root.textColor
-        font.pixelSize: 13
+        pointSize: Style.fontSizeL
     }
 
     // Resolve once: hwmon layout doesn't change without a reboot.

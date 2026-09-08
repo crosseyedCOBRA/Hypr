@@ -19,17 +19,17 @@ Item {
         id: rowLayout
         spacing: 4
 
-        Text {
+        NText {
             text: ""
             color: root.textColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
         }
 
-        Text {
+        NText {
             id: label
             text: root.connected ? "Connected" : "Disconnected"
             color: root.textColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
         }
     }
 

@@ -13,11 +13,11 @@ Item {
     implicitWidth: icon.implicitWidth
     implicitHeight: icon.implicitHeight
 
-    Text {
+    NText {
         id: icon
         text: ""
         color: ClipboardHistoryService.items.length > 0 ? root.activeColor : root.textColor
-        font.pixelSize: 13
+        pointSize: Style.fontSizeL
     }
 
     MouseArea {

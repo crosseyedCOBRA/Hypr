@@ -21,16 +21,16 @@ Item {
         id: rowLayout
         spacing: 4
 
-        Text {
+        NText {
             text: ""
             color: NightLightState.active ? root.activeColor : root.textColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
         }
 
-        Text {
+        NText {
             text: NightLightState.active ? "night" : ""
             color: root.activeColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
         }
     }
 

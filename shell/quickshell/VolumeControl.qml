@@ -19,16 +19,16 @@ Item {
         id: rowLayout
         spacing: 4
 
-        Text {
+        NText {
             text: (root.sink && root.sink.ready && root.sink.audio.muted) ? "󰖁" : ""
             color: root.textColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
         }
 
-        Text {
+        NText {
             text: (root.sink && root.sink.ready) ? (root.sink.audio.muted ? "muted" : Math.round(root.sink.audio.volume * 100) + "%") : ""
             color: root.textColor
-            font.pixelSize: 13
+            pointSize: Style.fontSizeL
         }
     }
 

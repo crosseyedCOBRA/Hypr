@@ -19,11 +19,11 @@ Item {
     implicitWidth: icon.implicitWidth
     implicitHeight: icon.implicitHeight
 
-    Text {
+    NText {
         id: icon
         text: ""
         color: root.poweredOn ? root.activeColor : root.textColor
-        font.pixelSize: 13
+        pointSize: Style.fontSizeL
     }
 
     MouseArea {
