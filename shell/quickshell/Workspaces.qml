@@ -53,7 +53,8 @@ Row {
                 anchors.centerIn: parent
                 text: pill.modelData.name
                 color: pill.modelData.active ? Colors.teal : Colors.textMuted
-                pointSize: Style.fontSizeL
+                pointSize: Style.fontSizeM
+                font.weight: Style.fontWeightBold
             }
 
             MouseArea {

@@ -88,7 +88,7 @@ Variants {
                     anchors.centerIn: parent
                     text: Qt.formatDateTime(clock.date, "dddd MMMM d yyyy HH:mm")
                     color: Colors.text
-                    pointSize: Style.fontSizeL
+                    pointSize: Style.fontSizeM
                     font.weight: Style.fontWeightBold
 
                     SystemClock {

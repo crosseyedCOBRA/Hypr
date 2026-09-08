@@ -14,13 +14,15 @@ Row {
     NText {
         text: "" // nf-fa-linux
         color: root.textColor
-        pointSize: Style.fontSizeL
+        pointSize: Style.fontSizeM
+        font.weight: Style.fontWeightBold
     }
 
     NText {
         text: root.version
         color: root.textColor
-        pointSize: Style.fontSizeL
+        pointSize: Style.fontSizeM
+        font.weight: Style.fontWeightBold
     }
 
     Process {
