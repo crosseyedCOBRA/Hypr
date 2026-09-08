@@ -145,6 +145,19 @@ Variants {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
+                    MediaWidget {
+                        // Unlike most modules, this one also hides itself
+                        // when there's genuinely nothing playing - has to be
+                        // re-derived here rather than relying on the
+                        // component's own internal default, since setting
+                        // `visible` externally replaces that binding rather
+                        // than combining with it.
+                        visible: ModulesConfig.showInBar("mediaPlayer", panel) && !!MediaService.currentPlayer
+                        textColor: Colors.textMuted
+                        activeColor: Colors.teal
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                     VolumeControl {
                         visible: ModulesConfig.showInBar("volume", panel)
                         textColor: Colors.purple

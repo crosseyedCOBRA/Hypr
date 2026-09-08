@@ -141,6 +141,21 @@ FloatingWindow {
                     activeColor: Colors.blue
                 }
             }
+
+            Row {
+                spacing: 10
+                // Also hides when nothing's playing, same reasoning as
+                // Bar.qml's instance - a label with nothing next to it
+                // would look broken otherwise.
+                visible: ModulesConfig.showInTray("mediaPlayer", OverflowState.panel) && !!MediaService.currentPlayer
+
+                Text { text: "Media"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                MediaWidget {
+                    textColor: Colors.textMuted
+                    activeColor: Colors.teal
+                }
+            }
         }
     }
 }

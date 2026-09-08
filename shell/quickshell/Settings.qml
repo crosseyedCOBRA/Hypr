@@ -43,7 +43,8 @@ FloatingWindow {
         volume: "Volume",
         stayAwake: "Stay awake",
         nightLight: "Night light",
-        bluetooth: "Bluetooth"
+        bluetooth: "Bluetooth",
+        mediaPlayer: "Media player"
     })
 
     function categoryLabel(id) {
