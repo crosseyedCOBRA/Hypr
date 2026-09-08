@@ -54,7 +54,7 @@ QtObject {
             property var nightLight: ({ enabled: true, screens: "all", tray: false })
             property var dnd: ({ enabled: true, screens: "all", tray: true })
             property var bluetooth: ({ enabled: true, screens: "all", tray: false })
-            property var mediaPlayer: ({ enabled: true, screens: "all", tray: false })
+            property var mediaPlayer: ({ enabled: true, screens: "all", tray: true })
             property var clipboard: ({ enabled: true, screens: "all", tray: true })
             property var notifications: ({ enabled: true, screens: "all", tray: false })
             property var wallpaper: ({ enabled: true, screens: "all", tray: true })

@@ -88,7 +88,7 @@ FloatingWindow {
     // and a bit of background definition around its Control Center rather
     // than content running edge-to-edge.
     implicitWidth: 440
-    implicitHeight: 900
+    implicitHeight: 830
 
     readonly property PwNode pwSink: Pipewire.defaultAudioSink
     readonly property PwNode pwSource: Pipewire.defaultAudioSource
@@ -596,14 +596,42 @@ FloatingWindow {
                     }
                 }
 
-                // Empty placeholder - keeps Wifi aligned to the
-                // right column now that Power Profile pushed the
-                // whole right column down one row, leaving this
-                // slot with no natural left-column partner (Stay
-                // Awake/Dnd/Network only account for 3 rows).
-                Item {
+                Rectangle {
                     width: root.tileWidth
                     height: root.tileHeight
+                    radius: Style.radiusS
+                    color: clipboardTileArea.containsMouse ? Colors.pillActive : Colors.pill
+                    visible: ModulesConfig.showInTray("clipboard", ControlCenterState.panel)
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        NIcon {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            icon: ""
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXL
+                        }
+
+                        NText {
+                            text: "Clipboard"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                        }
+                    }
+
+                    MouseArea {
+                        id: clipboardTileArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: ClipboardHistoryPanelState.visible = !ClipboardHistoryPanelState.visible
+                    }
                 }
 
                 Rectangle {
@@ -650,44 +678,6 @@ FloatingWindow {
                 width: root.contentWidth
                 columns: 2
                 spacing: 10
-
-                Rectangle {
-                    width: root.tileWidth
-                    height: root.tileHeight
-                    radius: Style.radiusS
-                    color: clipboardTileArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("clipboard", ControlCenterState.panel)
-
-                    Behavior on color {
-                        ColorAnimation { duration: Style.animationFast }
-                    }
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        NIcon {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            icon: ""
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXL
-                        }
-
-                        NText {
-                            text: "Clipboard"
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXS
-                        }
-                    }
-
-                    MouseArea {
-                        id: clipboardTileArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: ClipboardHistoryPanelState.visible = !ClipboardHistoryPanelState.visible
-                    }
-                }
 
                 Rectangle {
                     width: root.tileWidth
@@ -793,19 +783,16 @@ FloatingWindow {
                     id: mediaCard
                     width: 230
                     spacing: 8
-                    // Deliberately not gated by ModulesConfig.showInTray("mediaPlayer", ...)
-                    // like every other tile here - Noctalia's own reference
-                    // bar screenshot shows a compact "now playing" widget in
-                    // the bar *and* this same rich card in the Control
-                    // Center simultaneously, unlike Clipboard/Wallpaper/etc.
-                    // (Control-Center-only there). Zaris's single tray
-                    // flag can't express "both places" - keeping
-                    // mediaPlayer's tray default false (bar-visible, via
-                    // Bar.qml's own MediaWidget) and just always showing
-                    // this card when something's playing gets the same
-                    // dual-display without sacrificing the bar's mini
-                    // scrubber.
-                    visible: !!MediaService.currentPlayer
+                    // The "both places at once" exception this card used to
+                    // need (Noctalia's own bar shows a compact "now playing"
+                    // widget alongside this same rich card in its Control
+                    // Center) no longer applies - the user asked to drop
+                    // Bar.qml's MediaWidget now that this card exists,
+                    // since showing the same now-playing info in both spots
+                    // was redundant. `mediaPlayer`'s tray default flipped to
+                    // `true` at the same time (ModulesConfig.qml), so this
+                    // card is properly gated like every other tile here now.
+                    visible: ModulesConfig.showInTray("mediaPlayer", ControlCenterState.panel) && !!MediaService.currentPlayer
 
                     Item {
                         width: parent.width

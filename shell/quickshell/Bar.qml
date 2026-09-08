@@ -161,19 +161,6 @@ Variants {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    MediaWidget {
-                        // Unlike most modules, this one also hides itself
-                        // when there's genuinely nothing playing - has to be
-                        // re-derived here rather than relying on the
-                        // component's own internal default, since setting
-                        // `visible` externally replaces that binding rather
-                        // than combining with it.
-                        visible: ModulesConfig.showInBar("mediaPlayer", panel) && !!MediaService.currentPlayer
-                        textColor: Colors.textMuted
-                        activeColor: Colors.teal
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
                     ClipboardIndicator {
                         visible: ModulesConfig.showInBar("clipboard", panel)
                         textColor: Colors.textMuted
@@ -247,10 +234,20 @@ Variants {
                         // one module's tray setting (the profile header,
                         // toggle grid, quick-launch tiles, and audio
                         // section aren't tray-gated at all).
+                        //
+                        // The source asset itself is 347x304, not truly
+                        // square - `PreserveAspectFit` into a square box
+                        // was letterboxing it (real empty space top and
+                        // bottom, not a distortion), reading as "smushed"
+                        // next to the bar's other icons. `PreserveAspectCrop`
+                        // fills the box completely instead, cropping a
+                        // sliver off the wider left/right edges rather than
+                        // leaving vertical gaps - a truer square. Sized up
+                        // slightly too (20->26) per the same feedback.
                         source: "file://" + Quickshell.env("HOME") + "/.config/quickshell/assets/zaris-logo-square.png"
-                        width: 20
-                        height: 20
-                        fillMode: Image.PreserveAspectFit
+                        width: 26
+                        height: 26
+                        fillMode: Image.PreserveAspectCrop
                         anchors.verticalCenter: parent.verticalCenter
 
                         MouseArea {
