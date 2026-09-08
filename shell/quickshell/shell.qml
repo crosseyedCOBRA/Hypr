@@ -26,4 +26,5 @@ ShellRoot {
     WallpaperPickerPanel {}
     CalendarFlyout {}
     NotificationHistoryPanel {}
+    AvatarPickerPanel {}
 }

@@ -148,7 +148,17 @@ FloatingWindow {
 
                         Image {
                             id: faceImage
-                            source: "file://" + Quickshell.env("HOME") + "/.face"
+                            // The `?v=` query string does nothing to which
+                            // file actually loads (file:// URLs ignore
+                            // query strings) - it's purely there so
+                            // AvatarPickerPanel.qml bumping
+                            // AvatarPickerPanelState.version after
+                            // overwriting ~/.face in place forces QML's
+                            // image cache (keyed on the full URL string,
+                            // not the file's actual contents) to treat it
+                            // as a different image and reload, rather than
+                            // keep showing whatever it cached before.
+                            source: "file://" + Quickshell.env("HOME") + "/.face?v=" + AvatarPickerPanelState.version
                             asynchronous: true
                             fillMode: Image.PreserveAspectCrop
                             width: avatar.width
@@ -179,6 +189,22 @@ FloatingWindow {
                             source: "file://" + Quickshell.env("HOME") + "/.config/quickshell/assets/zaris-logo-circle.png"
                             visible: faceImage.status !== Image.Ready
                             fillMode: Image.PreserveAspectFit
+                        }
+
+                        MouseArea {
+                            id: avatarArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: AvatarPickerPanelState.visible = true
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: width / 2
+                            color: "transparent"
+                            border.width: avatarArea.containsMouse ? 2 : 0
+                            border.color: Colors.pillActive
                         }
                     }
 
