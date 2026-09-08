@@ -8,6 +8,13 @@ import Quickshell.Widgets
 // dialog rather than two different inline popups. windowrule=float +
 // center,title:^Pin to Dock$ in zaris.conf places it like the launcher/
 // settings/OSD windows - same mechanism, nothing new needed WM-side.
+//
+// Phase 2 of the Noctalia-port effort (see ROADMAP.md): the two hand-rolled
+// "button" Rectangle+Text+MouseArea groups are now NButton (real hover
+// states, matches the styling every other ported button in this shell
+// uses) - the outer dialog chrome (bordered Rectangle) and the IconImage
+// row are left as-is, no ported widget maps onto either more usefully than
+// what's already there.
 FloatingWindow {
     id: dialog
 
@@ -43,12 +50,12 @@ FloatingWindow {
                     source: PinDialogState.appIcon !== "" ? Quickshell.iconPath(PinDialogState.appIcon, true) : ""
                 }
 
-                Text {
+                NText {
                     anchors.verticalCenter: parent.verticalCenter
                     text: PinDialogState.appName
                     color: Colors.text
-                    font.pixelSize: 16
-                    font.bold: true
+                    pointSize: Style.fontSizeL
+                    font.weight: Style.fontWeightBold
                 }
             }
 
@@ -56,47 +63,21 @@ FloatingWindow {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 10
 
-                Rectangle {
-                    width: actionLabel.implicitWidth + 24
-                    height: 32
-                    radius: 6
-                    color: Colors.pillActive
-
-                    Text {
-                        id: actionLabel
-                        anchors.centerIn: parent
-                        text: dialog.pinned ? "Remove from Dock" : "Pin to Dock"
-                        color: Colors.text
-                        font.pixelSize: 13
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: {
-                            DockConfig.togglePin(PinDialogState.appId)
-                            PinDialogState.visible = false
-                        }
+                NButton {
+                    text: dialog.pinned ? "Remove from Dock" : "Pin to Dock"
+                    backgroundColor: Colors.pillActive
+                    textColor: Colors.text
+                    onClicked: {
+                        DockConfig.togglePin(PinDialogState.appId)
+                        PinDialogState.visible = false
                     }
                 }
 
-                Rectangle {
-                    width: cancelLabel.implicitWidth + 24
-                    height: 32
-                    radius: 6
-                    color: Colors.pill
-
-                    Text {
-                        id: cancelLabel
-                        anchors.centerIn: parent
-                        text: "Cancel"
-                        color: Colors.textMuted
-                        font.pixelSize: 13
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        onClicked: PinDialogState.visible = false
-                    }
+                NButton {
+                    text: "Cancel"
+                    outlined: true
+                    backgroundColor: Colors.textMuted
+                    onClicked: PinDialogState.visible = false
                 }
             }
         }
