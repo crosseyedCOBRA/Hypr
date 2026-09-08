@@ -27,7 +27,13 @@ singleton PinDialogState 1.0 PinDialogState.qml
 singleton DndState 1.0 DndState.qml
 singleton WeatherService 1.0 WeatherService.qml
 singleton PowerProfileState 1.0 PowerProfileState.qml
+singleton BarConfig 1.0 BarConfig.qml
+singleton DockItemsService 1.0 DockItemsService.qml
+LauncherContent 1.0 LauncherContent.qml
 Launcher 1.0 Launcher.qml
+BarClockText 1.0 BarClockText.qml
+BarControlCenterLauncher 1.0 BarControlCenterLauncher.qml
+BarStatusModules 1.0 BarStatusModules.qml
 Bar 1.0 Bar.qml
 Workspaces 1.0 Workspaces.qml
 CpuLoad 1.0 CpuLoad.qml

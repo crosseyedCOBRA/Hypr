@@ -67,28 +67,48 @@ import Quickshell.Services.Pipewire
 // Bluetooth, volume, media) is read from the same shared singletons/
 // services the bar's inline modules use, so toggling from here stays in
 // sync with the bar.
-FloatingWindow {
+// Built on PopupWindow rather than a FloatingWindow, same reasoning as
+// Settings.qml/CalendarFlyout.qml: anchors directly to the bar's own
+// full-width background surface (ControlCenterState.barItem, set by
+// whichever monitor's launcher icon was actually clicked) via `anchor.item`
+// rather than a WM-side `topright 14 48` windowrule fixed to one screen
+// corner - the WM rule looked fine while the bar only ever lived at the
+// top, but once BarConfig.position could also be "bottom" (see BarConfig's
+// own comment), a fixed top-right corner would leave Control Center
+// visually disconnected from a bar that's actually at the bottom of the
+// screen. Right-aligned under the bar (anchor.rect.x) and opening
+// above/below it depending on BarConfig.position (BarConfig.popupAnchorY,
+// shared with every other bar-anchored popup) keeps it attached to the bar
+// wherever the bar actually is.
+PopupWindow {
     id: root
 
-    visible: ControlCenterState.visible
-    title: "Control Center"
+    visible: ControlCenterState.visible && !!ControlCenterState.barItem
+    color: Colors.bg
 
     // Fixed size, same reasoning as Settings.qml's fixed 680x460 - a real
     // bug found while building the second pass (not just a Xephyr-sandbox
     // artifact, confirmed via a debug Timer on the LIVE desktop with a
     // real WM running): FloatingWindow's actual OS-level height never
-    // tracked content.implicitHeight growing after first map. Sidestepped
-    // the same way Settings.qml already does for its own differently-sized
-    // categories - one fixed size generous enough for the tallest state
-    // this panel can be in (every optional row/dial visible at once).
-    // Widened a bit and given real side padding (the content column stays
-    // at its existing contentWidth, just with more breathing room on
-    // either side of it now) plus a subtle outer border - a cleaner match
-    // for Noctalia's own reference screenshot, which has visible padding
-    // and a bit of background definition around its Control Center rather
-    // than content running edge-to-edge.
+    // tracked content.implicitHeight growing after first map (this window
+    // was a FloatingWindow at the time; PopupWindow has never been
+    // observed to have this problem, but the fixed size is kept regardless
+    // since nothing about this panel's content actually needs to grow).
+    // Sidestepped the same way Settings.qml already does for its own
+    // differently-sized categories - one fixed size generous enough for
+    // the tallest state this panel can be in (every optional row/dial
+    // visible at once). Widened a bit and given real side padding (the
+    // content column stays at its existing contentWidth, just with more
+    // breathing room on either side of it now) plus a subtle outer border
+    // - a cleaner match for Noctalia's own reference screenshot, which has
+    // visible padding and a bit of background definition around its
+    // Control Center rather than content running edge-to-edge.
     implicitWidth: 440
     implicitHeight: 830
+
+    anchor.item: ControlCenterState.barItem
+    anchor.rect.x: ControlCenterState.barItem ? ControlCenterState.barItem.width - implicitWidth : 0
+    anchor.rect.y: BarConfig.popupAnchorY(ControlCenterState.barItem, implicitHeight)
 
     readonly property PwNode pwSink: Pipewire.defaultAudioSink
     readonly property PwNode pwSource: Pipewire.defaultAudioSource

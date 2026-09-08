@@ -40,7 +40,12 @@ PopupWindow {
 
     anchor.item: CalendarFlyoutState.targetItem
     anchor.rect.x: CalendarFlyoutState.targetItem ? (CalendarFlyoutState.targetItem.width - implicitWidth) / 2 : 0
-    anchor.rect.y: CalendarFlyoutState.targetItem ? CalendarFlyoutState.targetItem.height + 10 : 0
+    // Opens above the bar instead of below it when BarConfig.position is
+    // "bottom" - see BarConfig.popupAnchorY's own comment. The clock this
+    // anchors to can now live in a bottom-positioned bar too (either layout
+    // mode), not just a top one, so this can no longer be a fixed
+    // downward-only offset.
+    anchor.rect.y: BarConfig.popupAnchorY(CalendarFlyoutState.targetItem, implicitHeight)
 
     readonly property var todayDate: new Date()
     property int viewMonth: todayDate.getMonth()

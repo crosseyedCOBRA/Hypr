@@ -55,20 +55,38 @@ PopupWindow {
     color: Colors.bg
 
     implicitWidth: 680
-    implicitHeight: 720
+    // Tall enough that every category's content fits without the
+    // NScrollView ever actually needing to scroll - the Modules tab (the
+    // full per-module Enabled/Screens/In-tray table, 16 rows) is the
+    // tallest at ~850px including its own header/margins, so this leaves a
+    // comfortable margin above that on any real monitor. Matters more now
+    // than it used to: a bar-position-aware popup (BarConfig.popupAnchorY)
+    // that opens upward, above a bottom-positioned bar, needs real
+    // headroom between the bar and the top of the screen to stay fully
+    // visible - a shorter window that scrolled internally would have had
+    // more slack to work with there, but per explicit user preference this
+    // shows everything statically instead; splitting a category further
+    // (like Bar/Modules already were) is the intended fix if a future
+    // addition ever makes one category's content taller than this.
+    implicitHeight: 900
 
     anchor.item: SettingsState.targetItem
     // Horizontally centered under the bar, same as CalendarFlyout centers
     // under the clock - anchor.item is now the bar's full-width surface,
     // not a small edge icon, so centering here means centered on screen.
     anchor.rect.x: SettingsState.targetItem ? (SettingsState.targetItem.width - implicitWidth) / 2 : 0
-    anchor.rect.y: SettingsState.targetItem ? SettingsState.targetItem.height + 10 : 0
+    // Opens above the bar instead of below it when BarConfig.position is
+    // "bottom" - see BarConfig.popupAnchorY's own comment.
+    anchor.rect.y: BarConfig.popupAnchorY(SettingsState.targetItem, implicitHeight)
 
     property string activeCategory: "bar"
 
     readonly property var categories: [
+        { id: "general", label: "General", icon: "" },
+        { id: "layout", label: "Layout", icon: "" },
         { id: "profile", label: "Profile", icon: "" },
-        { id: "bar", label: "Bar", icon: "" },
+        { id: "bar", label: "Bar", icon: "" },
+        { id: "modules", label: "Modules", icon: "" },
         { id: "dock", label: "Dock", icon: "" }
     ]
 
@@ -199,6 +217,148 @@ PopupWindow {
                             bottomPadding: 16
                         }
 
+                        // ==================== General ====================
+                        Column {
+                            width: parent.width
+                            spacing: 4
+                            visible: settingsWindow.activeCategory === "general"
+
+                            NText {
+                                text: "About this system"
+                                color: Colors.text
+                                pointSize: Style.fontSizeM
+                                font.weight: Style.fontWeightBold
+                                bottomPadding: 4
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 28
+                                spacing: 12
+                                NText { text: "OS"; width: 140; color: Colors.textMuted; pointSize: Style.fontSizeS }
+                                NText { text: HostService.osPretty || "Unknown"; color: Colors.text; pointSize: Style.fontSizeM }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 28
+                                spacing: 12
+                                NText { text: "Hostname"; width: 140; color: Colors.textMuted; pointSize: Style.fontSizeS }
+                                NText { text: HostService.hostName || "Unknown"; color: Colors.text; pointSize: Style.fontSizeM }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 28
+                                spacing: 12
+                                NText { text: "Uptime"; width: 140; color: Colors.textMuted; pointSize: Style.fontSizeS }
+                                NText { text: HostService.uptimeText || "Unknown"; color: Colors.text; pointSize: Style.fontSizeM }
+                            }
+
+                            NText {
+                                text: "More general, non-bar-specific settings will land here over time - this is reserved for them rather than left out entirely."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 10
+                            }
+                        }
+
+                        // ==================== Layout ====================
+                        Column {
+                            width: parent.width
+                            spacing: 4
+                            visible: settingsWindow.activeCategory === "layout"
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Bar layout"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NTabBar {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    tabHeight: 22
+
+                                    NTabButton {
+                                        text: "Status Bar"
+                                        pointSize: Style.fontSizeS
+                                        checked: BarConfig.layoutMode === "statusbar"
+                                        onClicked: BarConfig.setLayoutMode("statusbar")
+                                    }
+
+                                    NTabButton {
+                                        text: "Taskbar"
+                                        pointSize: Style.fontSizeS
+                                        checked: BarConfig.layoutMode === "taskbar"
+                                        onClicked: BarConfig.setLayoutMode("taskbar")
+                                    }
+                                }
+                            }
+
+                            NText {
+                                text: BarConfig.layoutMode === "taskbar"
+                                    ? "Taskbar mode: launcher + pinned/running apps embedded directly in the bar (left), workspaces centered, status modules + clock + Control Center on the right - a Plasma/Windows-style layout. The standalone Dock's own window is hidden while this is active; pin apps the same way as before (right-click a result in the launcher)."
+                                    : "Status Bar mode: the original layout - logo + workspaces (left), clock (center), status modules + Control Center (right). Enable the separate Dock (see the Dock tab) if you also want a pinned/running-apps strip."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 6
+                                bottomPadding: 10
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Bar position"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NTabBar {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    tabHeight: 22
+
+                                    NTabButton {
+                                        text: "Top"
+                                        pointSize: Style.fontSizeS
+                                        checked: BarConfig.position === "top"
+                                        onClicked: BarConfig.setPosition("top")
+                                    }
+
+                                    NTabButton {
+                                        text: "Bottom"
+                                        pointSize: Style.fontSizeS
+                                        checked: BarConfig.position === "bottom"
+                                        onClicked: BarConfig.setPosition("bottom")
+                                    }
+                                }
+                            }
+
+                            NText {
+                                text: "Applies in either layout above. Left/right bar positions (like the dock already supports) are a possible future addition, not available yet."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 6
+                            }
+                        }
+
                         // ==================== Profile ====================
                         Column {
                             width: parent.width
@@ -239,10 +399,83 @@ PopupWindow {
                         }
 
                         // ==================== Bar ====================
+                        // Per-module Enabled/Screens/In-tray table moved out
+                        // to its own "Modules" tab below - keeping it here
+                        // alongside opacity/height made this one tab by far
+                        // the tallest in the whole window, which mattered
+                        // once every tab needed to fit without scrolling
+                        // (see the window's own implicitHeight comment).
                         Column {
                             width: parent.width
                             spacing: 4
                             visible: settingsWindow.activeCategory === "bar"
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Background opacity"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NSlider {
+                                    width: 160
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    from: 0
+                                    to: 1
+                                    value: BarConfig.backgroundOpacity
+                                    onMoved: BarConfig.setBackgroundOpacity(value)
+                                }
+
+                                NText {
+                                    text: Math.round(BarConfig.backgroundOpacity * 100) + "%"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.textMuted
+                                    pointSize: Style.fontSizeS
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Height"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NSlider {
+                                    width: 160
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    from: 32
+                                    to: 96
+                                    value: BarConfig.height
+                                    onMoved: BarConfig.setHeight(value)
+                                }
+
+                                NText {
+                                    text: BarConfig.height + "px"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.textMuted
+                                    pointSize: Style.fontSizeS
+                                }
+                            }
+                        }
+
+                        // ==================== Modules ====================
+                        Column {
+                            width: parent.width
+                            spacing: 4
+                            visible: settingsWindow.activeCategory === "modules"
 
                             Row {
                                 width: parent.width

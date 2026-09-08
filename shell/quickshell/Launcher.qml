@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Widgets
 
 // Rofi-style application launcher.
 //
@@ -18,15 +17,22 @@ import Quickshell.Widgets
 // bordered-Rectangle+TextInput, same reasoning as every other search/
 // filter field in this shell - its Up/Down/Return/Escape key handling
 // isn't reachable through NTextInput's inputItem alias from outside the
-// component.
-FloatingWindow {
-    id: launcherWindow
-
-    visible: LauncherState.visible
-    title: "Launcher"
-
-    implicitWidth: 600
-    implicitHeight: 420
+// component. Both of those live in LauncherContent.qml now (see below).
+//
+// Two window variants, same "Item root holding shared state, two Window
+// children" pattern Dock.qml already uses for its reserved/floating modes:
+// a centered FloatingWindow (BarConfig.layoutMode "statusbar", the original
+// behavior, positioned via the WM's own title-matched float+center
+// windowrule) and a PopupWindow anchored to the bar's own taskbar-mode
+// launcher icon (BarConfig.layoutMode "taskbar", LauncherState.anchorItem -
+// set by Bar.qml right before toggling visible) - "similarly to Windows UI,
+// KDE Plasma, etc." per the user's explicit request for taskbar mode. Only
+// one is ever visible at a time; both share the exact same query/
+// filteredApps/launch() state (kept here, in the outer Item) and the exact
+// same LauncherContent.qml for their actual search+list UI, so switching
+// BarConfig.layoutMode doesn't lose or duplicate any of that state.
+Item {
+    id: root
 
     IpcHandler {
         target: "launcher"
@@ -96,99 +102,44 @@ FloatingWindow {
         })
     }
 
-    onVisibleChanged: {
-        if (visible) {
-            query = ""
-            resultList.currentIndex = 0
-            searchField.forceActiveFocus()
+    FloatingWindow {
+        id: launcherWindow
+
+        visible: LauncherState.visible && BarConfig.layoutMode !== "taskbar"
+        title: "Launcher"
+
+        implicitWidth: 600
+        implicitHeight: 420
+
+        LauncherContent {
+            launcherRoot: root
+            active: BarConfig.layoutMode !== "taskbar"
         }
     }
 
-    Rectangle {
-        anchors.fill: parent
+    // Opens downward below the icon when the bar is at the top, upward
+    // above it when the bar is at the bottom - mirroring a real taskbar
+    // start menu's own behavior either way (Windows/Plasma open upward
+    // from a bottom taskbar). Left-aligned under the icon (anchor.rect.x:
+    // 0) rather than centered like Settings.qml/CalendarFlyout.qml - a
+    // start-menu-style launcher conventionally lines up with its trigger
+    // icon's left edge, not straddling it.
+    PopupWindow {
+        id: launcherPopup
+
+        visible: LauncherState.visible && BarConfig.layoutMode === "taskbar" && !!LauncherState.anchorItem
         color: Colors.bg
 
-        Column {
-            anchors.fill: parent
-            anchors.margins: 12
-            spacing: 8
+        implicitWidth: 420
+        implicitHeight: 500
 
-            Rectangle {
-                width: parent.width
-                height: 36
-                radius: 6
-                color: "transparent"
-                border.color: Colors.textMuted
-                border.width: 1
+        anchor.item: LauncherState.anchorItem
+        anchor.rect.x: 0
+        anchor.rect.y: BarConfig.popupAnchorY(LauncherState.anchorItem, implicitHeight)
 
-                TextInput {
-                    id: searchField
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    color: Colors.text
-                    font.pixelSize: 16
-                    clip: true
-                    focus: true
-                    text: launcherWindow.query
-
-                    onTextChanged: launcherWindow.query = text
-
-                    Keys.onEscapePressed: LauncherState.visible = false
-                    Keys.onReturnPressed: launcherWindow.launch(resultList.currentModelData)
-                    Keys.onDownPressed: resultList.currentIndex = Math.min(resultList.currentIndex + 1, resultList.count - 1)
-                    Keys.onUpPressed: resultList.currentIndex = Math.max(resultList.currentIndex - 1, 0)
-                }
-            }
-
-            NListView {
-                id: resultList
-                width: parent.width
-                height: parent.height - searchField.height - parent.spacing
-                model: launcherWindow.filteredApps
-                currentIndex: 0
-
-                property var currentModelData: count > 0 ? model[currentIndex] : null
-
-                delegate: Rectangle {
-                    width: resultList.width
-                    height: 44
-                    radius: 6
-                    color: ListView.isCurrentItem ? Colors.pillActive : "transparent"
-
-                    Row {
-                        anchors.fill: parent
-                        anchors.margins: 6
-                        spacing: 10
-
-                        IconImage {
-                            width: 32
-                            height: 32
-                            anchors.verticalCenter: parent.verticalCenter
-                            source: Quickshell.iconPath(modelData.icon, true)
-                        }
-
-                        NText {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.name
-                            color: Colors.text
-                            pointSize: Style.fontSizeL
-                        }
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        onClicked: function (mouse) {
-                            if (mouse.button === Qt.RightButton) {
-                                PinDialogState.open(modelData.id, modelData.name, modelData.icon)
-                                return
-                            }
-                            resultList.currentIndex = index
-                            launcherWindow.launch(modelData)
-                        }
-                    }
-                }
-            }
+        LauncherContent {
+            launcherRoot: root
+            active: BarConfig.layoutMode === "taskbar"
         }
     }
 }

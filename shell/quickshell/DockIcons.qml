@@ -26,7 +26,10 @@ import Quickshell.Widgets
 Item {
     id: root
 
-    readonly property int iconSize: 44
+    // Overridable (not readonly) so the bar's embedded taskbar-mode strip
+    // (Bar.qml) can size icons to fit BarConfig.height instead of the
+    // standalone dock's fixed 44px - both still share this exact component.
+    property int iconSize: 44
     readonly property int spacing: 10
 
     property var model: []
