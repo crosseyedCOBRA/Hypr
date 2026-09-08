@@ -45,7 +45,7 @@ Row {
 
             width: label.implicitWidth + 16
             height: 22
-            radius: 4
+            radius: Math.min(Style.radiusS, height / 2)
             color: modelData.active ? Colors.pillActive : Colors.pill
 
             NText {

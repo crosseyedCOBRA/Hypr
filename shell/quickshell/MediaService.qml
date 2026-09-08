@@ -50,6 +50,22 @@ Singleton {
         }
     }
 
+    // `currentPlayer.length` doesn't reliably notify property changes for
+    // every MPRIS source - confirmed via a live debug Timer against a real
+    // Firefox/YouTube MPRIS bridge (the exact "generic browser tab" case
+    // this file's header comment already calls out): a plain `trackLength:
+    // currentPlayer ? currentPlayer.length : 0` binding froze at whatever
+    // near-zero placeholder value the player first reported and never
+    // re-evaluated again, while `currentPlayer.length` read directly
+    // (imperatively, bypassing QML's change-notification requirement) kept
+    // climbing correctly every second - the same reliability gap
+    // `currentPosition` already works around below via `positionTimer`
+    // rather than a plain binding. Refreshed at the same points
+    // `currentPosition` already is, for the same reason.
+    function _refreshTrackLength() {
+        trackLength = currentPlayer ? ((currentPlayer.length < infiniteTrackLength) ? currentPlayer.length : 0) : 0
+    }
+
     property var currentPlayer: null
     property string playerIdentity: currentPlayer ? (currentPlayer.identity || "") : ""
     property real currentPosition: 0
@@ -60,7 +76,9 @@ Singleton {
     property string trackArtist: currentPlayer ? (currentPlayer.trackArtist || "") : ""
     property string trackAlbum: currentPlayer ? (currentPlayer.trackAlbum || "") : ""
     property string trackArtUrl: currentPlayer ? (currentPlayer.trackArtUrl || "") : ""
-    property real trackLength: currentPlayer ? ((currentPlayer.length < infiniteTrackLength) ? currentPlayer.length : 0) : 0
+    // Not a pure binding (unlike the rest of this block) - see
+    // _refreshTrackLength() below for why.
+    property real trackLength: 0
     property bool canPlay: currentPlayer ? currentPlayer.canPlay : false
     property bool canPause: currentPlayer ? currentPlayer.canPause : false
     property bool canGoNext: currentPlayer ? currentPlayer.canGoNext : false
@@ -226,6 +244,7 @@ Singleton {
                 currentPlayer = newPlayer
                 selectedPlayerIndex = index
                 currentPosition = currentPlayer ? currentPlayer.position : 0
+                _refreshTrackLength()
             }
         }
     }
@@ -236,6 +255,7 @@ Singleton {
         if (newPlayer !== currentPlayer) {
             currentPlayer = newPlayer
             currentPosition = currentPlayer ? currentPlayer.position : 0
+            _refreshTrackLength()
         }
     }
 
@@ -322,6 +342,7 @@ Singleton {
         onTriggered: {
             if (currentPlayer && !root.isSeeking && currentPlayer.isPlaying && currentPlayer.length > 0 && currentPlayer.playbackState === MprisPlaybackState.Playing) {
                 currentPosition = currentPlayer.position
+                _refreshTrackLength()
             } else {
                 running = false
             }
@@ -334,11 +355,13 @@ Singleton {
         function onPositionChanged() {
             if (!root.isSeeking && currentPlayer) {
                 currentPosition = currentPlayer.position
+                _refreshTrackLength()
             }
         }
         function onPlaybackStateChanged() {
             if (!root.isSeeking && currentPlayer) {
                 currentPosition = currentPlayer.position
+                _refreshTrackLength()
             }
         }
     }

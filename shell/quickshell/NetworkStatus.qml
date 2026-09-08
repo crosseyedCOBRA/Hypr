@@ -2,14 +2,16 @@ import QtQuick
 import QtQuick.Controls
 import Quickshell.Io
 
-// Wired-connection status: icon + Connected/Disconnected, link speed shown
-// on hover. Auto-detects the interface holding the default route rather
-// than hardcoding one.
+// Wired-connection status: icon + interface name (matching Noctalia's bar,
+// which shows e.g. "enp2s0" rather than a generic "Connected" label), link
+// speed shown on hover. Auto-detects the interface holding the default
+// route rather than hardcoding one.
 Item {
     id: root
 
     property color textColor: "white"
     property bool connected: false
+    property string interfaceName: ""
     property string tooltipText: ""
 
     implicitWidth: rowLayout.implicitWidth
@@ -27,7 +29,7 @@ Item {
 
         NText {
             id: label
-            text: root.connected ? "Connected" : "Disconnected"
+            text: root.connected ? root.interfaceName : "Disconnected"
             color: root.textColor
             pointSize: Style.fontSizeL
         }
@@ -64,6 +66,7 @@ Item {
                 const speed = parts[2]
 
                 root.connected = state === "up"
+                root.interfaceName = iface
                 root.tooltipText = root.connected ? (iface + ": " + (speed || "?") + " Mbps") : "No active connection"
             }
         }
