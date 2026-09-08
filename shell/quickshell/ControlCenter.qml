@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Services.Pipewire
 
@@ -10,12 +11,25 @@ import Quickshell.Services.Pipewire
 // Control Center (its code is Wayland/OpenGL-native, nothing to port),
 // just the same idea built from Zaris's existing services: a richer, more
 // scannable landing spot than one long column of label+widget rows.
-// Deliberately skipped two pieces of Noctalia's version that have no Zaris
-// equivalent yet: an avatar/large clock (the bar's own clock is already
-// visible behind this panel, wherever it's opened from) and weather+
-// power-profile (no weather service or power-profile switching exists
-// here - weather specifically is next up, per the user, not folded into
-// this pass).
+// Deliberately skipped one piece of Noctalia's version that has no Zaris
+// equivalent yet: weather+power-profile (no weather service or
+// power-profile switching exists here - weather specifically is next up,
+// per the user, not folded into this pass).
+//
+// Eighth pass: added the profile header (avatar, display name, uptime)
+// this file's own comment used to list as intentionally skipped - "the
+// bar's own clock is already visible behind this panel" reasoning applied
+// to the clock specifically, not the profile block as a whole, and the
+// user asked for the full header once the rest of the panel was in place.
+// `HostService.qml` already had `displayName`/`username` from Phase 1
+// (ported but never given a real use site until now) - only `uptimeText`
+// is new there. No real `~/.face` exists on this machine, so the avatar
+// falls back to a single-letter badge (`DockIcons.qml`'s existing
+// fallback-avatar pattern, reused verbatim: `Colors.pill` circle + bold
+// first-letter `NText`) - real-photo support (a `MultiEffect` circular
+// mask, since Qt Quick's `Image` can't clip to a non-rectangular shape on
+// its own) was verified separately with a throwaway test file, not left
+// unverified just because this machine has nothing to show through it.
 //
 // Seventh pass: the media card is now a real "now playing" card (album art
 // as a full-bleed background behind title/artist/album, a real seek
@@ -68,7 +82,7 @@ FloatingWindow {
     // categories - one fixed size generous enough for the tallest state
     // this panel can be in (every optional row/dial visible at once).
     implicitWidth: 404
-    implicitHeight: 700
+    implicitHeight: 720
 
     readonly property PwNode pwSink: Pipewire.defaultAudioSink
     readonly property PwNode pwSource: Pipewire.defaultAudioSource
@@ -119,7 +133,82 @@ FloatingWindow {
 
             Item {
                 width: root.contentWidth
-                height: 26
+                height: 44
+
+                Row {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 10
+
+                    Item {
+                        id: avatar
+                        width: 44
+                        height: 44
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        Image {
+                            id: faceImage
+                            source: "file://" + Quickshell.env("HOME") + "/.face"
+                            asynchronous: true
+                            fillMode: Image.PreserveAspectCrop
+                            width: avatar.width
+                            height: avatar.height
+                            visible: false
+                            layer.enabled: true
+                        }
+
+                        Rectangle {
+                            id: avatarMask
+                            width: avatar.width
+                            height: avatar.height
+                            radius: width / 2
+                            visible: false
+                            layer.enabled: true
+                        }
+
+                        MultiEffect {
+                            anchors.fill: parent
+                            source: faceImage
+                            maskEnabled: true
+                            maskSource: avatarMask
+                            visible: faceImage.status === Image.Ready
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: width / 2
+                            color: Colors.pill
+                            visible: faceImage.status !== Image.Ready
+
+                            NText {
+                                anchors.centerIn: parent
+                                text: (HostService.displayName || "U").charAt(0).toUpperCase()
+                                color: Colors.text
+                                pointSize: Style.fontSizeXL
+                                font.weight: Style.fontWeightBold
+                            }
+                        }
+                    }
+
+                    Column {
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 1
+
+                        NText {
+                            text: HostService.displayName
+                            color: Colors.text
+                            pointSize: Style.fontSizeM
+                            font.weight: Style.fontWeightBold
+                        }
+
+                        NText {
+                            text: "Uptime: " + HostService.uptimeText
+                            visible: HostService.uptimeText !== ""
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                        }
+                    }
+                }
 
                 Row {
                     anchors.right: parent.right

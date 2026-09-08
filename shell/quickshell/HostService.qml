@@ -5,15 +5,19 @@ import Quickshell.Io
 
 // Host/user identity info - distro name + logo, resolved display name, and
 // hostname (adapted from Services/System/HostService.qml, MIT licensed,
-// v4.7.7 - see README.md's "Third-party code" section). No current use
-// site yet (no About panel or user-facing header exists to show any of
-// this), ported as a foundation piece the way MediaService/WallpaperService
-// were - genuinely useful, zero Wayland/compositor coupling, and not
-// redundant with anything Zaris's own bar modules already read (those
-// cover CPU/kernel/network, not host/user identity). Dropped the
-// `NOCTALIA_REALNAME` env-var override (Noctalia-specific env var name,
-// no Zaris equivalent) and `Logger.*` calls (no such logging singleton
-// here).
+// v4.7.7 - see README.md's "Third-party code" section). Ported as a
+// foundation piece the way MediaService/WallpaperService were - genuinely
+// useful, zero Wayland/compositor coupling, and not redundant with
+// anything Zaris's own bar modules already read (those cover CPU/kernel/
+// network, not host/user identity). Dropped the `NOCTALIA_REALNAME`
+// env-var override (Noctalia-specific env var name, no Zaris equivalent)
+// and `Logger.*` calls (no such logging singleton here).
+//
+// First real use site: ControlCenter.qml's profile header. `uptimeText`
+// is new (not part of the original port) - reads `/proc/uptime` directly
+// rather than parsing `uptime -p`'s locale-dependent prose output, and
+// refreshes every minute like every other live-polled stat in this
+// codebase.
 Singleton {
     id: root
 
@@ -26,6 +30,34 @@ Singleton {
     property string realName: ""
 
     property string hostName: ""
+
+    property string uptimeText: ""
+
+    function formatUptime(totalSeconds) {
+        const h = Math.floor(totalSeconds / 3600)
+        const m = Math.floor((totalSeconds % 3600) / 60)
+        return h > 0 ? (h + "h " + m + "m") : (m + "m")
+    }
+
+    Process {
+        id: uptimeReader
+        command: ["sh", "-c", "cat /proc/uptime"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const seconds = parseFloat(this.text.trim().split(" ")[0])
+                if (!isNaN(seconds))
+                    root.uptimeText = root.formatUptime(seconds)
+            }
+        }
+    }
+
+    Timer {
+        interval: 60000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: uptimeReader.running = true
+    }
 
     property string pendingLogoName: ""
 
