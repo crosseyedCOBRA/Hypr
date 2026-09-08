@@ -15,6 +15,7 @@ singleton WallpaperPickerPanelState 1.0 WallpaperPickerPanelState.qml
 singleton CalendarFlyoutState 1.0 CalendarFlyoutState.qml
 singleton HostService 1.0 HostService.qml
 singleton BatteryService 1.0 BatteryService.qml
+singleton BrightnessService 1.0 BrightnessService.qml
 singleton OverflowState 1.0 OverflowState.qml
 singleton SettingsState 1.0 SettingsState.qml
 singleton OSDState 1.0 OSDState.qml

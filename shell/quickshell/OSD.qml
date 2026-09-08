@@ -30,6 +30,37 @@ FloatingWindow {
         }
     }
 
+    // Actually changes brightness (via BrightnessService, which picks
+    // ddcutil/brightnessctl/asdbctl per-monitor as appropriate) and shows
+    // the OSD popup with the primary monitor's resulting level - bind
+    // XF86MonBrightnessUp/Down to these in zaris.conf once ddcutil or
+    // brightnessctl is installed for your hardware (see DEPENDENCIES.md).
+    IpcHandler {
+        target: "brightness"
+
+        function increase(): void {
+            BrightnessService.increaseBrightness()
+            osdWindow.showPrimaryBrightness()
+        }
+
+        function decrease(): void {
+            BrightnessService.decreaseBrightness()
+            osdWindow.showPrimaryBrightness()
+        }
+    }
+
+    function showPrimaryBrightness() {
+        const monitor = BrightnessService.getMonitorForScreen(Quickshell.screens[0])
+        if (!monitor)
+            return
+        // increase/decreaseBrightness() only queue the new value (applied
+        // after a short debounce) rather than updating `brightness`
+        // synchronously - read the queued value first so the OSD doesn't
+        // briefly flash the stale pre-change level.
+        const level = !isNaN(monitor.queuedBrightness) ? monitor.queuedBrightness : monitor.brightness
+        OSDState.show("brightness", Math.round(level * 100), false)
+    }
+
     Rectangle {
         anchors.fill: parent
         radius: 10

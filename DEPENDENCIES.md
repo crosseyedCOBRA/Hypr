@@ -97,8 +97,8 @@ above.
 
 | Feature | Needs | Arch/pacman | Debian/apt | Fedora/dnf | Status |
 |---|---|---|---|---|---|
-| Brightness control — external monitors (DDC/CI) | `ddcutil` | `ddcutil` | `ddcutil` | `ddcutil` | Not installed on the reference machine; `BrightnessService.qml` port confirmed portable but not yet done — see ROADMAP.md |
-| Brightness control — internal laptop backlight | `brightnessctl` | `brightnessctl` | `brightnessctl` | `brightnessctl` | Same as above — not installed here (this machine has no `/sys/class/backlight` device to control anyway) |
+| Brightness control — external monitors (DDC/CI) | `ddcutil` | `ddcutil` | `ddcutil` | `ddcutil` | `BrightnessService.qml` is ported and wired up (`qs ipc call brightness increase/decrease`, commented-out keybinds in `zaris.conf`), but **not installed on the reference machine** — install this to actually control an external monitor's brightness over DDC/CI, then uncomment the keybinds. See ROADMAP.md for what was/wasn't verifiable without it. |
+| Brightness control — internal laptop backlight | `brightnessctl` | `brightnessctl` | `brightnessctl` | `brightnessctl` | Same as above — not installed here (this machine also has no `/sys/class/backlight` device to control anyway, so this needs both the package and matching laptop hardware) |
 
 ## Building Quickshell from source (Debian only)
 
