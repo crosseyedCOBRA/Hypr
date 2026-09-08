@@ -68,4 +68,16 @@ QtObject {
         root.currentProfile = name
         Quickshell.execDetached(["powerprofilesctl", "set", name])
     }
+
+    // ControlCenter.qml's tile is a single cycling button (one click steps
+    // to the next profile), not the original three-way segmented row this
+    // shipped with - a user request after seeing the first version live.
+    // Falls back to the list's first entry when currentProfile is still ""
+    // (nothing queried back yet, or the daemon isn't installed), so the
+    // very first click always lands on a real profile instead of no-op'ing.
+    function cycleProfile() {
+        const idx = root.profiles.indexOf(root.currentProfile)
+        const next = root.profiles[(idx + 1) % root.profiles.length]
+        root.setProfile(next)
+    }
 }

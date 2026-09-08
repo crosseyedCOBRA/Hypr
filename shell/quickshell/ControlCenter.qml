@@ -81,8 +81,14 @@ FloatingWindow {
     // the same way Settings.qml already does for its own differently-sized
     // categories - one fixed size generous enough for the tallest state
     // this panel can be in (every optional row/dial visible at once).
-    implicitWidth: 404
-    implicitHeight: 830
+    // Widened a bit and given real side padding (the content column stays
+    // at its existing contentWidth, just with more breathing room on
+    // either side of it now) plus a subtle outer border - a cleaner match
+    // for Noctalia's own reference screenshot, which has visible padding
+    // and a bit of background definition around its Control Center rather
+    // than content running edge-to-edge.
+    implicitWidth: 440
+    implicitHeight: 900
 
     readonly property PwNode pwSink: Pipewire.defaultAudioSink
     readonly property PwNode pwSource: Pipewire.defaultAudioSource
@@ -123,6 +129,8 @@ FloatingWindow {
     Rectangle {
         anchors.fill: parent
         color: Colors.bg
+        border.width: 1
+        border.color: Colors.pill
 
         Column {
             id: content
@@ -256,6 +264,95 @@ FloatingWindow {
                 }
             }
 
+            Row {
+                width: root.contentWidth
+                spacing: 14
+                visible: ModulesConfig.showInTray("volume", ControlCenterState.panel) && ((!!root.pwSink && root.pwSink.ready) || (!!root.pwSource && root.pwSource.ready))
+
+                Column {
+                    width: (parent.width - parent.spacing) / 2
+                    spacing: 4
+                    visible: !!root.pwSink && root.pwSink.ready
+
+                    Row {
+                        width: parent.width
+                        spacing: 6
+
+                        NIconButton {
+                            baseSize: 22
+                            icon: (root.pwSink && root.pwSink.ready && root.pwSink.audio.muted) ? "󰖁" : ""
+                            anchors.verticalCenter: parent.verticalCenter
+                            onClicked: {
+                                if (root.pwSink)
+                                    root.pwSink.audio.muted = !root.pwSink.audio.muted
+                            }
+                        }
+
+                        NText {
+                            text: root.pwSink && root.pwSink.ready ? root.pwSink.description : ""
+                            width: parent.width - 22 - parent.spacing
+                            elide: Text.ElideRight
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    NSlider {
+                        width: parent.width
+                        from: 0
+                        to: 1.0
+                        value: root.pwSink && root.pwSink.ready ? root.pwSink.audio.volume : 0
+                        onMoved: {
+                            if (root.pwSink)
+                                root.pwSink.audio.volume = value
+                        }
+                    }
+                }
+
+                Column {
+                    width: (parent.width - parent.spacing) / 2
+                    spacing: 4
+                    visible: !!root.pwSource && root.pwSource.ready
+
+                    Row {
+                        width: parent.width
+                        spacing: 6
+
+                        NIconButton {
+                            baseSize: 22
+                            icon: (root.pwSource && root.pwSource.ready && root.pwSource.audio.muted) ? "" : ""
+                            anchors.verticalCenter: parent.verticalCenter
+                            onClicked: {
+                                if (root.pwSource)
+                                    root.pwSource.audio.muted = !root.pwSource.audio.muted
+                            }
+                        }
+
+                        NText {
+                            text: root.pwSource && root.pwSource.ready ? root.pwSource.description : ""
+                            width: parent.width - 22 - parent.spacing
+                            elide: Text.ElideRight
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+
+                    NSlider {
+                        width: parent.width
+                        from: 0
+                        to: 1.0
+                        value: root.pwSource && root.pwSource.ready ? root.pwSource.audio.volume : 0
+                        onMoved: {
+                            if (root.pwSource)
+                                root.pwSource.audio.volume = value
+                        }
+                    }
+                }
+            }
+
+
             Grid {
                 width: root.contentWidth
                 columns: 2
@@ -300,12 +397,20 @@ FloatingWindow {
                     }
                 }
 
+                // Power profile - a single button that cycles through the
+                // three power-profiles-daemon profiles on each click,
+                // rather than the three separate tiles this shipped with
+                // originally (a user request after seeing that version
+                // live - one tile fits the grid's existing visual language
+                // better than a wide three-way row). See
+                // PowerProfileState.qml's own header comment for why this
+                // is safe to ship even though that daemon isn't installed
+                // on this machine yet.
                 Rectangle {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: nightLightToggleArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("nightLight", ControlCenterState.panel)
+                    color: powerProfileArea.containsMouse ? Colors.pillActive : Colors.pill
 
                     Behavior on color {
                         ColorAnimation { duration: Style.animationFast }
@@ -315,16 +420,15 @@ FloatingWindow {
                         anchors.centerIn: parent
                         spacing: 4
 
-                        NightLight {
-                            id: nightLightToggle
-                            clickable: false
+                        NIcon {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            textColor: Colors.textMuted
-                            activeColor: Colors.blue
+                            icon: PowerProfileState.profileIcon(PowerProfileState.currentProfile)
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXL
                         }
 
                         NText {
-                            text: "Night Light"
+                            text: PowerProfileState.profileLabel(PowerProfileState.currentProfile)
                             anchors.horizontalCenter: parent.horizontalCenter
                             color: Colors.textMuted
                             pointSize: Style.fontSizeXS
@@ -332,10 +436,10 @@ FloatingWindow {
                     }
 
                     MouseArea {
-                        id: nightLightToggleArea
+                        id: powerProfileArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: nightLightToggle.toggle()
+                        onClicked: PowerProfileState.cycleProfile()
                     }
                 }
 
@@ -377,7 +481,82 @@ FloatingWindow {
                         onClicked: dndToggle.toggle()
                     }
                 }
+                Rectangle {
+                    width: root.tileWidth
+                    height: root.tileHeight
+                    radius: Style.radiusS
+                    color: nightLightToggleArea.containsMouse ? Colors.pillActive : Colors.pill
+                    visible: ModulesConfig.showInTray("nightLight", ControlCenterState.panel)
 
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        NightLight {
+                            id: nightLightToggle
+                            clickable: false
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            textColor: Colors.textMuted
+                            activeColor: Colors.blue
+                        }
+
+                        NText {
+                            text: "Night Light"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                        }
+                    }
+
+                    MouseArea {
+                        id: nightLightToggleArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: nightLightToggle.toggle()
+                    }
+                }
+                Rectangle {
+                    width: root.tileWidth
+                    height: root.tileHeight
+                    radius: Style.radiusS
+                    color: networkToggleArea.containsMouse ? Colors.pillActive : Colors.pill
+                    visible: ModulesConfig.showInTray("network", ControlCenterState.panel)
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        NetworkToggle {
+                            id: networkToggle
+                            clickable: false
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            textColor: Colors.textMuted
+                            activeColor: Colors.blue
+                        }
+
+                        NText {
+                            text: "Network"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                        }
+                    }
+
+                    MouseArea {
+                        id: networkToggleArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: networkToggle.toggle()
+                    }
+                }
                 Rectangle {
                     width: root.tileWidth
                     height: root.tileHeight
@@ -417,43 +596,14 @@ FloatingWindow {
                     }
                 }
 
-                Rectangle {
+                // Empty placeholder - keeps Wifi aligned to the
+                // right column now that Power Profile pushed the
+                // whole right column down one row, leaving this
+                // slot with no natural left-column partner (Stay
+                // Awake/Dnd/Network only account for 3 rows).
+                Item {
                     width: root.tileWidth
                     height: root.tileHeight
-                    radius: Style.radiusS
-                    color: networkToggleArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("network", ControlCenterState.panel)
-
-                    Behavior on color {
-                        ColorAnimation { duration: Style.animationFast }
-                    }
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        NetworkToggle {
-                            id: networkToggle
-                            clickable: false
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            textColor: Colors.textMuted
-                            activeColor: Colors.blue
-                        }
-
-                        NText {
-                            text: "Network"
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXS
-                        }
-                    }
-
-                    MouseArea {
-                        id: networkToggleArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: networkToggle.toggle()
-                    }
                 }
 
                 Rectangle {
@@ -622,150 +772,6 @@ FloatingWindow {
                 }
             }
 
-            // Power profile - the other half of "we can add in weather and
-            // power profiles" from the fourth pass, deferred alongside
-            // weather at the time. Backed by power-profiles-daemon's own
-            // `powerprofilesctl` - see PowerProfileState.qml's header
-            // comment for why this is safe to ship even though that daemon
-            // isn't installed on this machine yet (sits harmlessly inert,
-            // same pattern as DDC brightness detection).
-            Row {
-                width: root.contentWidth
-                spacing: 8
-
-                Repeater {
-                    model: PowerProfileState.profiles
-
-                    Rectangle {
-                        id: profileTile
-                        required property string modelData
-                        width: (root.contentWidth - 16) / 3
-                        height: 44
-                        radius: Style.radiusS
-                        color: PowerProfileState.currentProfile === modelData
-                            ? Colors.pillActive
-                            : (profileArea.containsMouse ? Colors.pillActive : Colors.pill)
-
-                        Behavior on color {
-                            ColorAnimation { duration: Style.animationFast }
-                        }
-
-                        Row {
-                            anchors.centerIn: parent
-                            spacing: 6
-
-                            NIcon {
-                                anchors.verticalCenter: parent.verticalCenter
-                                icon: PowerProfileState.profileIcon(profileTile.modelData)
-                                color: PowerProfileState.currentProfile === profileTile.modelData ? Colors.coral : Colors.textMuted
-                                pointSize: Style.fontSizeM
-                            }
-
-                            NText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: PowerProfileState.profileLabel(profileTile.modelData)
-                                color: Colors.textMuted
-                                pointSize: Style.fontSizeS
-                            }
-                        }
-
-                        MouseArea {
-                            id: profileArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: PowerProfileState.setProfile(profileTile.modelData)
-                        }
-                    }
-                }
-            }
-
-            Row {
-                width: root.contentWidth
-                spacing: 14
-                visible: ModulesConfig.showInTray("volume", ControlCenterState.panel) && ((!!root.pwSink && root.pwSink.ready) || (!!root.pwSource && root.pwSource.ready))
-
-                Column {
-                    width: (parent.width - parent.spacing) / 2
-                    spacing: 4
-                    visible: !!root.pwSink && root.pwSink.ready
-
-                    Row {
-                        width: parent.width
-                        spacing: 6
-
-                        NIconButton {
-                            baseSize: 22
-                            icon: (root.pwSink && root.pwSink.ready && root.pwSink.audio.muted) ? "󰖁" : ""
-                            anchors.verticalCenter: parent.verticalCenter
-                            onClicked: {
-                                if (root.pwSink)
-                                    root.pwSink.audio.muted = !root.pwSink.audio.muted
-                            }
-                        }
-
-                        NText {
-                            text: root.pwSink && root.pwSink.ready ? root.pwSink.description : ""
-                            width: parent.width - 22 - parent.spacing
-                            elide: Text.ElideRight
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXS
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    NSlider {
-                        width: parent.width
-                        from: 0
-                        to: 1.0
-                        value: root.pwSink && root.pwSink.ready ? root.pwSink.audio.volume : 0
-                        onMoved: {
-                            if (root.pwSink)
-                                root.pwSink.audio.volume = value
-                        }
-                    }
-                }
-
-                Column {
-                    width: (parent.width - parent.spacing) / 2
-                    spacing: 4
-                    visible: !!root.pwSource && root.pwSource.ready
-
-                    Row {
-                        width: parent.width
-                        spacing: 6
-
-                        NIconButton {
-                            baseSize: 22
-                            icon: (root.pwSource && root.pwSource.ready && root.pwSource.audio.muted) ? "" : ""
-                            anchors.verticalCenter: parent.verticalCenter
-                            onClicked: {
-                                if (root.pwSource)
-                                    root.pwSource.audio.muted = !root.pwSource.audio.muted
-                            }
-                        }
-
-                        NText {
-                            text: root.pwSource && root.pwSource.ready ? root.pwSource.description : ""
-                            width: parent.width - 22 - parent.spacing
-                            elide: Text.ElideRight
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXS
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    NSlider {
-                        width: parent.width
-                        from: 0
-                        to: 1.0
-                        value: root.pwSource && root.pwSource.ready ? root.pwSource.audio.volume : 0
-                        onMoved: {
-                            if (root.pwSource)
-                                root.pwSource.audio.volume = value
-                        }
-                    }
-                }
-            }
 
             Row {
                 width: root.contentWidth
