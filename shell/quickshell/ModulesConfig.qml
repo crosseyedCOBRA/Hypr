@@ -40,12 +40,12 @@ QtObject {
             property var volume: ({ enabled: true, screens: "all", tray: false })
             property var stayAwake: ({ enabled: true, screens: "all", tray: false })
             property var nightLight: ({ enabled: true, screens: "all", tray: false })
-            property var dnd: ({ enabled: true, screens: "all", tray: false })
+            property var dnd: ({ enabled: true, screens: "all", tray: true })
             property var bluetooth: ({ enabled: true, screens: "all", tray: false })
             property var mediaPlayer: ({ enabled: true, screens: "all", tray: false })
-            property var clipboard: ({ enabled: true, screens: "all", tray: false })
-            property var wallpaper: ({ enabled: true, screens: "all", tray: false })
-            property var battery: ({ enabled: true, screens: "all", tray: false })
+            property var clipboard: ({ enabled: true, screens: "all", tray: true })
+            property var wallpaper: ({ enabled: true, screens: "all", tray: true })
+            property var battery: ({ enabled: true, screens: "all", tray: true })
         }
     }
 

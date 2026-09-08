@@ -1,6 +1,5 @@
 import QtQuick
 import Quickshell
-import Quickshell.Io
 
 // One panel per monitor. Systray/kernel/network are only shown on the
 // primary monitor -- no point duplicating that info across every screen.
@@ -227,49 +226,6 @@ Variants {
                         textColor: Colors.textMuted
                         activeColor: Colors.blue
                         anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    NIcon {
-                        icon: ""
-                        pointSize: Style.fontSizeXL
-                        color: Colors.blue
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        MouseArea {
-                            anchors.fill: parent
-                            acceptedButtons: Qt.LeftButton | Qt.RightButton
-                            onClicked: mouse => {
-                                const script = Quickshell.env("HOME") + "/.config/zaris/screenshot.sh"
-                                if (mouse.button === Qt.LeftButton)
-                                    Quickshell.execDetached([script])
-                                else
-                                    Quickshell.execDetached([script, "full"])
-                            }
-                        }
-                    }
-
-                    NIcon {
-                        icon: ""
-                        pointSize: Style.fontSizeXL
-                        color: Colors.coral
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: Quickshell.execDetached([Quickshell.env("HOME") + "/.config/zaris/powermenu.sh"])
-                        }
-                    }
-
-                    NIcon {
-                        icon: "\uf013"
-                        pointSize: Style.fontSizeL
-                        color: Colors.textMuted
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: SettingsState.visible = !SettingsState.visible
-                        }
                     }
 
                     NIcon {
