@@ -136,6 +136,13 @@ Variants {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
+                    NightLight {
+                        visible: ModulesConfig.showInBar("nightLight", panel)
+                        textColor: Colors.textMuted
+                        activeColor: Colors.blue
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                     Text {
                         text: ""
                         font.pixelSize: 16

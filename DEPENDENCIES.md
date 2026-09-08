@@ -75,6 +75,7 @@ itself.
 | Bar icon glyphs (Nerd Font) | `ttf-jetbrains-mono-nerd` (official, `extra`) | Not packaged, but installed the same way as Fedora — see "Installing the Nerd Font from upstream" below | Not packaged either — same upstream-download install as Debian |
 | Notification icon theme | `papirus-icon-theme` | `papirus-icon-theme` | `papirus-icon-theme` — official |
 | `loginctl` for the power menu | `elogind` (Arch is systemd-default, so not actually needed there — only relevant on a non-systemd Arch-based system like Artix) | `elogind`, `libpam-elogind` | Not needed — Fedora only ships systemd, `loginctl` is native |
+| Night light color-temperature toggle | `redshift` | `redshift` | `redshift` — confirmed official on all three (checked live via sources.debian.org and packages.fedoraproject.org) |
 
 The Arch-side data is what's actually installed and running on this
 project's own Artix reference machine. The Debian-side and Fedora-side

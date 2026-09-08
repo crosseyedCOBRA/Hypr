@@ -26,7 +26,8 @@ FloatingWindow {
         gpuTemp: "GPU temperature",
         network: "Network status",
         volume: "Volume",
-        stayAwake: "Stay awake"
+        stayAwake: "Stay awake",
+        nightLight: "Night light"
     })
 
     Rectangle {

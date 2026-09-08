@@ -64,6 +64,12 @@ FloatingWindow {
                 textColor: Colors.textMuted
                 activeColor: Colors.coral
             }
+
+            NightLight {
+                visible: ModulesConfig.showInTray("nightLight", OverflowState.panel)
+                textColor: Colors.textMuted
+                activeColor: Colors.blue
+            }
         }
     }
 }
