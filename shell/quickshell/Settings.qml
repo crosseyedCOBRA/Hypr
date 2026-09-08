@@ -57,6 +57,7 @@ FloatingWindow {
         volume: "Volume",
         stayAwake: "Stay awake",
         nightLight: "Night light",
+        dnd: "Do not disturb",
         bluetooth: "Bluetooth",
         mediaPlayer: "Media player",
         clipboard: "Clipboard history",

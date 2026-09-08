@@ -22,7 +22,7 @@ import Quickshell.Io
 QtObject {
     id: root
 
-    readonly property var moduleIds: ["kernel", "cpu", "cpuTemp", "gpuTemp", "network", "volume", "stayAwake", "nightLight", "bluetooth", "mediaPlayer", "clipboard", "wallpaper", "battery"]
+    readonly property var moduleIds: ["kernel", "cpu", "cpuTemp", "gpuTemp", "network", "volume", "stayAwake", "nightLight", "dnd", "bluetooth", "mediaPlayer", "clipboard", "wallpaper", "battery"]
 
     property FileView configFile: FileView {
         path: Quickshell.env("HOME") + "/.config/quickshell/modules.json"
@@ -40,6 +40,7 @@ QtObject {
             property var volume: ({ enabled: true, screens: "all", tray: false })
             property var stayAwake: ({ enabled: true, screens: "all", tray: false })
             property var nightLight: ({ enabled: true, screens: "all", tray: false })
+            property var dnd: ({ enabled: true, screens: "all", tray: false })
             property var bluetooth: ({ enabled: true, screens: "all", tray: false })
             property var mediaPlayer: ({ enabled: true, screens: "all", tray: false })
             property var clipboard: ({ enabled: true, screens: "all", tray: false })

@@ -138,6 +138,18 @@ FloatingWindow {
 
             Row {
                 spacing: 10
+                visible: ModulesConfig.showInTray("dnd", OverflowState.panel)
+
+                NText { text: "Do Not Disturb"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }
+
+                Dnd {
+                    textColor: Colors.textMuted
+                    activeColor: Colors.red
+                }
+            }
+
+            Row {
+                spacing: 10
                 visible: ModulesConfig.showInTray("bluetooth", OverflowState.panel)
 
                 NText { text: "Bluetooth"; width: overflowWindow.labelWidth; color: Colors.textMuted; pointSize: Style.fontSizeS }

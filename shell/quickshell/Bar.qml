@@ -215,6 +215,13 @@ Variants {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
+                    Dnd {
+                        visible: ModulesConfig.showInBar("dnd", panel)
+                        textColor: Colors.textMuted
+                        activeColor: Colors.red
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                     BluetoothIndicator {
                         visible: ModulesConfig.showInBar("bluetooth", panel)
                         textColor: Colors.textMuted
