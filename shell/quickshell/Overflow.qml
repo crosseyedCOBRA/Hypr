@@ -7,14 +7,25 @@ import Quickshell
 // inline bar modules use, so toggling from here or from the bar stays in
 // sync - these are just a second view onto the same state, not a separate
 // instance of it.
+//
+// Each module is wrapped in a label + component Row here (not inside the
+// module files themselves, and not in Bar.qml's compact usage) - the bar
+// stays icon-only for space, but a flyout list has room to say what each
+// row actually is. Wrapping rather than modifying the components also means
+// any existing MouseArea inside a module (Volume, StayAwake, NightLight,
+// BluetoothIndicator all have real click behavior) is untouched - the label
+// is just a sibling Text to its left, never something layered on top of it
+// that could shadow its hit region.
 FloatingWindow {
     id: overflowWindow
 
     visible: OverflowState.visible
     title: "More"
 
-    implicitWidth: Math.max(160, content.implicitWidth + 24)
+    implicitWidth: Math.max(200, content.implicitWidth + 24)
     implicitHeight: content.implicitHeight + 24
+
+    readonly property int labelWidth: 80
 
     Rectangle {
         anchors.fill: parent
@@ -25,56 +36,110 @@ FloatingWindow {
             anchors.centerIn: parent
             spacing: 10
 
-            KernelVersion {
+            Row {
+                spacing: 10
                 visible: ModulesConfig.showInTray("kernel", OverflowState.panel)
-                textColor: Colors.blue
+
+                Text { text: "Kernel"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                KernelVersion {
+                    textColor: Colors.blue
+                }
             }
 
-            CpuLoad {
+            Row {
+                spacing: 10
                 visible: ModulesConfig.showInTray("cpu", OverflowState.panel)
-                textColor: Colors.coral
+
+                Text { text: "CPU"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                CpuLoad {
+                    textColor: Colors.coral
+                }
             }
 
-            HwmonSensor {
+            Row {
+                spacing: 10
                 visible: ModulesConfig.showInTray("cpuTemp", OverflowState.panel)
-                sensorLabel: "Tctl"
-                iconGlyph: ""
-                textColor: Colors.blue
+
+                Text { text: "CPU Temp"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                HwmonSensor {
+                    sensorLabel: "Tctl"
+                    iconGlyph: ""
+                    textColor: Colors.blue
+                }
             }
 
-            HwmonSensor {
+            Row {
+                spacing: 10
                 visible: ModulesConfig.showInTray("gpuTemp", OverflowState.panel)
-                sensorLabel: "edge"
-                iconGlyph: ""
-                textColor: Colors.teal
+
+                Text { text: "GPU Temp"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                HwmonSensor {
+                    sensorLabel: "edge"
+                    iconGlyph: ""
+                    textColor: Colors.teal
+                }
             }
 
-            NetworkStatus {
+            Row {
+                spacing: 10
                 visible: ModulesConfig.showInTray("network", OverflowState.panel)
-                textColor: Colors.blue
+
+                Text { text: "Network"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                NetworkStatus {
+                    textColor: Colors.blue
+                }
             }
 
-            VolumeControl {
+            Row {
+                spacing: 10
                 visible: ModulesConfig.showInTray("volume", OverflowState.panel)
-                textColor: Colors.purple
+
+                Text { text: "Volume"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                VolumeControl {
+                    textColor: Colors.purple
+                }
             }
 
-            StayAwake {
+            Row {
+                spacing: 10
                 visible: ModulesConfig.showInTray("stayAwake", OverflowState.panel)
-                textColor: Colors.textMuted
-                activeColor: Colors.coral
+
+                Text { text: "Stay Awake"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                StayAwake {
+                    textColor: Colors.textMuted
+                    activeColor: Colors.coral
+                }
             }
 
-            NightLight {
+            Row {
+                spacing: 10
                 visible: ModulesConfig.showInTray("nightLight", OverflowState.panel)
-                textColor: Colors.textMuted
-                activeColor: Colors.blue
+
+                Text { text: "Night Light"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                NightLight {
+                    textColor: Colors.textMuted
+                    activeColor: Colors.blue
+                }
             }
 
-            BluetoothIndicator {
+            Row {
+                spacing: 10
                 visible: ModulesConfig.showInTray("bluetooth", OverflowState.panel)
-                textColor: Colors.textMuted
-                activeColor: Colors.blue
+
+                Text { text: "Bluetooth"; width: overflowWindow.labelWidth; color: Colors.textMuted; font.pixelSize: 12 }
+
+                BluetoothIndicator {
+                    textColor: Colors.textMuted
+                    activeColor: Colors.blue
+                }
             }
         }
     }
