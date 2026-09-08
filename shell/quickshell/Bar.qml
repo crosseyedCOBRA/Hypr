@@ -4,8 +4,30 @@ import Quickshell.Io
 
 // One panel per monitor. Systray/kernel/network are only shown on the
 // primary monitor -- no point duplicating that info across every screen.
+//
+// Mirrored outputs (e.g. `xrandr --output HDMI-A-0 --same-as DisplayPort-0`)
+// still show up as two distinct entries in Quickshell.screens, each with
+// identical geometry - without deduplicating them here, a second, fully
+// overlapping bar gets created on top of the real one for every mirrored
+// screen, hiding its tray/kernel modules behind whichever bar happens to
+// stack on top. Collapsing to one bar per unique geometry, keeping the
+// first occurrence of each, fixes this while leaving true multi-monitor
+// (distinct positions) completely unaffected - and keeps `isPrimary` below
+// correct too, since the survivor for the first geometry is always the
+// literal `Quickshell.screens[0]` object.
 Variants {
-    model: Quickshell.screens
+    model: {
+        const seen = []
+        const result = []
+        for (const s of Quickshell.screens) {
+            const key = s.x + "," + s.y + "," + s.width + "," + s.height
+            if (seen.includes(key))
+                continue
+            seen.push(key)
+            result.push(s)
+        }
+        return result
+    }
 
     PanelWindow {
         id: panel
