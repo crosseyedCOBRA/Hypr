@@ -48,6 +48,12 @@ NTabView 1.0 NTabView.qml
 NCollapsible 1.0 NCollapsible.qml
 NScrollText 1.0 NScrollText.qml
 NRadioButton 1.0 NRadioButton.qml
+NTextInput 1.0 NTextInput.qml
+NComboBox 1.0 NComboBox.qml
+NSlider 1.0 NSlider.qml
+NSpinBox 1.0 NSpinBox.qml
+NContextMenu 1.0 NContextMenu.qml
+NScrollView 1.0 NScrollView.qml
 StayAwake 1.0 StayAwake.qml
 NightLight 1.0 NightLight.qml
 MediaWidget 1.0 MediaWidget.qml
