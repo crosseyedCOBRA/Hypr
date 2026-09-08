@@ -42,17 +42,35 @@ FloatingWindow {
             width: parent.width - 40
             spacing: 10
 
-            Text {
+            Row {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: {
-                    if (OSDState.kind === "brightness")
-                        return " " + Math.round(OSDState.level * 100) + "%"
-                    if (OSDState.muted)
-                        return " muted"
-                    return " " + Math.round(OSDState.level * 100) + "%"
+                spacing: 8
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: {
+                        if (OSDState.kind === "brightness")
+                            return ""
+                        if (OSDState.muted)
+                            return ""
+                        return ""
+                    }
+                    color: Colors.text
+                    font.pixelSize: 16
                 }
-                color: Colors.text
-                font.pixelSize: 16
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: {
+                        if (OSDState.kind === "brightness")
+                            return Math.round(OSDState.level * 100) + "%"
+                        if (OSDState.muted)
+                            return "muted"
+                        return Math.round(OSDState.level * 100) + "%"
+                    }
+                    color: Colors.text
+                    font.pixelSize: 16
+                }
             }
 
             Rectangle {
