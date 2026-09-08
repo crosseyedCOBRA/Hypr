@@ -9,6 +9,11 @@ import Quickshell.Io
 // windowrule=float + windowrule=center,title:^OSD$ in zaris.conf places it
 // like the launcher/settings windows - same mechanism, nothing new needed
 // on the WM side for this one.
+//
+// Phase 2 of the Noctalia-port effort (see ROADMAP.md): the icon glyph is
+// now NIcon and the percentage/muted label is now NText, matching the
+// icon-vs-text convention every ported widget already uses internally
+// (e.g. NButton's own icon+text pair).
 FloatingWindow {
     id: osdWindow
 
@@ -77,9 +82,9 @@ FloatingWindow {
                 anchors.horizontalCenter: parent.horizontalCenter
                 spacing: 8
 
-                Text {
+                NIcon {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: {
+                    icon: {
                         if (OSDState.kind === "brightness")
                             return ""
                         if (OSDState.muted)
@@ -87,10 +92,10 @@ FloatingWindow {
                         return ""
                     }
                     color: Colors.text
-                    font.pixelSize: 16
+                    pointSize: Style.fontSizeL
                 }
 
-                Text {
+                NText {
                     anchors.verticalCenter: parent.verticalCenter
                     text: {
                         if (OSDState.kind === "brightness")
@@ -100,7 +105,7 @@ FloatingWindow {
                         return Math.round(OSDState.level * 100) + "%"
                     }
                     color: Colors.text
-                    font.pixelSize: 16
+                    pointSize: Style.fontSizeL
                 }
             }
 
