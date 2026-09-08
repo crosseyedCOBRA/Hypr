@@ -24,4 +24,5 @@ ShellRoot {
     BluetoothPanel {}
     ClipboardHistoryPanel {}
     WallpaperPickerPanel {}
+    CalendarFlyout {}
 }

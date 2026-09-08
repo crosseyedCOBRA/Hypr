@@ -11,6 +11,7 @@ singleton ClipboardHistoryService 1.0 ClipboardHistoryService.qml
 singleton ClipboardHistoryPanelState 1.0 ClipboardHistoryPanelState.qml
 singleton WallpaperService 1.0 WallpaperService.qml
 singleton WallpaperPickerPanelState 1.0 WallpaperPickerPanelState.qml
+singleton CalendarFlyoutState 1.0 CalendarFlyoutState.qml
 singleton OverflowState 1.0 OverflowState.qml
 singleton SettingsState 1.0 SettingsState.qml
 singleton OSDState 1.0 OSDState.qml
@@ -53,6 +54,7 @@ ClipboardIndicator 1.0 ClipboardIndicator.qml
 ClipboardHistoryPanel 1.0 ClipboardHistoryPanel.qml
 WallpaperIndicator 1.0 WallpaperIndicator.qml
 WallpaperPickerPanel 1.0 WallpaperPickerPanel.qml
+CalendarFlyout 1.0 CalendarFlyout.qml
 BluetoothIndicator 1.0 BluetoothIndicator.qml
 BluetoothPanel 1.0 BluetoothPanel.qml
 Overflow 1.0 Overflow.qml

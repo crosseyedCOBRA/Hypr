@@ -85,6 +85,7 @@ Variants {
 
                 // --- center: clock ---
                 Text {
+                    id: clockText
                     anchors.centerIn: parent
                     text: Qt.formatDateTime(clock.date, "dddd MMMM d yyyy HH:mm")
                     color: Colors.text
@@ -94,6 +95,22 @@ Variants {
                     SystemClock {
                         id: clock
                         precision: SystemClock.Minutes
+                    }
+
+                    // Opens CalendarFlyout.qml anchored below this clock -
+                    // one shared flyout instance retargeted to whichever
+                    // monitor's clock was actually clicked, see
+                    // CalendarFlyoutState.qml.
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            if (CalendarFlyoutState.targetItem === clockText)
+                                CalendarFlyoutState.visible = !CalendarFlyoutState.visible
+                            else {
+                                CalendarFlyoutState.targetItem = clockText
+                                CalendarFlyoutState.visible = true
+                            }
+                        }
                     }
                 }
 
