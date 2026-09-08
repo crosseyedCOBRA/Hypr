@@ -812,8 +812,17 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
         return;
     }
 
-    const uint16_t W = pWindow->getFullscreen() ? MONITOR->vecSize.x : pWindow->getRealSize().x;
-    const uint16_t H = pWindow->getFullscreen() ? MONITOR->vecSize.y : pWindow->getRealSize().y;
+    // getRealSize() is only ever kept up to date by the tiling/animation
+    // system (see updateAnimations()) - dock-type windows skip that
+    // entirely (refreshDirtyWindows() continues past them before reaching
+    // it), so getRealSize() for a dock just sits at its unset default
+    // (0,0) forever. Their actual current size lives in EffectiveSize
+    // instead, which IS kept correct for them (set at creation in
+    // remapFloatingWindow, and on every resize in eventConfigure).
+    // Without this, shape application "runs" (logged) but computes a
+    // mask for a zero-sized window, so it has no visible effect at all.
+    const uint16_t W = pWindow->getFullscreen() ? MONITOR->vecSize.x : (pWindow->getDock() ? pWindow->getEffectiveSize().x : pWindow->getRealSize().x);
+    const uint16_t H = pWindow->getFullscreen() ? MONITOR->vecSize.y : (pWindow->getDock() ? pWindow->getEffectiveSize().y : pWindow->getRealSize().y);
     // Docks get rounding (above) but never a border - they're not a regular
     // focusable window, and border_size would also expand the shape mask's
     // bounding box beyond the dock's own real geometry for no reason.
