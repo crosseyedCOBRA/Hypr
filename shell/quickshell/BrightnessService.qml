@@ -13,16 +13,16 @@ import Quickshell.Io
 // this is a straight architectural port like BatteryService.qml, not a
 // "build something simpler" rescope.
 //
-// NEITHER `ddcutil` NOR `brightnessctl` IS INSTALLED ON THE REFERENCE
-// MACHINE, and it has no `/sys/class/backlight` device either - every
-// path here is designed to degrade gracefully (empty device lists,
-// disabled controls) when its backing tool is missing, and that
-// degradation was verified live (loads cleanly, `ddcutil detect` and the
-// backlight-scan both correctly report nothing found, no errors), but the
-// actual brightness-changing commands themselves could NOT be verified
-// end-to-end here. See DEPENDENCIES.md's "Optional dependencies" section -
-// install `ddcutil` for external-monitor brightness or `brightnessctl` for
-// an internal laptop panel, whichever matches your hardware, then re-test.
+// `ddcutil` is now installed on the reference machine (it wasn't when this
+// file was first ported - see DEPENDENCIES.md's "Optional dependencies"
+// section, and ROADMAP.md for the original degrade-gracefully-with-neither-
+// tool-installed verification). Once it was, real DDC/CI control against
+// three genuine external monitors (an Acer XZ272 and two MSI displays)
+// surfaced a real bug this port had inherited silently: `connectorMatches()`
+// below exists specifically to fix it - see its own comment for the full
+// story. `brightnessctl` is also installed now but has no backlight device
+// to control on this desktop, so that path is still only degrade-gracefully
+// verified, not end-to-end.
 //
 // Stripped of `Settings.data.brightness.*` (now a hand-edit-only
 // `brightness.json`, same precedent as `nightlight.json`/`battery.json`:
@@ -59,6 +59,36 @@ Singleton {
 
     function getMonitorForScreen(screen) {
         return monitors.find(m => m.modelData === screen)
+    }
+
+    // Matches an X11/XRandR output name (what Quickshell's ShellScreen.name
+    // reports, e.g. "DisplayPort-1", "HDMI-A-0") against a DRM connector
+    // name (what `ddcutil detect` reports via sysfs/KMS, e.g. "DP-2",
+    // "HDMI-A-1") - genuinely different naming schemes for the same
+    // physical port, confirmed live on the reference machine: `xrandr
+    // --query` showed "DisplayPort-0/1/2" + "HDMI-A-0" while `ddcutil
+    // detect` reported the identical physical monitors as "DP-1/2/3" +
+    // "HDMI-A-1" for the same ports, in the same connected order. A plain
+    // `connector === modelData.name` comparison (the original Noctalia
+    // code, written for Wayland/DRM-native compositors where the
+    // compositor's own screen names typically *are* the DRM connector
+    // names already) never matches on X11 as a result - `isDdc` was
+    // silently always false, even with `ddcutil` correctly installed and
+    // detecting real monitors, until this was traced down live.
+    //
+    // Heuristic, not guaranteed universal: XRandR happened to be 0-indexed
+    // here where DRM is 1-indexed, consistently per connector type
+    // (DisplayPort-0 -> DP-1, HDMI-A-0 -> HDMI-A-1) - a common but not
+    // certain pattern across all GPU drivers/kernel versions. If DDC
+    // control silently doesn't activate on different hardware, this offset
+    // assumption is the first thing to re-check.
+    function connectorMatches(xrandrName, drmConnector) {
+        const m = /^(DisplayPort|HDMI-A|DVI-D|DVI-I)-(\d+)$/.exec(xrandrName || "")
+        if (!m)
+            return false
+        const prefix = m[1] === "DisplayPort" ? "DP" : m[1]
+        const xrandrIndex = parseInt(m[2])
+        return drmConnector === `${prefix}-${xrandrIndex + 1}`
     }
 
     signal monitorBrightnessChanged(var monitor, real newBrightness)
@@ -249,8 +279,8 @@ Singleton {
         id: monitor
 
         required property ShellScreen modelData
-        readonly property bool isDdc: root.enableDdcSupport && root.ddcMonitors.some(m => m.connector === modelData.name)
-        readonly property string busNum: root.ddcMonitors.find(m => m.connector === modelData.name)?.busNum ?? ""
+        readonly property bool isDdc: root.enableDdcSupport && root.ddcMonitors.some(m => root.connectorMatches(modelData.name, m.connector))
+        readonly property string busNum: root.ddcMonitors.find(m => root.connectorMatches(modelData.name, m.connector))?.busNum ?? ""
         readonly property bool isAppleDisplay: root.appleDisplayPresent && modelData.model.startsWith("StudioDisplay")
         readonly property string method: isAppleDisplay ? "apple" : (isDdc ? "ddcutil" : "internal")
 

@@ -97,8 +97,8 @@ above.
 
 | Feature | Needs | Arch/pacman | Debian/apt | Fedora/dnf | Status |
 |---|---|---|---|---|---|
-| Brightness control — external monitors (DDC/CI) | `ddcutil` | `ddcutil` | `ddcutil` | `ddcutil` | `BrightnessService.qml` is ported and wired up (`qs ipc call brightness increase/decrease`, commented-out keybinds in `zaris.conf`), but **not installed on the reference machine** — install this to actually control an external monitor's brightness over DDC/CI, then uncomment the keybinds. See ROADMAP.md for what was/wasn't verifiable without it. |
-| Brightness control — internal laptop backlight | `brightnessctl` | `brightnessctl` | `brightnessctl` | `brightnessctl` | Same as above — not installed here (this machine also has no `/sys/class/backlight` device to control anyway, so this needs both the package and matching laptop hardware) |
+| Brightness control — external monitors (DDC/CI) | `ddcutil` | `ddcutil` | `ddcutil` | `ddcutil` | **Installed and confirmed working end-to-end** against three real DDC/CI monitors — `qs ipc call brightness increase/decrease` genuinely changes hardware brightness now, keybinds uncommented in the live `zaris.conf`. Installing it surfaced a real X11-vs-DRM connector-naming bug in `BrightnessService.qml` (now fixed) — see ROADMAP.md for the full story. |
+| Brightness control — internal laptop backlight | `brightnessctl` | `brightnessctl` | `brightnessctl` | `brightnessctl` | Installed, but this machine has no `/sys/class/backlight` device to control (desktop, not a laptop) — still only degrade-gracefully verified, not end-to-end. Needs real laptop hardware to test further. |
 
 ## Building Quickshell from source (Debian only)
 
