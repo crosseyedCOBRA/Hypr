@@ -340,9 +340,242 @@ FloatingWindow {
                             }
 
                             NText {
-                                text: "Reserved permanently reserves screen space at the bottom of the primary monitor, like the bar does. Floating overlays on top of windows instead without reserving space - windows can tile underneath it. Pin apps to the dock via right-click on a result in the launcher."
+                                text: "Reserved permanently reserves screen space, like the bar does. Floating overlays on top of windows instead without reserving space - windows can tile underneath it. Pin apps to the dock via right-click on a result in the launcher."
                                 width: parent.width
                                 wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 6
+                                bottomPadding: 10
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+                                visible: DockConfig.enabled
+
+                                NText {
+                                    text: "Position"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NTabBar {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    tabHeight: 22
+
+                                    NTabButton {
+                                        text: "Top"
+                                        pointSize: Style.fontSizeS
+                                        checked: DockConfig.position === "top"
+                                        onClicked: DockConfig.setPosition("top")
+                                    }
+
+                                    NTabButton {
+                                        text: "Bottom"
+                                        pointSize: Style.fontSizeS
+                                        checked: DockConfig.position === "bottom"
+                                        onClicked: DockConfig.setPosition("bottom")
+                                    }
+
+                                    NTabButton {
+                                        text: "Left"
+                                        pointSize: Style.fontSizeS
+                                        checked: DockConfig.position === "left"
+                                        onClicked: DockConfig.setPosition("left")
+                                    }
+
+                                    NTabButton {
+                                        text: "Right"
+                                        pointSize: Style.fontSizeS
+                                        checked: DockConfig.position === "right"
+                                        onClicked: DockConfig.setPosition("right")
+                                    }
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+                                visible: DockConfig.enabled
+
+                                NText {
+                                    text: "Launcher position"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NTabBar {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    tabHeight: 22
+
+                                    NTabButton {
+                                        text: "Start"
+                                        pointSize: Style.fontSizeS
+                                        checked: DockConfig.launcherPosition === "start"
+                                        onClicked: DockConfig.setLauncherPosition("start")
+                                    }
+
+                                    NTabButton {
+                                        text: "End"
+                                        pointSize: Style.fontSizeS
+                                        checked: DockConfig.launcherPosition === "end"
+                                        onClicked: DockConfig.setLauncherPosition("end")
+                                    }
+                                }
+                            }
+
+                            NText {
+                                text: "\"Start\" is the top/left-most end of the dock's own strip regardless of position, so it stays meaningful for a vertical (left/right) dock too."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 6
+                                bottomPadding: 10
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+                                visible: DockConfig.enabled
+
+                                NText {
+                                    text: "Screens"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NTabBar {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    tabHeight: 22
+
+                                    NTabButton {
+                                        text: "All"
+                                        pointSize: Style.fontSizeS
+                                        checked: DockConfig.configFile.adapter.screens === "all"
+                                        onClicked: DockConfig.setScreens("all")
+                                    }
+
+                                    NTabButton {
+                                        text: "Primary"
+                                        pointSize: Style.fontSizeS
+                                        checked: DockConfig.configFile.adapter.screens === "primary" || DockConfig.configFile.adapter.screens === undefined
+                                        onClicked: DockConfig.setScreens("primary")
+                                    }
+                                }
+                            }
+
+                            NText {
+                                text: "Pinning to specific monitors by name is JSON-only for now (dock.json's \"screens\" field, an array of exact xrandr output names)."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 6
+                                bottomPadding: 10
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+                                visible: DockConfig.enabled
+
+                                NText {
+                                    text: "Background opacity"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NSlider {
+                                    width: 160
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    from: 0
+                                    to: 1
+                                    value: DockConfig.backgroundOpacity
+                                    onMoved: DockConfig.setBackgroundOpacity(value)
+                                }
+
+                                NText {
+                                    text: Math.round(DockConfig.backgroundOpacity * 100) + "%"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.textMuted
+                                    pointSize: Style.fontSizeS
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+                                visible: DockConfig.enabled
+
+                                NText {
+                                    text: "Background color"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                Rectangle {
+                                    width: 24
+                                    height: 24
+                                    radius: 4
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: DockConfig.backgroundColor
+                                    border.width: 1
+                                    border.color: Colors.textMuted
+                                }
+
+                                NTextInput {
+                                    width: 120
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: DockConfig.backgroundColor
+                                    placeholderText: "#0c0b1a"
+                                    onEditingFinished: DockConfig.setBackgroundColor(text)
+                                    onAccepted: DockConfig.setBackgroundColor(text)
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+                                visible: DockConfig.enabled && DockConfig.mode === "floating"
+
+                                NText {
+                                    text: "Auto-hide"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                ToggleSwitch {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    checked: DockConfig.autoHide
+                                    onToggled: newChecked => DockConfig.setAutoHide(newChecked)
+                                }
+                            }
+
+                            NText {
+                                text: "Only applies in Floating mode. When on, the dock stays hidden until you hover a small marker at its position, then hides again shortly after you move away."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                visible: DockConfig.enabled && DockConfig.mode === "floating"
                                 color: Colors.textMuted
                                 pointSize: Style.fontSizeXS
                                 topPadding: 6

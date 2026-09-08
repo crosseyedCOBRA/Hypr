@@ -157,7 +157,10 @@ void handleWindowRule(const std::string& command, const std::string& value) {
         && RULE.find("monitor") != 0
         && RULE.find("center") != 0
         && RULE.find("topright") != 0
-        && RULE.find("bottomcenter") != 0) {
+        && RULE.find("bottomcenter") != 0
+        && RULE.find("topcenter") != 0
+        && RULE.find("leftcenter") != 0
+        && RULE.find("rightcenter") != 0) {
             Debug::log(ERR, "Invalid rule found: " + RULE);
             ConfigManager::parseError = "Invalid rule found: " + RULE;
             return;

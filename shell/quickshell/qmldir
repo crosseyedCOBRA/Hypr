@@ -87,6 +87,7 @@ ControlCenter 1.0 ControlCenter.qml
 Settings 1.0 Settings.qml
 OSD 1.0 OSD.qml
 DockIcons 1.0 DockIcons.qml
+DockContent 1.0 DockContent.qml
 DockLauncherIcon 1.0 DockLauncherIcon.qml
 Dock 1.0 Dock.qml
 PinDialog 1.0 PinDialog.qml

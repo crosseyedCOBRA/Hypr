@@ -11,12 +11,18 @@ import Quickshell.Widgets
 // `entry` is the matching DesktopEntries object (for `.execute()`), or null
 // for a running app with no matching installed .desktop file.
 //
-// A plain `Row` can't support drag-to-reorder (a Positioner keeps forcibly
-// resetting its children's x/y every relayout, fighting a MouseArea's own
-// drag.target), so this manually positions each icon by index instead --
-// only pinned icons are draggable, and only ever among the other pinned
-// icons (which always sit first in `model`, before any running-only
-// ones) - dragging one into the running section wouldn't mean anything.
+// A plain `Row`/`Column` can't support drag-to-reorder (a Positioner keeps
+// forcibly resetting its children's x/y every relayout, fighting a
+// MouseArea's own drag.target), so this manually positions each icon by
+// index instead -- only pinned icons are draggable, and only ever among the
+// other pinned icons (which always sit first in `model`, before any
+// running-only ones) - dragging one into the running section wouldn't mean
+// anything.
+//
+// `vertical` switches the whole layout axis (position along y instead of x,
+// drag.axis YAxis instead of XAxis, implicitHeight/implicitWidth swapped) -
+// for a left/right-positioned dock (Dock.qml/DockConfig.position), which
+// lays its icons out top-to-bottom instead of left-to-right.
 Item {
     id: root
 
@@ -24,10 +30,11 @@ Item {
     readonly property int spacing: 10
 
     property var model: []
+    property bool vertical: false
     readonly property int pinnedCount: model.filter(function (m) { return m.pinned }).length
 
-    implicitWidth: Math.max(model.length * (iconSize + spacing) - spacing, 0)
-    implicitHeight: iconSize
+    implicitWidth: vertical ? iconSize : Math.max(model.length * (iconSize + spacing) - spacing, 0)
+    implicitHeight: vertical ? Math.max(model.length * (iconSize + spacing) - spacing, 0) : iconSize
 
     signal activateRequested(string windowId)
     signal launchRequested(var entry)
@@ -43,11 +50,15 @@ Item {
 
             width: root.iconSize
             height: root.iconSize
-            y: 0
+            x: root.vertical ? 0 : index * (root.iconSize + root.spacing)
+            y: root.vertical ? index * (root.iconSize + root.spacing) : 0
             z: dragArea.drag.active ? 10 : 1
 
-            x: index * (root.iconSize + root.spacing)
             Behavior on x {
+                enabled: !dragArea.drag.active
+                NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+            }
+            Behavior on y {
                 enabled: !dragArea.drag.active
                 NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
             }
@@ -93,16 +104,23 @@ Item {
                 }
             }
 
-            // running indicator
+            // running indicator - sits on whichever edge is "outward" from
+            // the icon strip's own layout axis (bottom for a horizontal
+            // dock, right edge for a vertical one), matching where a
+            // running-app dot conventionally reads as attached to the dock
+            // itself rather than floating in the middle of the icon.
             Rectangle {
                 visible: iconItem.modelData.running
                 width: 5
                 height: 5
                 radius: 2.5
                 color: Colors.teal
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 1
+                anchors.horizontalCenter: root.vertical ? undefined : parent.horizontalCenter
+                anchors.verticalCenter: root.vertical ? parent.verticalCenter : undefined
+                anchors.bottom: root.vertical ? undefined : parent.bottom
+                anchors.right: root.vertical ? parent.right : undefined
+                anchors.bottomMargin: root.vertical ? 0 : 1
+                anchors.rightMargin: root.vertical ? 1 : 0
             }
 
             MouseArea {
@@ -121,9 +139,11 @@ Item {
                 // pinned range - root.pinnedCount - 1 is the last pinned
                 // icon's slot, since pinned entries always come first.
                 drag.target: iconItem.modelData.pinned ? iconItem : undefined
-                drag.axis: Drag.XAxis
+                drag.axis: root.vertical ? Drag.YAxis : Drag.XAxis
                 drag.minimumX: 0
-                drag.maximumX: Math.max(0, root.pinnedCount - 1) * (root.iconSize + root.spacing)
+                drag.maximumX: root.vertical ? 0 : Math.max(0, root.pinnedCount - 1) * (root.iconSize + root.spacing)
+                drag.minimumY: 0
+                drag.maximumY: root.vertical ? Math.max(0, root.pinnedCount - 1) * (root.iconSize + root.spacing) : 0
 
                 property bool wasDragged: false
 
@@ -137,7 +157,7 @@ Item {
                     if (!drag.active && !wasDragged)
                         return
                     if (iconItem.modelData.pinned) {
-                        const newIndex = Math.round(iconItem.x / (root.iconSize + root.spacing))
+                        const newIndex = Math.round((root.vertical ? iconItem.y : iconItem.x) / (root.iconSize + root.spacing))
                         root.reorderRequested(iconItem.modelData.id, newIndex)
                     }
                 }

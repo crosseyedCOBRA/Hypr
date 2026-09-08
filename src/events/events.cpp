@@ -470,6 +470,58 @@ CWindow* Events::remapFloatingWindow(int windowID, int forcemonitor) {
             } catch (...) {
                 Debug::log(LOG, "Rule bottomcenter failed, rule: " + rule.szRule + "=" + rule.szValue);
             }
+        } else if (rule.szRule.find("topcenter") == 0) {
+            // Mirror of "bottomcenter" - anchored to the top-center of the
+            // monitor instead, for the floating-mode dock (Dock.qml) when
+            // Settings' Dock position is "top". marginY is the gap from the
+            // monitor's top edge to the window's top edge.
+            try {
+                const auto MARGINY = stoi(rule.szRule.substr(rule.szRule.find(" ") + 1));
+
+                Debug::log(LOG, "Rule topcenter, applying to window " + std::to_string(windowID));
+
+                const auto& MONITOR = g_pWindowManager->monitors[CURRENTSCREEN];
+                PWINDOWINARR->setDefaultPosition(Vector2D(
+                    MONITOR.vecPosition.x + (MONITOR.vecSize.x - PWINDOWINARR->getDefaultSize().x) / 2.f,
+                    MONITOR.vecPosition.y + MARGINY));
+            } catch (...) {
+                Debug::log(LOG, "Rule topcenter failed, rule: " + rule.szRule + "=" + rule.szValue);
+            }
+        } else if (rule.szRule.find("leftcenter") == 0) {
+            // Same family as "topcenter"/"bottomcenter", anchored to the
+            // vertical center of the monitor's left edge instead - for the
+            // floating-mode dock when Settings' Dock position is "left".
+            // marginX is the gap from the monitor's left edge to the
+            // window's left edge.
+            try {
+                const auto MARGINX = stoi(rule.szRule.substr(rule.szRule.find(" ") + 1));
+
+                Debug::log(LOG, "Rule leftcenter, applying to window " + std::to_string(windowID));
+
+                const auto& MONITOR = g_pWindowManager->monitors[CURRENTSCREEN];
+                PWINDOWINARR->setDefaultPosition(Vector2D(
+                    MONITOR.vecPosition.x + MARGINX,
+                    MONITOR.vecPosition.y + (MONITOR.vecSize.y - PWINDOWINARR->getDefaultSize().y) / 2.f));
+            } catch (...) {
+                Debug::log(LOG, "Rule leftcenter failed, rule: " + rule.szRule + "=" + rule.szValue);
+            }
+        } else if (rule.szRule.find("rightcenter") == 0) {
+            // Mirror of "leftcenter" - anchored to the vertical center of
+            // the monitor's right edge, for the floating-mode dock when
+            // Settings' Dock position is "right". marginX is the gap from
+            // the monitor's right edge to the window's right edge.
+            try {
+                const auto MARGINX = stoi(rule.szRule.substr(rule.szRule.find(" ") + 1));
+
+                Debug::log(LOG, "Rule rightcenter, applying to window " + std::to_string(windowID));
+
+                const auto& MONITOR = g_pWindowManager->monitors[CURRENTSCREEN];
+                PWINDOWINARR->setDefaultPosition(Vector2D(
+                    MONITOR.vecPosition.x + MONITOR.vecSize.x - PWINDOWINARR->getDefaultSize().x - MARGINX,
+                    MONITOR.vecPosition.y + (MONITOR.vecSize.y - PWINDOWINARR->getDefaultSize().y) / 2.f));
+            } catch (...) {
+                Debug::log(LOG, "Rule rightcenter failed, rule: " + rule.szRule + "=" + rule.szValue);
+            }
         }
     }
 
