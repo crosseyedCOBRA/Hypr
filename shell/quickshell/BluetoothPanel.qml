@@ -15,6 +15,13 @@ import Quickshell.Widgets
 // modern audio/input devices) is.
 // windowrule=float + center,title:^Bluetooth$ in zaris.conf places it like
 // the settings/overflow windows - same mechanism, nothing new WM-side.
+//
+// Phase 2 of the Noctalia-port effort (see ROADMAP.md): the plain
+// Flickable is now NScrollView, every raw Text is now NText, and every
+// hand-rolled "button" Rectangle+Text+MouseArea (Scan, Pair, Cancel,
+// Connect, Disconnect, Forget) is now NButton, sized down via a smaller
+// fontSize to keep the same compact device-row density the originals had
+// rather than NButton's own larger default padding.
 FloatingWindow {
     id: panel
 
@@ -30,32 +37,31 @@ FloatingWindow {
         anchors.fill: parent
         color: Colors.bg
 
-        Flickable {
+        NScrollView {
+            id: scrollView
             anchors.fill: parent
             anchors.margins: 20
-            contentHeight: content.implicitHeight
-            clip: true
 
             Column {
                 id: content
-                width: parent.width
+                width: scrollView.availableWidth
                 spacing: 14
 
-                Text {
+                NText {
                     text: "Bluetooth"
-                    font.pixelSize: 16
-                    font.bold: true
+                    pointSize: Style.fontSizeL
+                    font.weight: Style.fontWeightBold
                     color: Colors.text
                 }
 
                 // --- no adapter at all: bluetoothd likely isn't running ---
-                Text {
+                NText {
                     visible: !panel.adapter
                     width: parent.width
                     wrapMode: Text.WordWrap
                     text: "No Bluetooth adapter found. Is bluetoothd running?"
                     color: Colors.textMuted
-                    font.pixelSize: 12
+                    pointSize: Style.fontSizeS
                 }
 
                 // --- adapter power + scan toggles ---
@@ -65,12 +71,12 @@ FloatingWindow {
                     height: 32
                     spacing: 12
 
-                    Text {
+                    NText {
                         text: "Power"
                         width: 90
                         anchors.verticalCenter: parent.verticalCenter
                         color: Colors.text
-                        font.pixelSize: 13
+                        pointSize: Style.fontSizeM
                     }
 
                     ToggleSwitch {
@@ -86,41 +92,29 @@ FloatingWindow {
                     height: 32
                     spacing: 12
 
-                    Text {
+                    NText {
                         text: "Scan"
                         width: 90
                         anchors.verticalCenter: parent.verticalCenter
                         color: Colors.text
-                        font.pixelSize: 13
+                        pointSize: Style.fontSizeM
                     }
 
-                    Rectangle {
-                        width: scanLabel.implicitWidth + 24
-                        height: 26
-                        radius: 6
+                    NButton {
                         anchors.verticalCenter: parent.verticalCenter
-                        color: panel.adapter && panel.adapter.discovering ? Colors.pillActive : Colors.pill
-
-                        Text {
-                            id: scanLabel
-                            anchors.centerIn: parent
-                            text: panel.adapter && panel.adapter.discovering ? "Scanning..." : "Scan for devices"
-                            color: Colors.text
-                            font.pixelSize: 12
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: panel.adapter.discovering = !panel.adapter.discovering
-                        }
+                        text: panel.adapter && panel.adapter.discovering ? "Scanning..." : "Scan for devices"
+                        fontSize: Style.fontSizeS
+                        backgroundColor: panel.adapter && panel.adapter.discovering ? Colors.pillActive : Colors.pill
+                        textColor: Colors.text
+                        onClicked: panel.adapter.discovering = !panel.adapter.discovering
                     }
                 }
 
-                Text {
+                NText {
                     visible: !!panel.adapter && panel.adapter.enabled
                     text: "Devices"
-                    font.pixelSize: 14
-                    font.bold: true
+                    pointSize: Style.fontSizeM
+                    font.weight: Style.fontWeightBold
                     color: Colors.text
                     topPadding: 6
                 }
@@ -149,15 +143,15 @@ FloatingWindow {
                                 width: parent.width
                                 spacing: 8
 
-                                Text {
+                                NText {
                                     width: parent.width - statusText.implicitWidth - 8
                                     text: deviceRow.modelData.name || deviceRow.modelData.deviceName || deviceRow.modelData.address
                                     color: Colors.text
-                                    font.pixelSize: 13
+                                    pointSize: Style.fontSizeM
                                     elide: Text.ElideRight
                                 }
 
-                                Text {
+                                NText {
                                     id: statusText
                                     text: {
                                         const d = deviceRow.modelData
@@ -170,134 +164,74 @@ FloatingWindow {
                                         return "available"
                                     }
                                     color: deviceRow.modelData.connected ? Colors.teal : Colors.textMuted
-                                    font.pixelSize: 11
+                                    pointSize: Style.fontSizeXS
                                 }
                             }
 
-                            Text {
+                            NText {
                                 visible: deviceRow.modelData.batteryAvailable
                                 text: "Battery: " + Math.round(deviceRow.modelData.battery * 100) + "%"
                                 color: Colors.textMuted
-                                font.pixelSize: 11
+                                pointSize: Style.fontSizeXS
                             }
 
                             Row {
                                 spacing: 8
 
-                                Rectangle {
+                                NButton {
                                     visible: !deviceRow.modelData.paired && !deviceRow.modelData.pairing
-                                    width: pairLabel.implicitWidth + 20
-                                    height: 24
-                                    radius: 6
-                                    color: Colors.pillActive
-
-                                    Text {
-                                        id: pairLabel
-                                        anchors.centerIn: parent
-                                        text: "Pair"
-                                        color: Colors.text
-                                        font.pixelSize: 11
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        onClicked: deviceRow.modelData.pair()
-                                    }
+                                    text: "Pair"
+                                    fontSize: Style.fontSizeXS
+                                    backgroundColor: Colors.pillActive
+                                    textColor: Colors.text
+                                    onClicked: deviceRow.modelData.pair()
                                 }
 
-                                Rectangle {
+                                NButton {
                                     visible: deviceRow.modelData.pairing
-                                    width: cancelPairLabel.implicitWidth + 20
-                                    height: 24
-                                    radius: 6
-                                    color: Colors.pill
-
-                                    Text {
-                                        id: cancelPairLabel
-                                        anchors.centerIn: parent
-                                        text: "Cancel"
-                                        color: Colors.textMuted
-                                        font.pixelSize: 11
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        onClicked: deviceRow.modelData.cancelPair()
-                                    }
+                                    text: "Cancel"
+                                    fontSize: Style.fontSizeXS
+                                    backgroundColor: Colors.pill
+                                    textColor: Colors.textMuted
+                                    onClicked: deviceRow.modelData.cancelPair()
                                 }
 
-                                Rectangle {
+                                NButton {
                                     visible: deviceRow.modelData.paired && !deviceRow.modelData.connected && !deviceRow.modelData.pairing
-                                    width: connectLabel.implicitWidth + 20
-                                    height: 24
-                                    radius: 6
-                                    color: Colors.pillActive
-
-                                    Text {
-                                        id: connectLabel
-                                        anchors.centerIn: parent
-                                        text: "Connect"
-                                        color: Colors.text
-                                        font.pixelSize: 11
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        onClicked: deviceRow.modelData.connect()
-                                    }
+                                    text: "Connect"
+                                    fontSize: Style.fontSizeXS
+                                    backgroundColor: Colors.pillActive
+                                    textColor: Colors.text
+                                    onClicked: deviceRow.modelData.connect()
                                 }
 
-                                Rectangle {
+                                NButton {
                                     visible: deviceRow.modelData.connected
-                                    width: disconnectLabel.implicitWidth + 20
-                                    height: 24
-                                    radius: 6
-                                    color: Colors.pill
-
-                                    Text {
-                                        id: disconnectLabel
-                                        anchors.centerIn: parent
-                                        text: "Disconnect"
-                                        color: Colors.text
-                                        font.pixelSize: 11
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        onClicked: deviceRow.modelData.disconnect()
-                                    }
+                                    text: "Disconnect"
+                                    fontSize: Style.fontSizeXS
+                                    backgroundColor: Colors.pill
+                                    textColor: Colors.text
+                                    onClicked: deviceRow.modelData.disconnect()
                                 }
 
-                                Rectangle {
+                                NButton {
                                     visible: deviceRow.modelData.paired
-                                    width: forgetLabel.implicitWidth + 20
-                                    height: 24
-                                    radius: 6
-                                    color: Colors.pill
-
-                                    Text {
-                                        id: forgetLabel
-                                        anchors.centerIn: parent
-                                        text: "Forget"
-                                        color: Colors.coral
-                                        font.pixelSize: 11
-                                    }
-
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        onClicked: deviceRow.modelData.forget()
-                                    }
+                                    text: "Forget"
+                                    fontSize: Style.fontSizeXS
+                                    backgroundColor: Colors.pill
+                                    textColor: Colors.coral
+                                    onClicked: deviceRow.modelData.forget()
                                 }
                             }
                         }
                     }
                 }
 
-                Text {
+                NText {
                     visible: !!panel.adapter && panel.adapter.enabled && panel.adapter.devices.count === 0
                     text: "No devices found yet - try scanning."
                     color: Colors.textMuted
-                    font.pixelSize: 12
+                    pointSize: Style.fontSizeS
                 }
             }
         }
