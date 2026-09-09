@@ -29,5 +29,6 @@ ShellRoot {
     AvatarPickerPanel {}
     AudioMixerPanel {}
     IconPickerPanel {}
+    FolderPickerPanel {}
     PowerMenuPanel {}
 }

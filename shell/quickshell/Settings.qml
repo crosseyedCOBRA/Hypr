@@ -640,14 +640,29 @@ PopupWindow {
                                 onSelected: key => DefaultsConfig.setDefaultPdfViewer(key)
                             }
 
-                            NTextInput {
+                            Row {
                                 width: parent.width
-                                label: "Screenshot folder"
-                                description: "Where Control Center's Screenshot tile saves to."
-                                text: DefaultsConfig.screenshotFolder
-                                placeholderText: Quickshell.env("HOME") + "/Pictures/Screenshots"
-                                onEditingFinished: DefaultsConfig.setScreenshotFolder(text)
-                                onAccepted: DefaultsConfig.setScreenshotFolder(text)
+                                spacing: 8
+
+                                NTextInput {
+                                    width: parent.width - browseScreenshotFolderButton.width - parent.spacing
+                                    label: "Screenshot folder"
+                                    description: "Where Control Center's Screenshot tile saves to."
+                                    text: DefaultsConfig.screenshotFolder
+                                    placeholderText: Quickshell.env("HOME") + "/Pictures/Screenshots"
+                                    onEditingFinished: DefaultsConfig.setScreenshotFolder(text)
+                                    onAccepted: DefaultsConfig.setScreenshotFolder(text)
+                                }
+
+                                NIconButton {
+                                    id: browseScreenshotFolderButton
+                                    baseSize: 28
+                                    icon: ""
+                                    tooltipText: "Browse..."
+                                    anchors.bottom: parent.bottom
+                                    anchors.bottomMargin: 4
+                                    onClicked: FolderPickerPanelState.open(DefaultsConfig.screenshotFolder, function (path) { DefaultsConfig.setScreenshotFolder(path) })
+                                }
                             }
 
                             NText {
