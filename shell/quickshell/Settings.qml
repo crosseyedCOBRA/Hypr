@@ -128,6 +128,7 @@ PopupWindow {
         { id: "defaults", label: "Defaults", icon: "" },
         { id: "layout", label: "Layout", icon: "" },
         { id: "colors", label: "Colors", icon: "" },
+        { id: "wallpaper", label: "Wallpaper", icon: "" },
         { id: "bar", label: "Bar", icon: "" },
         { id: "dock", label: "Dock", icon: "" },
         { id: "audio", label: "Audio", icon: "" },
@@ -833,6 +834,104 @@ PopupWindow {
                                 color: Colors.textMuted
                                 pointSize: Style.fontSizeXS
                                 topPadding: 6
+                            }
+                        }
+
+                        // ==================== Wallpaper ====================
+                        // Every field here just exposes WallpaperService.qml's
+                        // existing properties/setters - that singleton already
+                        // had a real folder/rotation backend (built for
+                        // WallpaperPickerPanel.qml's own grid picker), this
+                        // tab didn't need any new backend work, just a
+                        // Settings-side surface for it.
+                        Column {
+                            width: parent.width
+                            spacing: 12
+                            visible: settingsWindow.activeCategory === "wallpaper"
+
+                            NText {
+                                text: "Wallpaper folder"
+                                color: Colors.text
+                                pointSize: Style.fontSizeM
+                            }
+
+                            Row {
+                                id: wallpaperFolderRow
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+
+                                NTextInput {
+                                    width: wallpaperFolderRow.width - 24 - 36
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: WallpaperService.directory
+                                    onEditingFinished: WallpaperService.setDirectory(text)
+                                    onAccepted: WallpaperService.setDirectory(text)
+                                }
+
+                                NIconButton {
+                                    baseSize: 28
+                                    icon: ""
+                                    enabled: DefaultsConfig.defaultFileExplorer !== ""
+                                    tooltipText: DefaultsConfig.defaultFileExplorer !== "" ? "Browse..." : "Set a Default File Explorer first (Defaults tab)"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    onClicked: {
+                                        const entry = DesktopEntries.byId(DefaultsConfig.defaultFileExplorer)
+                                        if (entry)
+                                            entry.execute()
+                                    }
+                                }
+                            }
+
+                            NText {
+                                text: "Scanned non-recursively for images (jpg/jpeg/png/webp/bmp) - Browse opens your Default File Explorer to look around, it doesn't pick a folder directly. " + WallpaperService.images.length + " image(s) found."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Rotate automatically"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                ToggleSwitch {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    checked: WallpaperService.rotationEnabled
+                                    onToggled: newChecked => WallpaperService.setRotationEnabled(newChecked)
+                                }
+                            }
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Rotation interval"
+                                enabled: WallpaperService.rotationEnabled
+                                model: [
+                                    { key: "5", name: "Every 5 minutes" },
+                                    { key: "15", name: "Every 15 minutes" },
+                                    { key: "30", name: "Every 30 minutes" },
+                                    { key: "60", name: "Every hour" },
+                                    { key: "180", name: "Every 3 hours" }
+                                ]
+                                currentKey: "" + WallpaperService.rotationIntervalMinutes
+                                onSelected: key => WallpaperService.setRotationInterval(parseInt(key, 10))
+                            }
+
+                            NButton {
+                                text: "Open Wallpaper Picker"
+                                fontSize: Style.fontSizeS
+                                backgroundColor: Colors.pill
+                                textColor: Colors.text
+                                onClicked: WallpaperPickerPanelState.visible = true
                             }
                         }
 
