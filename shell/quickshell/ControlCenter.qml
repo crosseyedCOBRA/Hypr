@@ -125,6 +125,14 @@ PopupWindow {
         objects: (root.pwSink ? [root.pwSink] : []).concat(root.pwSource ? [root.pwSource] : [])
     }
 
+    // Same "primary monitor represents them all" reasoning OSD.qml's own
+    // showPrimaryBrightness() already established - BrightnessService.
+    // setBrightness()/increaseBrightness()/decreaseBrightness() already
+    // apply to every monitor at once, so one slider reading/driving the
+    // primary monitor's value stays consistent with what the OSD popup
+    // (and the XF86MonBrightness keybinds behind it) already show.
+    readonly property var primaryBrightnessMonitor: BrightnessService.getMonitorForScreen(Quickshell.screens[0])
+
     readonly property int labelWidth: 80
     readonly property int contentWidth: 380
     readonly property int tileWidth: 150
@@ -170,8 +178,8 @@ PopupWindow {
             id: content
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
-            anchors.topMargin: 12
-            spacing: 12
+            anchors.topMargin: 8
+            spacing: 8
 
             Item {
                 width: root.contentWidth
@@ -435,6 +443,35 @@ PopupWindow {
                                 root.pwSource.audio.volume = value
                         }
                     }
+                }
+            }
+
+            Row {
+                width: root.contentWidth
+                spacing: 10
+                // Icon + slider on one row, no separate label line (unlike
+                // the volume rows above, which need one to show each
+                // device's own variable name) - kept deliberately compact:
+                // Control Center's content is a fixed height that must
+                // never scroll (see this file's own header comment), and
+                // every optional row here competes for the same vertical
+                // space the weather/forecast rows at the bottom need.
+                visible: !!root.primaryBrightnessMonitor && root.primaryBrightnessMonitor.brightnessControlAvailable
+
+                NIcon {
+                    icon: ""
+                    color: Colors.textMuted
+                    pointSize: Style.fontSizeM
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                NSlider {
+                    width: parent.width - 22 - parent.spacing
+                    anchors.verticalCenter: parent.verticalCenter
+                    from: 0
+                    to: 1.0
+                    value: root.primaryBrightnessMonitor ? root.primaryBrightnessMonitor.brightness : 0
+                    onMoved: BrightnessService.setBrightness(value)
                 }
             }
 
