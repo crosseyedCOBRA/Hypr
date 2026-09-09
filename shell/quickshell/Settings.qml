@@ -285,6 +285,46 @@ PopupWindow {
 
                             NComboBox {
                                 width: parent.width
+                                label: "Cursor theme"
+                                description: "Applies to GTK/Qt apps and this WM's own pointer cursor - both only pick it up at their own next restart."
+                                model: DefaultsConfig.availableCursorThemes
+                                currentKey: DefaultsConfig.cursorTheme
+                                placeholder: "System default"
+                                onSelected: key => DefaultsConfig.setCursorTheme(key)
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Cursor size"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NSlider {
+                                    width: 160
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    from: 16
+                                    to: 48
+                                    value: DefaultsConfig.cursorSize
+                                    onMoved: DefaultsConfig.setCursorSize(value)
+                                }
+
+                                NText {
+                                    text: Math.round(DefaultsConfig.cursorSize) + "px"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.textMuted
+                                    pointSize: Style.fontSizeS
+                                }
+                            }
+
+                            NComboBox {
+                                width: parent.width
                                 label: "Font family"
                                 description: "Applies to this shell's own text and GTK apps."
                                 model: DefaultsConfig.availableFonts
@@ -334,7 +374,7 @@ PopupWindow {
                             }
 
                             NText {
-                                text: "Icon theme and GTK font changes need a real restart to actually take visual effect - Qt/GTK only read them at their own startup. \"Reload Shell UI\" below reloads Zaris's own QML live (useful after hand-editing a config file), but it can't reach into Qt's icon theme - that specifically needs the shell process itself restarted (kill and relaunch qs, or log out and back in)."
+                                text: "Icon theme, cursor theme, and GTK font changes need a real restart to actually take visual effect - Qt/GTK/this WM only read them at their own startup (the cursor theme needs the WM itself restarted to update its own pointer, not just the shell). \"Reload Shell UI\" below reloads Zaris's own QML live (useful after hand-editing a config file), but it can't reach any of that - a genuine visual change needs the shell process itself restarted (kill and relaunch qs, or log out and back in)."
                                 width: parent.width
                                 wrapMode: Text.WordWrap
                                 color: Colors.textMuted
