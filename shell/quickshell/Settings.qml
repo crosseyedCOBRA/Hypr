@@ -109,6 +109,20 @@ PopupWindow {
 
     property string activeCategory: "bar"
 
+    // Lets an external caller (AudioMixerPanel.qml's gear button) open
+    // Settings directly to a specific tab instead of whatever
+    // activeCategory was last left on - see SettingsState.requestedCategory
+    // itself for why. Only acts when a real request is pending, so a plain
+    // open (Control Center's gear button, which never touches
+    // requestedCategory) keeps today's "reopens to the last tab you were
+    // on" behavior unchanged.
+    onVisibleChanged: {
+        if (settingsWindow.visible && SettingsState.requestedCategory !== "") {
+            settingsWindow.activeCategory = SettingsState.requestedCategory
+            SettingsState.requestedCategory = ""
+        }
+    }
+
     readonly property var categories: [
         { id: "general", label: "General", icon: "" },
         { id: "defaults", label: "Defaults", icon: "" },
@@ -116,6 +130,7 @@ PopupWindow {
         { id: "colors", label: "Colors", icon: "" },
         { id: "bar", label: "Bar", icon: "" },
         { id: "dock", label: "Dock", icon: "" },
+        { id: "audio", label: "Audio", icon: "" },
         { id: "profile", label: "Profile", icon: "" },
         { id: "datetime", label: "Date/Time", icon: "" },
         { id: "modules", label: "Modules", icon: "" },
@@ -1527,6 +1542,22 @@ PopupWindow {
                                 color: Colors.textMuted
                                 pointSize: Style.fontSizeXS
                                 topPadding: 6
+                            }
+                        }
+
+                        // ==================== Audio ====================
+                        // Reuses the exact same AudioMixer.qml content the
+                        // bar's volume-icon popup shows (AudioMixerPanel.qml)
+                        // - see that component's own header comment for the
+                        // Volumes/Devices sub-tabs and the empirically-
+                        // verified Pipewire node filtering behind them.
+                        Column {
+                            width: parent.width
+                            spacing: 4
+                            visible: settingsWindow.activeCategory === "audio"
+
+                            AudioMixer {
+                                width: parent.width
                             }
                         }
                     }

@@ -27,4 +27,5 @@ ShellRoot {
     CalendarFlyout {}
     NotificationHistoryPanel {}
     AvatarPickerPanel {}
+    AudioMixerPanel {}
 }

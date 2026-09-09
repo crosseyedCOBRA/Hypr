@@ -13,4 +13,13 @@ import QtQuick
 QtObject {
     property bool visible: false
     property Item targetItem: null
+
+    // Set right before `visible = true` by anything that wants Settings to
+    // open directly to a specific category id (e.g. AudioMixerPanel.qml's
+    // gear button jumping to "audio") rather than whatever `activeCategory`
+    // was last left on. Settings.qml consumes and clears this itself the
+    // moment it becomes visible - a plain open (Control Center's gear
+    // button) never touches this, so Settings keeps opening to its last
+    // category as before in that case.
+    property string requestedCategory: ""
 }
