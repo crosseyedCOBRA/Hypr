@@ -34,6 +34,7 @@ singleton DefaultsConfig 1.0 DefaultsConfig.qml
 singleton DateTimeConfig 1.0 DateTimeConfig.qml
 singleton BarConfig 1.0 BarConfig.qml
 singleton DockItemsService 1.0 DockItemsService.qml
+singleton PowerMenuPanelState 1.0 PowerMenuPanelState.qml
 LauncherContent 1.0 LauncherContent.qml
 Launcher 1.0 Launcher.qml
 BarClockText 1.0 BarClockText.qml
@@ -101,6 +102,7 @@ CalendarFlyout 1.0 CalendarFlyout.qml
 BatteryIndicator 1.0 BatteryIndicator.qml
 BluetoothIndicator 1.0 BluetoothIndicator.qml
 BluetoothPanel 1.0 BluetoothPanel.qml
+PowerMenuPanel 1.0 PowerMenuPanel.qml
 ControlCenter 1.0 ControlCenter.qml
 Settings 1.0 Settings.qml
 OSD 1.0 OSD.qml

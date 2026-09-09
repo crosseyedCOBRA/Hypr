@@ -304,7 +304,10 @@ PopupWindow {
                         baseSize: 26
                         icon: ""
                         tooltipText: "Power menu"
-                        onClicked: Quickshell.execDetached([Quickshell.env("HOME") + "/.config/zaris/powermenu.sh"])
+                        onClicked: {
+                            PowerMenuPanelState.visible = true
+                            ControlCenterState.visible = false
+                        }
                     }
 
                     NIconButton {
