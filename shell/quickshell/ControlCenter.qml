@@ -104,7 +104,20 @@ PopupWindow {
     // visible padding and a bit of background definition around its
     // Control Center rather than content running edge-to-edge.
     implicitWidth: 440
-    implicitHeight: 830
+    // 830 -> 900, a bit taller to comfortably fit most of the new Calendar
+    // section (CalendarWidget.qml, added below the media/gauges cluster)
+    // without scrolling in the common case - but NOT sized to fit
+    // literally everything simultaneously visible the way the original
+    // 830 was, since that would have meant ~1150px, which doesn't fit
+    // under even a 1080px-tall monitor's bar (44 + 10 gap + 1150 > 1080 -
+    // confirmed by testing, the earlier attempt at exactly that number
+    // simply clipped the calendar/weather content off-screen with nothing
+    // to indicate more existed). The content below is now wrapped in a
+    // real NScrollView (same component Settings.qml already uses) instead,
+    // so the rare fully-expanded state (every optional row/dial, a full
+    // media card, and the calendar all visible together) scrolls into
+    // view rather than silently disappearing past the window's edge.
+    implicitHeight: 900
 
     anchor.item: ControlCenterState.barItem
     anchor.rect.x: ControlCenterState.barItem ? ControlCenterState.barItem.width - implicitWidth : 0
@@ -152,15 +165,32 @@ PopupWindow {
         border.width: 1
         border.color: Colors.pill
 
-        Column {
-            id: content
+        // NScrollView (the same real-scrollbar component Settings.qml
+        // already uses) rather than a plain fixed Column - added alongside
+        // the new Calendar section below so the rare fully-expanded state
+        // (every optional row/dial, a full media card, and the calendar
+        // all visible at once) scrolls into view instead of silently
+        // clipping past the window's fixed-size bottom edge the way a
+        // plain Column would. Sized to content's own width plus a little
+        // room for the scrollbar rather than the full Rectangle width, so
+        // content stays centered exactly as it did before this wrapped it.
+        NScrollView {
+            id: ccScrollView
             anchors.top: parent.top
+            anchors.bottom: parent.bottom
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.topMargin: 12
-            spacing: 12
+            anchors.bottomMargin: 12
+            width: root.contentWidth + 20
 
-            Item {
+            Column {
+                id: content
                 width: root.contentWidth
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 12
+
+                Item {
+                    width: root.contentWidth
                 height: 44
 
                 Row {
@@ -1013,6 +1043,18 @@ PopupWindow {
                 }
             }
 
+            // Calendar - a second, independent CalendarWidget instance from
+            // CalendarFlyout.qml's own (which month is being viewed is a
+            // per-view concern, not global data worth sharing - same
+            // "duplicate the self-contained piece" approach this file
+            // already uses for cpuSource/cpuTempSource/gpuTempSource
+            // above). No ModulesConfig tray gate, same reasoning as
+            // Weather below - a fixed panel feature, not a bar module with
+            // an existing presence to preserve/hide.
+            CalendarWidget {
+                width: root.contentWidth
+            }
+
             // Weather - the one piece of the reference screenshot deferred
             // out of the seventh Control Center pass specifically so it
             // wouldn't be bundled into an already-large media/audio change.
@@ -1020,42 +1062,11 @@ PopupWindow {
             // tiles above, there's no existing bar presence to preserve or
             // hide, and a location/weather API is opt-in by nature (simply
             // shows "Loading weather..." until the first fetch resolves,
-            // never a silent failure).
-            Row {
+            // never a silent failure). Now WeatherWidget.qml, shared with
+            // CalendarFlyout.qml's own weather row rather than duplicated.
+            WeatherWidget {
                 width: root.contentWidth
-                spacing: 12
-
-                NText {
-                    text: WeatherService.haveData ? WeatherService.iconGlyphCurrent : ""
-                    color: Colors.blue
-                    pointSize: Style.fontSizeXXXL
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 1
-
-                    NText {
-                        text: {
-                            if (WeatherService.errorText !== "")
-                                return "Weather unavailable"
-                            if (!WeatherService.haveData)
-                                return "Loading weather..."
-                            return Math.round(WeatherService.temperatureF) + "°F  " + WeatherService.conditionTextCurrent
-                        }
-                        color: Colors.text
-                        pointSize: Style.fontSizeM
-                        font.weight: Style.fontWeightBold
-                    }
-
-                    NText {
-                        visible: WeatherService.haveData
-                        text: WeatherService.locationName + "  H:" + Math.round(WeatherService.highF) + "°  L:" + Math.round(WeatherService.lowF) + "°"
-                        color: Colors.textMuted
-                        pointSize: Style.fontSizeS
-                    }
-                }
+            }
             }
         }
     }

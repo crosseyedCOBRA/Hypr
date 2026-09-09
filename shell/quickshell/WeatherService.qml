@@ -29,10 +29,17 @@ QtObject {
 
         adapter: JsonAdapter {
             property string manualLocationQuery: ""
+            property bool hideLocation: false
         }
     }
 
     readonly property string manualLocationQuery: configFile.adapter.manualLocationQuery
+    // For anyone who doesn't want their city name visible in a widget that
+    // can end up on screen in a screenshot/stream - WeatherWidget.qml
+    // (shared by Control Center and the calendar flyout) respects this,
+    // still showing the temperature/condition/hi-lo, just not the place
+    // name itself.
+    readonly property bool hideLocation: configFile.adapter.hideLocation === true
 
     function setManualLocation(query) {
         configFile.adapter.manualLocationQuery = query
@@ -42,6 +49,10 @@ QtObject {
     function useAutoLocation() {
         configFile.adapter.manualLocationQuery = ""
         refresh()
+    }
+
+    function setHideLocation(val) {
+        configFile.adapter.hideLocation = val
     }
 
     property bool loading: false

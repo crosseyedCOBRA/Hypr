@@ -87,6 +87,8 @@ NotificationHistoryPanel 1.0 NotificationHistoryPanel.qml
 WallpaperIndicator 1.0 WallpaperIndicator.qml
 WallpaperPickerPanel 1.0 WallpaperPickerPanel.qml
 AvatarPickerPanel 1.0 AvatarPickerPanel.qml
+CalendarWidget 1.0 CalendarWidget.qml
+WeatherWidget 1.0 WeatherWidget.qml
 CalendarFlyout 1.0 CalendarFlyout.qml
 BatteryIndicator 1.0 BatteryIndicator.qml
 BluetoothIndicator 1.0 BluetoothIndicator.qml

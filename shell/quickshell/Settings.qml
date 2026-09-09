@@ -730,6 +730,34 @@ PopupWindow {
                                         WeatherService.setManualLocation(text.trim())
                                 }
                             }
+
+                            Row {
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Hide location"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                ToggleSwitch {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    checked: WeatherService.hideLocation
+                                    onToggled: newChecked => WeatherService.setHideLocation(newChecked)
+                                }
+                            }
+
+                            NText {
+                                text: "Keeps the city name out of the weather widget (Control Center, calendar) - the temperature/condition/hi-lo still shows."
+                                width: 320
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 4
+                            }
                         }
 
                         // ==================== Bar ====================

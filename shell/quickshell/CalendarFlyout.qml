@@ -11,13 +11,14 @@ import Quickshell
 // category as the clipboard-mechanism decision. CalendarHeaderCard is
 // separately entangled with Noctalia's weather/location system and its
 // own analog/digital clock widget, neither of which exists here - the bar
-// already has its own clock. What's actually portable and worth keeping is
-// CalendarMonthCard's month-grid generation and navigation logic - pure JS
-// date math (day-of-week offsets, "days from previous/next month to pad
-// the grid", "which cell is today") with zero external coupling - ported
-// close to verbatim below. No event integration (no dots, no per-day
-// tooltips, no click-to-open-gnome-calendar) since there's no event data
-// to show yet; this is a plain date-browsing calendar for now.
+// already has its own clock. The actual month-grid logic (day-of-week
+// offsets, padding, "which cell is today") now lives in CalendarWidget.qml,
+// shared with Control Center's own Calendar section below.
+//
+// Also now shows current weather (WeatherWidget.qml, also shared with
+// Control Center) underneath the grid, per explicit request - the same
+// data Control Center already displayed, just not previously duplicated
+// here.
 //
 // Built on PopupWindow rather than a FloatingWindow, same reasoning as
 // Tooltip.qml: anchors directly to an arbitrary target Item (here, the
@@ -35,7 +36,11 @@ PopupWindow {
     visible: CalendarFlyoutState.visible && !!CalendarFlyoutState.targetItem
     color: "transparent"
 
-    implicitWidth: 260
+    // Widened from the original 260 to comfortably fit the weather row
+    // added below the calendar grid - implicitHeight stays computed from
+    // body's own implicitHeight, so adding weather grew the window's
+    // height automatically with no hardcoded value to update.
+    implicitWidth: 300
     implicitHeight: body.implicitHeight + 20
 
     anchor.item: CalendarFlyoutState.targetItem
@@ -46,60 +51,6 @@ PopupWindow {
     // mode), not just a top one, so this can no longer be a fixed
     // downward-only offset.
     anchor.rect.y: BarConfig.popupAnchorY(CalendarFlyoutState.targetItem, implicitHeight)
-
-    readonly property var todayDate: new Date()
-    property int viewMonth: todayDate.getMonth()
-    property int viewYear: todayDate.getFullYear()
-    // Sunday - matches the bar clock's own hardcoded English date format,
-    // there's no locale/I18n system here to derive this from.
-    readonly property int firstDayOfWeek: 0
-
-    function goToPreviousMonth() {
-        const d = new Date(viewYear, viewMonth - 1, 1)
-        viewYear = d.getFullYear()
-        viewMonth = d.getMonth()
-    }
-
-    function goToNextMonth() {
-        const d = new Date(viewYear, viewMonth + 1, 1)
-        viewYear = d.getFullYear()
-        viewMonth = d.getMonth()
-    }
-
-    function goToToday() {
-        const now = new Date()
-        viewYear = now.getFullYear()
-        viewMonth = now.getMonth()
-    }
-
-    // Ported near-verbatim from Noctalia's CalendarMonthCard.qml daysModel -
-    // pure date math, no external coupling.
-    readonly property var daysModel: {
-        const firstOfMonth = new Date(viewYear, viewMonth, 1)
-        const lastOfMonth = new Date(viewYear, viewMonth + 1, 0)
-        const daysInMonth = lastOfMonth.getDate()
-        const firstOfMonthDayOfWeek = firstOfMonth.getDay()
-        const daysBefore = (firstOfMonthDayOfWeek - firstDayOfWeek + 7) % 7
-        const lastOfMonthDayOfWeek = lastOfMonth.getDay()
-        const daysAfter = (firstDayOfWeek - lastOfMonthDayOfWeek - 1 + 7) % 7
-        const days = []
-        const now = new Date()
-
-        const prevMonth = new Date(viewYear, viewMonth, 0)
-        const prevMonthDays = prevMonth.getDate()
-        for (let i = daysBefore - 1; i >= 0; i--)
-            days.push({ day: prevMonthDays - i, currentMonth: false, today: false })
-
-        for (let day = 1; day <= daysInMonth; day++) {
-            const isToday = viewYear === now.getFullYear() && viewMonth === now.getMonth() && day === now.getDate()
-            days.push({ day: day, currentMonth: true, today: isToday })
-        }
-
-        for (let i = 1; i <= daysAfter; i++)
-            days.push({ day: i, currentMonth: false, today: false })
-
-        return days
-    }
 
     Rectangle {
         anchors.fill: parent
@@ -112,105 +63,21 @@ PopupWindow {
             id: body
             anchors.fill: parent
             anchors.margins: 10
-            spacing: 8
+            spacing: 10
 
-            Row {
+            CalendarWidget {
                 width: parent.width
-                height: 24
-
-                NIconButton {
-                    icon: ""
-                    baseSize: 22
-                    tooltipText: "Previous month"
-                    anchors.verticalCenter: parent.verticalCenter
-                    onClicked: root.goToPreviousMonth()
-                }
-
-                NText {
-                    width: parent.width - 66
-                    horizontalAlignment: Text.AlignHCenter
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Qt.locale().monthName(root.viewMonth, Locale.LongFormat) + " " + root.viewYear
-                    pointSize: Style.fontSizeM
-                    font.weight: Style.fontWeightBold
-                    color: Colors.mOnSurface
-                }
-
-                NIconButton {
-                    icon: ""
-                    baseSize: 22
-                    tooltipText: "Next month"
-                    anchors.verticalCenter: parent.verticalCenter
-                    onClicked: root.goToNextMonth()
-                }
             }
 
-            Row {
+            Rectangle {
                 width: parent.width
-
-                Repeater {
-                    model: 7
-                    NText {
-                        required property int index
-                        width: body.width / 7
-                        horizontalAlignment: Text.AlignHCenter
-                        text: Qt.locale().dayName((root.firstDayOfWeek + index) % 7, Locale.ShortFormat).substring(0, 2).toUpperCase()
-                        pointSize: Style.fontSizeXS
-                        font.weight: Style.fontWeightBold
-                        color: Colors.mPrimary
-                    }
-                }
+                height: 1
+                color: Colors.mOutline
+                opacity: 0.4
             }
 
-            Grid {
-                width: parent.width
-                columns: 7
-
-                Repeater {
-                    model: root.daysModel
-
-                    Item {
-                        required property var modelData
-                        width: body.width / 7
-                        height: 28
-
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: 24
-                            height: 24
-                            radius: 12
-                            color: modelData.today ? Colors.mSecondary : "transparent"
-
-                            NText {
-                                anchors.centerIn: parent
-                                text: modelData.day
-                                pointSize: Style.fontSizeS
-                                opacity: modelData.currentMonth ? 1.0 : 0.35
-                                color: modelData.today ? Colors.mOnSecondary : Colors.mOnSurface
-                                font.weight: modelData.today ? Style.fontWeightBold : Style.fontWeightRegular
-                            }
-                        }
-                    }
-                }
-            }
-
-            Item {
-                width: parent.width
-                height: 20
-
-                NText {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    text: "Today"
-                    pointSize: Style.fontSizeXS
-                    color: Colors.mPrimary
-
-                    MouseArea {
-                        anchors.fill: parent
-                        anchors.margins: -6
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.goToToday()
-                    }
-                }
+            WeatherWidget {
+                iconPointSize: Style.fontSizeXXL
             }
         }
     }
