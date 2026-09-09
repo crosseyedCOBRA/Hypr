@@ -1217,11 +1217,19 @@ PopupWindow {
                                 }
 
                                 NTextInput {
-                                    width: launcherIconRow.width - 170 - 24 - 24
+                                    width: launcherIconRow.width - 170 - 24 - 24 - 12 - 36
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: BarConfig.launcherIcon
                                     onEditingFinished: BarConfig.setLauncherIcon(text)
                                     onAccepted: BarConfig.setLauncherIcon(text)
+                                }
+
+                                NIconButton {
+                                    baseSize: 28
+                                    icon: ""
+                                    tooltipText: "Browse..."
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    onClicked: IconPickerPanelState.open("launcher")
                                 }
                             }
 
@@ -1248,11 +1256,19 @@ PopupWindow {
                                 }
 
                                 NTextInput {
-                                    width: ccIconRow.width - 170 - 24 - 24
+                                    width: ccIconRow.width - 170 - 24 - 24 - 12 - 36
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: BarConfig.controlCenterIcon
                                     onEditingFinished: BarConfig.setControlCenterIcon(text)
                                     onAccepted: BarConfig.setControlCenterIcon(text)
+                                }
+
+                                NIconButton {
+                                    baseSize: 28
+                                    icon: ""
+                                    tooltipText: "Browse..."
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    onClicked: IconPickerPanelState.open("controlCenter")
                                 }
                             }
 

@@ -16,6 +16,7 @@ singleton WallpaperService 1.0 WallpaperService.qml
 singleton WallpaperPickerPanelState 1.0 WallpaperPickerPanelState.qml
 singleton AvatarPickerPanelState 1.0 AvatarPickerPanelState.qml
 singleton AudioMixerPanelState 1.0 AudioMixerPanelState.qml
+singleton IconPickerPanelState 1.0 IconPickerPanelState.qml
 singleton CalendarFlyoutState 1.0 CalendarFlyoutState.qml
 singleton HostService 1.0 HostService.qml
 singleton BatteryService 1.0 BatteryService.qml
@@ -89,6 +90,7 @@ NotificationHistoryPanel 1.0 NotificationHistoryPanel.qml
 WallpaperIndicator 1.0 WallpaperIndicator.qml
 WallpaperPickerPanel 1.0 WallpaperPickerPanel.qml
 AvatarPickerPanel 1.0 AvatarPickerPanel.qml
+IconPickerPanel 1.0 IconPickerPanel.qml
 AudioMixer 1.0 AudioMixer.qml
 AudioMixerPanel 1.0 AudioMixerPanel.qml
 CalendarWidget 1.0 CalendarWidget.qml

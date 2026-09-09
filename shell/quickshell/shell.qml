@@ -28,4 +28,5 @@ ShellRoot {
     NotificationHistoryPanel {}
     AvatarPickerPanel {}
     AudioMixerPanel {}
+    IconPickerPanel {}
 }
