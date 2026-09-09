@@ -15,6 +15,16 @@ FloatingWindow {
     implicitWidth: 440
     implicitHeight: 440
 
+    // Restores Settings' own visibility (hidden for the duration by
+    // FolderPickerPanelState.open() - see its own comment for why)
+    // whenever this panel actually closes, regardless of path - Select
+    // This Folder, the Cancel button below, or anything else that flips
+    // FolderPickerPanelState.visible false.
+    onVisibleChanged: {
+        if (!panel.visible)
+            FolderPickerPanelState.restoreSettings()
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Colors.bg
@@ -39,12 +49,23 @@ FloatingWindow {
                 }
 
                 NText {
-                    width: parent.width - upButton.width - parent.spacing
+                    // Extra room reserved on the right for the Cancel
+                    // button now sharing this row.
+                    width: parent.width - upButton.width - cancelButton.width - parent.spacing * 2
                     anchors.verticalCenter: parent.verticalCenter
                     text: FolderPickerPanelState.directory
                     color: Colors.text
                     pointSize: Style.fontSizeS
                     elide: Text.ElideMiddle
+                }
+
+                NIconButton {
+                    id: cancelButton
+                    anchors.verticalCenter: parent.verticalCenter
+                    baseSize: 20
+                    icon: ""
+                    tooltipText: "Cancel"
+                    onClicked: FolderPickerPanelState.visible = false
                 }
             }
 
