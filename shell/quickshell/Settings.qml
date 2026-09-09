@@ -87,6 +87,7 @@ PopupWindow {
         { id: "layout", label: "Layout", icon: "" },
         { id: "colors", label: "Colors", icon: "" },
         { id: "profile", label: "Profile", icon: "" },
+        { id: "weather", label: "Weather", icon: "" },
         { id: "bar", label: "Bar", icon: "" },
         { id: "modules", label: "Modules", icon: "" },
         { id: "dock", label: "Dock", icon: "" }
@@ -708,6 +709,20 @@ PopupWindow {
                                 onEditingFinished: HostService.setCustomDisplayName(text)
                                 onAccepted: HostService.setCustomDisplayName(text)
                             }
+
+                        }
+
+                        // ==================== Weather ====================
+                        // Split out from Profile - the location field/toggle
+                        // had no real connection to identity settings beyond
+                        // both being "things about how you show up", and
+                        // Weather has enough of its own surface (more is
+                        // planned - see the backlog) to earn its own tab
+                        // rather than staying bolted onto Profile.
+                        Column {
+                            width: parent.width
+                            spacing: 12
+                            visible: settingsWindow.activeCategory === "weather"
 
                             NTextInput {
                                 width: 260
