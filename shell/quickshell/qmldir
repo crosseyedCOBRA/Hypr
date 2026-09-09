@@ -27,6 +27,7 @@ singleton PinDialogState 1.0 PinDialogState.qml
 singleton DndState 1.0 DndState.qml
 singleton WeatherService 1.0 WeatherService.qml
 singleton PowerProfileState 1.0 PowerProfileState.qml
+singleton ThemeConfig 1.0 ThemeConfig.qml
 singleton BarConfig 1.0 BarConfig.qml
 singleton DockItemsService 1.0 DockItemsService.qml
 LauncherContent 1.0 LauncherContent.qml

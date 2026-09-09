@@ -840,6 +840,24 @@ PopupWindow {
                             color: Colors.pill
                         }
 
+                        // Known caveat, not fixable from here - same family
+                        // as MediaService.qml's own trackLength caveat
+                        // (unreliable "generic browser" MPRIS metadata):
+                        // confirmed live via direct `busctl ... Metadata`
+                        // + a filesystem check that Chromium's own MPRIS
+                        // bridge can report an `mpris:artUrl` pointing at a
+                        // `/tmp/.org.chromium.Chromium.<id>` temp file it
+                        // has already deleted by the time anything tries to
+                        // load it - Chromium writes this file only
+                        // momentarily and cleans it up almost immediately,
+                        // then keeps advertising the now-dead path for the
+                        // rest of the session. Nothing here can refresh
+                        // that value into something real since the D-Bus
+                        // metadata itself never changes to a working path -
+                        // this Image simply fails to load and the
+                        // Colors.pill/gradient background behind it shows
+                        // through instead, which is the correct graceful
+                        // fallback already, not a bug to chase further.
                         Image {
                             anchors.fill: parent
                             source: MediaService.trackArtUrl

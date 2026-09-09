@@ -6,16 +6,27 @@ import QtQuick
 // ~/.config/dunst/dunstrc and ~/.config/rofi/theme.rasi are themed to match
 // these same values by hand -- they can't import this file, so keep them in
 // sync manually if you change a color here.
+//
+// bg/text/blue/teal/coral are now sourced from ThemeConfig.qml (backed by
+// ~/.config/quickshell/colors.json, editable via Settings' Colors tab or by
+// hand) instead of being hardcoded - every file below and throughout the
+// rest of the shell already references these exact names, so a theme
+// change (or a built-in preset) propagates everywhere automatically with
+// no other file needing to change. pill/pillActive/textMuted/purple/red
+// stay fixed, deliberately out of scope for now (structural surface tones
+// and the error/danger red, not part of the "4-5 custom colors" the
+// theming system covers) - see ROADMAP.md's "per-module color overrides"
+// backlog item for a possible future extension.
 QtObject {
-    readonly property string bg: "#0c0b1a"
+    readonly property string bg: ThemeConfig.background
     readonly property string pill: "#1b204c"
     readonly property string pillActive: "#2d3a74"
-    readonly property string text: "#e8e6f0"
+    readonly property string text: ThemeConfig.text
     readonly property string textMuted: "#8890b5"
-    readonly property string teal: "#4da4a6"
-    readonly property string blue: "#5b7fd6"
+    readonly property string teal: ThemeConfig.secondary
+    readonly property string blue: ThemeConfig.primary
     readonly property string purple: "#b882be"
-    readonly property string coral: "#c55a63"
+    readonly property string coral: ThemeConfig.tertiary
     readonly property string red: "#d9556a"
 
     // Material Design 3 role aliases, adapted from Noctalia's Color.qml (MIT

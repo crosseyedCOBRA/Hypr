@@ -84,6 +84,7 @@ PopupWindow {
     readonly property var categories: [
         { id: "general", label: "General", icon: "" },
         { id: "layout", label: "Layout", icon: "" },
+        { id: "colors", label: "Colors", icon: "" },
         { id: "profile", label: "Profile", icon: "" },
         { id: "bar", label: "Bar", icon: "" },
         { id: "modules", label: "Modules", icon: "" },
@@ -351,6 +352,217 @@ PopupWindow {
 
                             NText {
                                 text: "Applies in either layout above. Left/right bar positions (like the dock already supports) are a possible future addition, not available yet."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 6
+                            }
+                        }
+
+                        // ==================== Colors ====================
+                        Column {
+                            width: parent.width
+                            spacing: 4
+                            visible: settingsWindow.activeCategory === "colors"
+
+                            NText {
+                                text: "Presets"
+                                color: Colors.text
+                                pointSize: Style.fontSizeM
+                                font.weight: Style.fontWeightBold
+                                bottomPadding: 4
+                            }
+
+                            Flow {
+                                width: parent.width
+                                spacing: 10
+
+                                Repeater {
+                                    model: ThemeConfig.presets
+
+                                    Rectangle {
+                                        id: presetCard
+                                        required property var modelData
+                                        width: 110
+                                        height: 58
+                                        radius: 6
+                                        color: Colors.pill
+                                        border.width: 1
+                                        border.color: presetHover.containsMouse ? Colors.pillActive : "transparent"
+
+                                        Column {
+                                            anchors.centerIn: parent
+                                            spacing: 6
+
+                                            Row {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                spacing: 4
+
+                                                Rectangle { width: 14; height: 14; radius: 7; color: presetCard.modelData.primary }
+                                                Rectangle { width: 14; height: 14; radius: 7; color: presetCard.modelData.secondary }
+                                                Rectangle { width: 14; height: 14; radius: 7; color: presetCard.modelData.tertiary }
+                                                Rectangle { width: 14; height: 14; radius: 7; color: presetCard.modelData.borderAccent }
+                                            }
+
+                                            NText {
+                                                anchors.horizontalCenter: parent.horizontalCenter
+                                                text: presetCard.modelData.name
+                                                color: Colors.text
+                                                pointSize: Style.fontSizeXS
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            id: presetHover
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            onClicked: ThemeConfig.applyPreset(presetCard.modelData.id)
+                                        }
+                                    }
+                                }
+                            }
+
+                            NText {
+                                text: "Applying a preset overwrites all five colors and the window border accent below - hand-edit any of them afterward if you just want to tweak one."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 6
+                                bottomPadding: 16
+                            }
+
+                            NText {
+                                text: "Custom colors"
+                                color: Colors.text
+                                pointSize: Style.fontSizeM
+                                font.weight: Style.fontWeightBold
+                                bottomPadding: 4
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+
+                                NText { text: "Primary"; width: 170; anchors.verticalCenter: parent.verticalCenter; color: Colors.text; pointSize: Style.fontSizeM }
+                                Rectangle { width: 24; height: 24; radius: 4; anchors.verticalCenter: parent.verticalCenter; color: ThemeConfig.primary; border.width: 1; border.color: Colors.textMuted }
+                                NTextInput {
+                                    width: 120
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ThemeConfig.primary
+                                    placeholderText: "#5b7fd6"
+                                    onEditingFinished: ThemeConfig.setPrimary(text)
+                                    onAccepted: ThemeConfig.setPrimary(text)
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+
+                                NText { text: "Secondary"; width: 170; anchors.verticalCenter: parent.verticalCenter; color: Colors.text; pointSize: Style.fontSizeM }
+                                Rectangle { width: 24; height: 24; radius: 4; anchors.verticalCenter: parent.verticalCenter; color: ThemeConfig.secondary; border.width: 1; border.color: Colors.textMuted }
+                                NTextInput {
+                                    width: 120
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ThemeConfig.secondary
+                                    placeholderText: "#4da4a6"
+                                    onEditingFinished: ThemeConfig.setSecondary(text)
+                                    onAccepted: ThemeConfig.setSecondary(text)
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+
+                                NText { text: "Tertiary"; width: 170; anchors.verticalCenter: parent.verticalCenter; color: Colors.text; pointSize: Style.fontSizeM }
+                                Rectangle { width: 24; height: 24; radius: 4; anchors.verticalCenter: parent.verticalCenter; color: ThemeConfig.tertiary; border.width: 1; border.color: Colors.textMuted }
+                                NTextInput {
+                                    width: 120
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ThemeConfig.tertiary
+                                    placeholderText: "#c55a63"
+                                    onEditingFinished: ThemeConfig.setTertiary(text)
+                                    onAccepted: ThemeConfig.setTertiary(text)
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+
+                                NText { text: "Text"; width: 170; anchors.verticalCenter: parent.verticalCenter; color: Colors.text; pointSize: Style.fontSizeM }
+                                Rectangle { width: 24; height: 24; radius: 4; anchors.verticalCenter: parent.verticalCenter; color: ThemeConfig.text; border.width: 1; border.color: Colors.textMuted }
+                                NTextInput {
+                                    width: 120
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ThemeConfig.text
+                                    placeholderText: "#e8e6f0"
+                                    onEditingFinished: ThemeConfig.setText(text)
+                                    onAccepted: ThemeConfig.setText(text)
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+
+                                NText { text: "Background"; width: 170; anchors.verticalCenter: parent.verticalCenter; color: Colors.text; pointSize: Style.fontSizeM }
+                                Rectangle { width: 24; height: 24; radius: 4; anchors.verticalCenter: parent.verticalCenter; color: ThemeConfig.background; border.width: 1; border.color: Colors.textMuted }
+                                NTextInput {
+                                    width: 120
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ThemeConfig.background
+                                    placeholderText: "#0c0b1a"
+                                    onEditingFinished: ThemeConfig.setBackground(text)
+                                    onAccepted: ThemeConfig.setBackground(text)
+                                }
+                            }
+
+                            NText {
+                                text: "\"Text muted\", pill/hover backgrounds, and the error/danger red stay fixed for now - only these five colors and the border accent below are themeable."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 6
+                                bottomPadding: 16
+                            }
+
+                            NText {
+                                text: "Window border accent"
+                                color: Colors.text
+                                pointSize: Style.fontSizeM
+                                font.weight: Style.fontWeightBold
+                                bottomPadding: 4
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+
+                                NText { text: "Focused window border"; width: 170; anchors.verticalCenter: parent.verticalCenter; color: Colors.text; pointSize: Style.fontSizeM }
+                                Rectangle { width: 24; height: 24; radius: 4; anchors.verticalCenter: parent.verticalCenter; color: ThemeConfig.borderAccent; border.width: 1; border.color: Colors.textMuted }
+                                NTextInput {
+                                    width: 120
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ThemeConfig.borderAccent
+                                    placeholderText: "#3bb2d4"
+                                    onEditingFinished: ThemeConfig.setBorderAccent(text)
+                                    onAccepted: ThemeConfig.setBorderAccent(text)
+                                }
+                            }
+
+                            NText {
+                                text: "This is a window-manager-level setting (zaris.conf's col.active_border), not a Quickshell one - it takes effect live, but an already-focused window's border only repaints on its next focus change."
                                 width: parent.width
                                 wrapMode: Text.WordWrap
                                 color: Colors.textMuted
