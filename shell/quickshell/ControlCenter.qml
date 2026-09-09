@@ -906,15 +906,34 @@ PopupWindow {
                         // confirmed live via direct `busctl ... Metadata`
                         // + a filesystem check that Chromium's own MPRIS
                         // bridge can report an `mpris:artUrl` pointing at a
-                        // `/tmp/.org.chromium.Chromium.<id>` temp file it
-                        // has already deleted by the time anything tries to
-                        // load it - Chromium writes this file only
-                        // momentarily and cleans it up almost immediately,
-                        // then keeps advertising the now-dead path for the
-                        // rest of the session. Nothing here can refresh
-                        // that value into something real since the D-Bus
-                        // metadata itself never changes to a working path -
-                        // this Image simply fails to load and the
+                        // `/tmp/.org.chromium.Chromium.<id>` temp file that
+                        // never actually loads. Originally chalked up to
+                        // Chromium deleting the file "almost immediately" -
+                        // re-investigated 2026-09-09 per an explicit user
+                        // question about whether this is really a Chromium-
+                        // as-Flatpak issue specifically, and it is: `flatpak
+                        // info --show-permissions org.chromium.Chromium`
+                        // grants `filesystems=home;` and a short allowlist
+                        // of specific paths, with no `--filesystem=/tmp` (or
+                        // `host`/`host-os`) anywhere in it. Flatpak's bubble-
+                        // wrap sandbox gives every app a private, isolated
+                        // `/tmp` by default unless a rule like that grants
+                        // the real host one - so the path Chromium's MPRIS
+                        // bridge advertises is real and valid *inside its
+                        // own sandbox*, but `/tmp/.org.chromium.Chromium.
+                        // <id>` on the actual host filesystem (what this
+                        // Image, running unsandboxed, actually reads) either
+                        // doesn't exist at all or is a completely unrelated
+                        // file - not a timing race that just happens to
+                        // always lose, but two different filesystems that
+                        // only share a path string. Still not fixable from
+                        // here either way (nothing server-side changes what
+                        // path Chromium's MPRIS metadata reports), but this
+                        // is the accurate why - a real player run outside a
+                        // sandbox (mpv, VLC, Spotify's native non-Flatpak
+                        // build, etc.) isn't affected, since there's no
+                        // sandbox boundary for its own real temp files to
+                        // cross. This Image simply fails to load and the
                         // Colors.pill/gradient background behind it shows
                         // through instead, which is the correct graceful
                         // fallback already, not a bug to chase further.
