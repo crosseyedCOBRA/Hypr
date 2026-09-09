@@ -22,6 +22,12 @@ Item {
     property color activeColor: "white"
     property bool clickable: true
     property bool radioEnabled: true
+    // When true (the bar's own instance only - see BarStatusModules.qml),
+    // a click opens Settings' Network tab (Wifi mini-tab) instead of
+    // toggling the radio - Control Center's own instance leaves this
+    // false, so its full-tile click keeps toggling exactly as before.
+    property bool settingsShortcut: false
+    property Item barSurfaceItem: null
 
     implicitWidth: icon.implicitWidth
     implicitHeight: icon.implicitHeight
@@ -41,7 +47,16 @@ Item {
     MouseArea {
         anchors.fill: parent
         enabled: root.clickable
-        onClicked: root.toggle()
+        onClicked: {
+            if (root.settingsShortcut) {
+                SettingsState.requestedCategory = "network"
+                SettingsState.requestedNetworkSubTab = "wifi"
+                SettingsState.targetItem = root.barSurfaceItem
+                SettingsState.visible = true
+                return
+            }
+            root.toggle()
+        }
     }
 
     Process {

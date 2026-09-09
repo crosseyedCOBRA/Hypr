@@ -35,6 +35,7 @@ singleton DateTimeConfig 1.0 DateTimeConfig.qml
 singleton BarConfig 1.0 BarConfig.qml
 singleton DockItemsService 1.0 DockItemsService.qml
 singleton PowerMenuPanelState 1.0 PowerMenuPanelState.qml
+singleton NetworkInterfacesService 1.0 NetworkInterfacesService.qml
 LauncherContent 1.0 LauncherContent.qml
 Launcher 1.0 Launcher.qml
 BarClockText 1.0 BarClockText.qml

@@ -152,6 +152,7 @@ Variants {
 
                     BarStatusModules {
                         barPanel: panel
+                        barSurfaceItem: barSurface
                         section: "left"
                         anchors.verticalCenter: parent.verticalCenter
                     }
@@ -168,6 +169,7 @@ Variants {
 
                     BarStatusModules {
                         barPanel: panel
+                        barSurfaceItem: barSurface
                         section: "center"
                         anchors.verticalCenter: parent.verticalCenter
                     }
@@ -181,6 +183,7 @@ Variants {
 
                     BarStatusModules {
                         barPanel: panel
+                        barSurfaceItem: barSurface
                         section: "right"
                         anchors.verticalCenter: parent.verticalCenter
                     }
@@ -245,6 +248,7 @@ Variants {
 
                     BarStatusModules {
                         barPanel: panel
+                        barSurfaceItem: barSurface
                         section: "right"
                         anySection: true
                         anchors.verticalCenter: parent.verticalCenter

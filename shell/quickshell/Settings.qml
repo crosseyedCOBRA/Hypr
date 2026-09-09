@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 // GUI settings app: sidebar (category list) + content pane, modeled after
 // Noctalia's own settings panel (a screenshot of it was the direct
@@ -115,6 +116,11 @@ PopupWindow {
 
     property string activeCategory: "bar"
 
+    // Which of the Network tab's own Ethernet/Wifi mini-tabs is showing -
+    // see SettingsState.requestedNetworkSubTab's own comment for how the
+    // bar's icons drive this.
+    property string networkSubTab: "ethernet"
+
     // Lets an external caller (AudioMixerPanel.qml's gear button) open
     // Settings directly to a specific tab instead of whatever
     // activeCategory was last left on - see SettingsState.requestedCategory
@@ -126,6 +132,10 @@ PopupWindow {
         if (settingsWindow.visible && SettingsState.requestedCategory !== "") {
             settingsWindow.activeCategory = SettingsState.requestedCategory
             SettingsState.requestedCategory = ""
+        }
+        if (settingsWindow.visible && SettingsState.requestedNetworkSubTab !== "") {
+            settingsWindow.networkSubTab = SettingsState.requestedNetworkSubTab
+            SettingsState.requestedNetworkSubTab = ""
         }
     }
 
@@ -261,6 +271,7 @@ PopupWindow {
         { id: "notifications", label: "Notifications", icon: "" },
         { id: "osd", label: "OSD", icon: "" },
         { id: "nightlight", label: "Night Light", icon: "" },
+        { id: "network", label: "Network", icon: "" },
         { id: "clipboard", label: "Clipboard", icon: "" },
         { id: "battery", label: "Battery", icon: "" },
         { id: "profile", label: "Profile", icon: "" },
@@ -2472,6 +2483,157 @@ PopupWindow {
                                     wrapMode: Text.WordWrap
                                     color: Colors.textMuted
                                     pointSize: Style.fontSizeXS
+                                }
+                            }
+                        }
+
+                        // ==================== Network ====================
+                        Column {
+                            width: parent.width
+                            spacing: 12
+                            visible: settingsWindow.activeCategory === "network"
+
+                            NTabBar {
+                                tabHeight: 24
+
+                                NTabButton {
+                                    text: "Ethernet"
+                                    pointSize: Style.fontSizeS
+                                    checked: settingsWindow.networkSubTab === "ethernet"
+                                    onClicked: settingsWindow.networkSubTab = "ethernet"
+                                }
+
+                                NTabButton {
+                                    text: "Wifi"
+                                    pointSize: Style.fontSizeS
+                                    checked: settingsWindow.networkSubTab === "wifi"
+                                    onClicked: settingsWindow.networkSubTab = "wifi"
+                                }
+                            }
+
+                            NText {
+                                visible: settingsWindow.networkSubTab === "ethernet" && NetworkInterfacesService.ethernetDevices.length === 0
+                                text: "No ethernet interfaces detected."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeS
+                            }
+
+                            NText {
+                                visible: settingsWindow.networkSubTab === "wifi" && NetworkInterfacesService.wifiDevices.length === 0
+                                text: "No wifi interfaces detected."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeS
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 8
+
+                                Repeater {
+                                    model: settingsWindow.networkSubTab === "ethernet" ? NetworkInterfacesService.ethernetDevices : NetworkInterfacesService.wifiDevices
+
+                                    Rectangle {
+                                        id: ifaceRow
+                                        required property var modelData
+                                        property bool expanded: false
+                                        property string ipText: ""
+
+                                        width: parent.width
+                                        height: content.implicitHeight + 20
+                                        radius: Style.radiusS
+                                        color: Colors.pill
+
+                                        Process {
+                                            id: ipReader
+                                            command: ["sh", "-c", "ip -4 -o addr show \"$1\" | awk '{print $4}'", "sh", ifaceRow.modelData.device]
+                                            stdout: StdioCollector {
+                                                onStreamFinished: ifaceRow.ipText = this.text.trim() || "No IPv4 address"
+                                            }
+                                        }
+
+                                        Column {
+                                            id: content
+                                            anchors.left: parent.left
+                                            anchors.right: parent.right
+                                            anchors.top: parent.top
+                                            anchors.margins: 10
+                                            spacing: 6
+
+                                            Row {
+                                                width: parent.width
+                                                spacing: 10
+
+                                                NIcon {
+                                                    icon: ifaceRow.modelData.type === "wifi" ? "" : ""
+                                                    color: ifaceRow.modelData.state === "connected" ? Colors.blue : Colors.textMuted
+                                                    pointSize: Style.fontSizeL
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                }
+
+                                                Column {
+                                                    spacing: 1
+                                                    anchors.verticalCenter: parent.verticalCenter
+
+                                                    NText {
+                                                        text: ifaceRow.modelData.device
+                                                        color: Colors.text
+                                                        pointSize: Style.fontSizeM
+                                                        font.weight: Style.fontWeightBold
+                                                    }
+
+                                                    NText {
+                                                        text: ifaceRow.modelData.state === "connected"
+                                                            ? "Connected" + (ifaceRow.modelData.connection ? " - " + ifaceRow.modelData.connection : "")
+                                                            : "Disconnected"
+                                                        color: Colors.textMuted
+                                                        pointSize: Style.fontSizeXS
+                                                    }
+                                                }
+
+                                                Item { width: 1; height: 1 }
+
+                                                NButton {
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    text: ifaceRow.modelData.state === "connected" ? "Disconnect" : "Connect"
+                                                    fontSize: Style.fontSizeXS
+                                                    backgroundColor: Colors.pillActive
+                                                    textColor: Colors.text
+                                                    onClicked: NetworkInterfacesService.toggle(ifaceRow.modelData.device, ifaceRow.modelData.state === "connected")
+                                                }
+
+                                                NButton {
+                                                    anchors.verticalCenter: parent.verticalCenter
+                                                    text: ifaceRow.expanded ? "Hide details" : "Details"
+                                                    fontSize: Style.fontSizeXS
+                                                    backgroundColor: Colors.pillActive
+                                                    textColor: Colors.text
+                                                    onClicked: {
+                                                        ifaceRow.expanded = !ifaceRow.expanded
+                                                        if (ifaceRow.expanded)
+                                                            ipReader.running = true
+                                                    }
+                                                }
+                                            }
+
+                                            NText {
+                                                visible: ifaceRow.modelData.state === "connected"
+                                                text: "Down: " + ifaceRow.modelData.rxKBs.toFixed(1) + " KB/s    Up: " + ifaceRow.modelData.txKBs.toFixed(1) + " KB/s"
+                                                color: Colors.textMuted
+                                                pointSize: Style.fontSizeXS
+                                            }
+
+                                            NText {
+                                                visible: ifaceRow.expanded
+                                                text: "IPv4: " + (ifaceRow.ipText || "Resolving...")
+                                                color: Colors.textMuted
+                                                pointSize: Style.fontSizeXS
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

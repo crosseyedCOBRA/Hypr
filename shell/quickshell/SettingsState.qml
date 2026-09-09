@@ -22,4 +22,11 @@ QtObject {
     // button) never touches this, so Settings keeps opening to its last
     // category as before in that case.
     property string requestedCategory: ""
+
+    // Same one-shot request/consume pattern as requestedCategory, for the
+    // Network tab's own Ethernet/Wifi mini-tab - set alongside
+    // requestedCategory = "network" by the bar's Network/Wifi icons so
+    // clicking either one opens Settings straight to the matching
+    // mini-tab rather than always landing on Ethernet.
+    property string requestedNetworkSubTab: ""
 }

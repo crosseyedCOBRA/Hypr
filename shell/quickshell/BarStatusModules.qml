@@ -29,6 +29,7 @@ Row {
     id: root
 
     required property var barPanel
+    required property Item barSurfaceItem
     required property string section
     // "taskbar" layout mode only - see this file's own header comment.
     property bool anySection: false
@@ -126,6 +127,7 @@ Row {
         id: networkComponent
         NetworkStatus {
             textColor: Colors.blue
+            barSurfaceItem: root.barSurfaceItem
         }
     }
 
@@ -198,6 +200,8 @@ Row {
         WifiToggle {
             textColor: Colors.textMuted
             activeColor: Colors.blue
+            settingsShortcut: true
+            barSurfaceItem: root.barSurfaceItem
         }
     }
 }
