@@ -303,8 +303,22 @@ PopupWindow {
                             // first user of it).
                             SettingsState.requestedCategory = "general"
                             SettingsState.targetItem = ControlCenterState.barItem
-                            SettingsState.visible = true
+                            // Close Control Center *before* opening Settings,
+                            // not after - both are override-redirect
+                            // Quickshell popups the WM continuously re-raises
+                            // (windowManager.cpp's alwaysOnTopWindows/
+                            // reassertAlwaysOnTop), so briefly having both
+                            // visible at once (the previous order) left a
+                            // real, if narrow, window for that raise logic to
+                            // race with Settings' own first paint - reported
+                            // live as Settings flashing open then
+                            // disappearing, with a second click doing
+                            // nothing (SettingsState.visible was already
+                            // true, so setting it to the same value again is
+                            // a no-op - see Settings.qml's own onClosed
+                            // handler for the other half of this fix).
                             ControlCenterState.visible = false
+                            SettingsState.visible = true
                         }
                     }
 
@@ -591,8 +605,10 @@ PopupWindow {
                         onClicked: {
                             SettingsState.requestedCategory = "battery"
                             SettingsState.targetItem = ControlCenterState.barItem
-                            SettingsState.visible = true
+                            // Close-before-open, same fix and same reason as
+                            // the Settings gear button above.
                             ControlCenterState.visible = false
+                            SettingsState.visible = true
                         }
                     }
                 }

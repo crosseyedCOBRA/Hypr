@@ -55,6 +55,21 @@ PopupWindow {
     visible: SettingsState.visible && !!SettingsState.targetItem
     color: Colors.bg
 
+    // Safety net for PopupWindow's own `onClosed` (Quickshell's popup
+    // semantics can close this out from under the QML-driven `visible`
+    // binding above for reasons outside this file's control - e.g. losing
+    // its own focus grab, see grabFocus below) - keeps SettingsState.visible
+    // in sync with reality whenever that happens, since without this, a
+    // stray close leaves it stuck reading `true` while the real window is
+    // actually gone, and clicking the gear again does nothing (setting an
+    // already-true property to true again is a no-op, so `visible`'s own
+    // binding never re-evaluates and the window never reopens). Reported
+    // live as "appears for a second then disappears, clicking the icon
+    // again doesn't do anything" - this is the fix for the second half;
+    // see ControlCenter.qml's own gear button/Battery tile for the other
+    // half (closing Control Center before opening Settings, not after).
+    onClosed: SettingsState.visible = false
+
     // Same override-redirect focus gap as Launcher.qml's taskbar-mode
     // popup (see its own comment for the full mechanism/investigation) -
     // confirmed live this affects Settings specifically, not just in
