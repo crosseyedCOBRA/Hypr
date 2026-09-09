@@ -16,7 +16,7 @@ add_compile_options(-Wall -Wextra)
 find_package(Threads REQUIRED)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(deps REQUIRED IMPORTED_TARGET glib-2.0 xcb-randr xcb-ewmh xcb-xinerama xcb-cursor xcb-keysyms xcb-icccm xcb-util xcb-composite xcb-damage xcb-render xcb-renderutil)
+pkg_check_modules(deps REQUIRED IMPORTED_TARGET glib-2.0 xcb-randr xcb-ewmh xcb-xinerama xcb-cursor xcb-keysyms xcb-icccm xcb-util xcb-composite xcb-damage xcb-render xcb-renderutil gl x11)
 
 file(GLOB_RECURSE SRCFILES "src/*.cpp")
 
@@ -53,6 +53,8 @@ target_link_libraries(zaris
         xcb-damage
         xcb-render
         xcb-render-util
+        GL
+        X11
         ${CMAKE_THREAD_LIBS_INIT}
 )
 

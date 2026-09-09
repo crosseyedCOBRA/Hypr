@@ -18,6 +18,16 @@
 #include "utilities/XCBProps.hpp"
 #include "ewmh/ewmh.hpp"
 
+// Milestone 2: everything a specific X visual needs to bind one of its
+// windows' redirected pixmaps as a GL texture via GLX_EXT_texture_from_pixmap.
+// Resolved once per visual (see CWindowManager::GLFBConfigsByVisual) rather
+// than re-queried every window every frame.
+struct SGLTexFromPixmapConfig {
+    GLXFBConfig fbconfig      = nullptr;
+    int         textureFormat = GLX_TEXTURE_FORMAT_RGBA_EXT;
+    bool        yInverted     = false;
+};
+
 class CWindowManager {
 public:
     xcb_connection_t*           DisplayConnection = nullptr;
@@ -45,6 +55,31 @@ public:
     // the root window itself is never destroyed/recreated.
     xcb_render_pictformat_t     RootPictFormat = 0;
     xcb_render_picture_t        RootPicture = 0;
+
+    // Milestone 2: GL passthrough via GLX_EXT_texture_from_pixmap, layered
+    // on top of milestone 1b rather than replacing it - if any part of GL
+    // setup fails, GLReady simply stays false and compositorRepaint() keeps
+    // using the already-proven XRender path above instead, so a GL problem
+    // (a missing driver feature, a different GPU vendor, etc.) degrades
+    // gracefully rather than breaking compositing outright. GLDisplay is a
+    // second, independent Xlib connection to the same X server dedicated
+    // purely to GL/GLX calls - Xlib's GLX API needs a Display*, and this
+    // way it can never interfere with DisplayConnection (the xcb_connection_t
+    // every other WM responsibility already runs on).
+    Display*                    GLDisplay = nullptr;
+    GLXContext                  GLContext = nullptr;
+    GLXWindow                   GLWindow  = 0;
+    bool                        GLReady   = false;
+
+    // Built once at setup by enumerating every advertised GLXFBConfig and
+    // keeping the ones usable for texture-from-pixmap, keyed by the X
+    // visual they match - mirrors the existing FORMATS-by-visual-id cache
+    // the XRender path above already uses for the exact same reason (each
+    // client window may use a different visual than the WM's own).
+    std::unordered_map<xcb_visualid_t, SGLTexFromPixmapConfig> GLFBConfigsByVisual;
+
+    PFNGLXBINDTEXIMAGEEXTPROC    glXBindTexImageEXTFn    = nullptr;
+    PFNGLXRELEASETEXIMAGEEXTPROC glXReleaseTexImageEXTFn = nullptr;
 
     // holds the objects of all active monitors.
     std::vector<SMonitor>       monitors;
@@ -114,11 +149,23 @@ public:
     void                        recieveEvent();
     void                        refreshDirtyWindows();
 
-    // Milestone 1b: repaints the whole screen by compositing every mapped
-    // top-level window's redirected pixmap onto the root Picture, in real
+    // Milestone 1b/2: repaints the whole screen by compositing every mapped
+    // top-level window's redirected pixmap back onto the screen, in real
     // X11 stacking order. No-op unless CompositingEnabled. Called once per
-    // tick from the existing GLib tick thread (see Events::handle()).
+    // tick from the existing GLib tick thread (see Events::handle()). Picks
+    // the GL path when milestone 2's setup succeeded (GLReady), else falls
+    // back to milestone 1b's plain XRender path - both are kept, not just
+    // the newer one, precisely so a GL-specific failure on some other
+    // machine/GPU degrades to "no shader effects yet" rather than "no
+    // compositing at all."
     void                        compositorRepaint();
+    void                        compositorRepaintXRender();
+    void                        compositorRepaintGL();
+
+    // Milestone 2: one-time GLX/GL setup, called from setupManager() right
+    // after milestone 1b's own RootPicture setup succeeds. Leaves GLReady
+    // false (see above) on any failure along the way.
+    void                        compositorSetupGL();
 
     void                        setFocusedWindow(xcb_drawable_t, bool userInitiated = false);
     void                        refocusWindowOnClosed();

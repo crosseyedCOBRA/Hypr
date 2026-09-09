@@ -256,6 +256,13 @@ void CWindowManager::setupManager() {
                         CompositingEnabled = false;
                     }
                 }
+
+                // Milestone 2: an optional upgrade on top of the XRender
+                // path above, not a replacement for it - see GLReady's own
+                // comment in windowManager.hpp. Only attempted once the
+                // XRender fallback itself is confirmed working.
+                if (CompositingEnabled)
+                    compositorSetupGL();
             }
         }
     }
@@ -2204,6 +2211,17 @@ void CWindowManager::compositorRepaint() {
     if (!CompositingEnabled)
         return;
 
+    // Milestone 2's GL path when it's actually up, otherwise milestone 1b's
+    // plain XRender path - see the member declarations in windowManager.hpp
+    // for why both are kept rather than the GL path fully replacing the
+    // other.
+    if (GLReady)
+        compositorRepaintGL();
+    else
+        compositorRepaintXRender();
+}
+
+void CWindowManager::compositorRepaintXRender() {
     // Ground-truth, real-time stacking order straight from the X server,
     // bottom-to-top - not our own `windows` deque, which isn't guaranteed to
     // mirror true X11 stacking order and doesn't track override-redirect
@@ -2273,6 +2291,305 @@ void CWindowManager::compositorRepaint() {
     free(TREEREPLY);
 
     xcb_flush(DisplayConnection);
+}
+
+// Xlib's own default error handler prints the error and then calls exit() -
+// fine for a simple Xlib app, fatal for a WM, where a GL/GLX mistake taking
+// down the entire desktop session is a much bigger deal than XCB's own
+// calls ever risk (XCB never crashes the process on a protocol error by
+// itself). Installed process-wide (Xlib only supports one global handler,
+// there's no per-Display variant) the moment Xlib enters the picture at
+// all, so any future GLX mistake here logs and degrades instead of killing
+// the whole WM - the same "never let compositing break the desktop"
+// principle every other compositor-only code path already follows.
+static int zarisXlibErrorHandler(Display* display, XErrorEvent* error) {
+    char errorText[256];
+    XGetErrorText(display, error->error_code, errorText, sizeof(errorText));
+    Debug::log(ERR, "Xlib error (compositor GL path): " + std::string(errorText) + " (request code " +
+                         std::to_string(error->request_code) + ", minor " + std::to_string(error->minor_code) + ")");
+    return 0;
+}
+
+void CWindowManager::compositorSetupGL() {
+    // Every early-return below leaves GLReady false, which means
+    // compositorRepaint() keeps using the already-proven XRender path -
+    // a GL setup failure here is a graceful step down, not a broken
+    // compositor. GLDisplay is deliberately a brand new, independent Xlib
+    // connection (not sharing DisplayConnection) so nothing here can affect
+    // the WM's own main event loop even if something below goes wrong.
+    XSetErrorHandler(zarisXlibErrorHandler);
+
+    GLDisplay = XOpenDisplay(NULL);
+
+    if (!GLDisplay) {
+        Debug::log(ERR, "compositorSetupGL: XOpenDisplay failed - GL compositing stays disabled.");
+        return;
+    }
+
+    const int SCREENNUM = DefaultScreen(GLDisplay);
+
+    int glxMajor = 0, glxMinor = 0;
+    if (!glXQueryVersion(GLDisplay, &glxMajor, &glxMinor) || (glxMajor < 1) || (glxMajor == 1 && glxMinor < 3)) {
+        Debug::log(ERR, "compositorSetupGL: GLX 1.3+ required, got " + std::to_string(glxMajor) + "." + std::to_string(glxMinor) +
+                             " - GL compositing stays disabled.");
+        return;
+    }
+
+    const std::string GLXEXTENSIONS = glXQueryExtensionsString(GLDisplay, SCREENNUM);
+    if (GLXEXTENSIONS.find("GLX_EXT_texture_from_pixmap") == std::string::npos) {
+        Debug::log(ERR, "compositorSetupGL: GLX_EXT_texture_from_pixmap not advertised - GL compositing stays disabled.");
+        return;
+    }
+
+    glXBindTexImageEXTFn    = (PFNGLXBINDTEXIMAGEEXTPROC)glXGetProcAddressARB((const GLubyte*)"glXBindTexImageEXT");
+    glXReleaseTexImageEXTFn = (PFNGLXRELEASETEXIMAGEEXTPROC)glXGetProcAddressARB((const GLubyte*)"glXReleaseTexImageEXT");
+
+    if (!glXBindTexImageEXTFn || !glXReleaseTexImageEXTFn) {
+        Debug::log(ERR, "compositorSetupGL: could not resolve glXBindTexImageEXT/glXReleaseTexImageEXT - GL compositing stays disabled.");
+        return;
+    }
+
+    int              numConfigs  = 0;
+    const auto       CONFIGS     = glXGetFBConfigs(GLDisplay, SCREENNUM, &numConfigs);
+    GLXFBConfig      rootConfig  = nullptr;
+
+    if (!CONFIGS || numConfigs == 0) {
+        Debug::log(ERR, "compositorSetupGL: glXGetFBConfigs returned nothing - GL compositing stays disabled.");
+        return;
+    }
+
+    for (int i = 0; i < numConfigs; ++i) {
+        const auto CONFIG = CONFIGS[i];
+
+        int visualID = 0, drawableType = 0, renderType = 0;
+        glXGetFBConfigAttrib(GLDisplay, CONFIG, GLX_VISUAL_ID, &visualID);
+        glXGetFBConfigAttrib(GLDisplay, CONFIG, GLX_DRAWABLE_TYPE, &drawableType);
+        glXGetFBConfigAttrib(GLDisplay, CONFIG, GLX_RENDER_TYPE, &renderType);
+
+        if (visualID == 0 || !(renderType & GLX_RGBA_BIT))
+            continue;
+
+        // The on-screen destination config: must be able to back a real
+        // GLXWindow and match the root window's own already-fixed visual
+        // (an X window's visual can't be changed after creation, so this
+        // is the only config that could ever work for wrapping root).
+        if (!rootConfig && (drawableType & GLX_WINDOW_BIT) && (xcb_visualid_t)visualID == Screen->root_visual)
+            rootConfig = CONFIG;
+
+        // Per-visual configs usable for texture-from-pixmap binding later,
+        // one per distinct visual any client window might actually use.
+        if (!(drawableType & GLX_PIXMAP_BIT) || GLFBConfigsByVisual.count((xcb_visualid_t)visualID))
+            continue;
+
+        int bindRGBA = 0, bindRGB = 0, targets = 0, yInverted = 0;
+        glXGetFBConfigAttrib(GLDisplay, CONFIG, GLX_BIND_TO_TEXTURE_RGBA_EXT, &bindRGBA);
+        glXGetFBConfigAttrib(GLDisplay, CONFIG, GLX_BIND_TO_TEXTURE_RGB_EXT, &bindRGB);
+        glXGetFBConfigAttrib(GLDisplay, CONFIG, GLX_BIND_TO_TEXTURE_TARGETS_EXT, &targets);
+        glXGetFBConfigAttrib(GLDisplay, CONFIG, GLX_Y_INVERTED_EXT, &yInverted);
+
+        if (!(targets & GLX_TEXTURE_2D_BIT_EXT) || (!bindRGBA && !bindRGB))
+            continue;
+
+        SGLTexFromPixmapConfig ENTRY;
+        ENTRY.fbconfig      = CONFIG;
+        ENTRY.textureFormat = bindRGBA ? GLX_TEXTURE_FORMAT_RGBA_EXT : GLX_TEXTURE_FORMAT_RGB_EXT;
+        ENTRY.yInverted     = yInverted != 0;
+
+        GLFBConfigsByVisual[(xcb_visualid_t)visualID] = ENTRY;
+    }
+
+    if (!rootConfig) {
+        Debug::log(ERR, "compositorSetupGL: no GLXFBConfig matches the root window's own visual - GL compositing stays disabled.");
+        XFree(CONFIGS);
+        GLFBConfigsByVisual.clear();
+        return;
+    }
+
+    GLContext = glXCreateNewContext(GLDisplay, rootConfig, GLX_RGBA_TYPE, NULL, True);
+
+    if (!GLContext) {
+        Debug::log(ERR, "compositorSetupGL: glXCreateNewContext failed - GL compositing stays disabled.");
+        XFree(CONFIGS);
+        GLFBConfigsByVisual.clear();
+        return;
+    }
+
+    GLWindow = glXCreateWindow(GLDisplay, rootConfig, Screen->root, NULL);
+
+    if (!GLWindow) {
+        Debug::log(ERR, "compositorSetupGL: glXCreateWindow (wrapping root) failed - GL compositing stays disabled.");
+        glXDestroyContext(GLDisplay, GLContext);
+        GLContext = nullptr;
+        XFree(CONFIGS);
+        GLFBConfigsByVisual.clear();
+        return;
+    }
+
+    if (!glXMakeContextCurrent(GLDisplay, GLWindow, GLWindow, GLContext)) {
+        Debug::log(ERR, "compositorSetupGL: glXMakeContextCurrent failed - GL compositing stays disabled.");
+        glXDestroyWindow(GLDisplay, GLWindow);
+        glXDestroyContext(GLDisplay, GLContext);
+        GLWindow  = 0;
+        GLContext = nullptr;
+        XFree(CONFIGS);
+        GLFBConfigsByVisual.clear();
+        return;
+    }
+
+    const auto GLVERSTR = glGetString(GL_VERSION);
+    const auto GLRENDSTR = glGetString(GL_RENDERER);
+    Debug::log(LOG, "compositorSetupGL: GL ready. Version: " + std::string(GLVERSTR ? (const char*)GLVERSTR : "?") +
+                         ", Renderer: " + std::string(GLRENDSTR ? (const char*)GLRENDSTR : "?"));
+
+    // A GLX context can only be current on one thread at a time - this
+    // setup runs on the main thread, but compositorRepaintGL() runs on the
+    // separate tick thread (see Events::handle()), so the main thread must
+    // release it here before that thread can ever bind it. Skipping this
+    // was a real bug caught while verifying this milestone: the tick
+    // thread's own glXMakeContextCurrent call failed with a BadAccess X
+    // error, which - before the error handler above was installed - was
+    // fatal to the entire WM via Xlib's default error handler.
+    glXMakeContextCurrent(GLDisplay, None, None, NULL);
+
+    XFree(CONFIGS);
+    GLReady = true;
+}
+
+void CWindowManager::compositorRepaintGL() {
+    // GLX contexts are only current on whichever thread last bound them -
+    // this repaint runs on the tick thread, while setup above ran on the
+    // main thread, so it must be (re-)bound here too. A no-op call if
+    // already current on this thread, so doing it every frame is harmless.
+    glXMakeContextCurrent(GLDisplay, GLWindow, GLWindow, GLContext);
+
+    const auto ROOTGEOM = xcb_get_geometry_reply(DisplayConnection, xcb_get_geometry(DisplayConnection, Screen->root), NULL);
+
+    if (!ROOTGEOM)
+        return;
+
+    const int SCREENW = ROOTGEOM->width;
+    const int SCREENH = ROOTGEOM->height;
+    free(ROOTGEOM);
+
+    glViewport(0, 0, SCREENW, SCREENH);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    // Top-left origin matching X11's own coordinate convention, so window
+    // geometry from xcb_get_geometry can be used directly with no flipping.
+    glOrtho(0, SCREENW, SCREENH, 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glEnable(GL_TEXTURE_2D);
+
+    // Same ground-truth stacking-order query compositorRepaintXRender()
+    // uses, for the same reason - see that function's own comment.
+    const auto TREEREPLY = xcb_query_tree_reply(DisplayConnection, xcb_query_tree(DisplayConnection, Screen->root), NULL);
+
+    if (!TREEREPLY)
+        return;
+
+    const auto CHILDREN   = xcb_query_tree_children(TREEREPLY);
+    const int  CHILDCOUNT = xcb_query_tree_children_length(TREEREPLY);
+
+    for (int i = 0; i < CHILDCOUNT; ++i) {
+        const xcb_window_t WIN = CHILDREN[i];
+
+        const auto ATTRSREPLY = xcb_get_window_attributes_reply(DisplayConnection, xcb_get_window_attributes(DisplayConnection, WIN), NULL);
+
+        if (!ATTRSREPLY)
+            continue;
+
+        if (ATTRSREPLY->map_state != XCB_MAP_STATE_VIEWABLE) {
+            free(ATTRSREPLY);
+            continue;
+        }
+
+        const auto VISUALCFGIT = GLFBConfigsByVisual.find((xcb_visualid_t)ATTRSREPLY->visual);
+
+        free(ATTRSREPLY);
+
+        if (VISUALCFGIT == GLFBConfigsByVisual.end())
+            continue;
+
+        const auto& VISUALCFG = VISUALCFGIT->second;
+
+        const auto GEOMREPLY = xcb_get_geometry_reply(DisplayConnection, xcb_get_geometry(DisplayConnection, WIN), NULL);
+
+        if (!GEOMREPLY)
+            continue;
+
+        // Same "re-fetch fresh every frame, no long-term cache" tradeoff
+        // as compositorRepaintXRender() - see that function's own comment.
+        // Unlike that function, this one MUST wait for a reply (a real
+        // round trip, via the checked cookie + xcb_request_check below)
+        // rather than fire-and-forget: DisplayConnection and GLDisplay are
+        // two independent connections/sockets to the server, so with no
+        // synchronization there's no guarantee the server has actually
+        // finished creating this Pixmap before GLDisplay's own
+        // glXCreatePixmap call below - issued moments later, but on a
+        // totally different connection - tries to reference it. Caught via
+        // this exact race while verifying this milestone (an intermittent
+        // GLXBadPixmap/BadDrawable from Mesa, "failed to create drawable").
+        const xcb_pixmap_t PIXMAP     = xcb_generate_id(DisplayConnection);
+        const auto         NAMECOOKIE = xcb_composite_name_window_pixmap_checked(DisplayConnection, WIN, PIXMAP);
+
+        if (const auto NAMEERROR = xcb_request_check(DisplayConnection, NAMECOOKIE); NAMEERROR != NULL) {
+            free(NAMEERROR);
+            free(GEOMREPLY);
+            continue;
+        }
+
+        const int PIXMAPATTRS[] = {
+            GLX_TEXTURE_TARGET_EXT, GLX_TEXTURE_2D_EXT,
+            GLX_TEXTURE_FORMAT_EXT, VISUALCFG.textureFormat,
+            XCB_NONE,
+        };
+
+        const GLXPixmap GLXPIX = glXCreatePixmap(GLDisplay, VISUALCFG.fbconfig, PIXMAP, PIXMAPATTRS);
+
+        if (GLXPIX) {
+            GLuint tex = 0;
+            glGenTextures(1, &tex);
+            glBindTexture(GL_TEXTURE_2D, tex);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glXBindTexImageEXTFn(GLDisplay, GLXPIX, GLX_FRONT_LEFT_EXT, NULL);
+
+            const float X = GEOMREPLY->x, Y = GEOMREPLY->y, W = GEOMREPLY->width, H = GEOMREPLY->height;
+            const float VTOP = VISUALCFG.yInverted ? 0.f : 1.f;
+            const float VBOT = VISUALCFG.yInverted ? 1.f : 0.f;
+
+            glBegin(GL_QUADS);
+            glTexCoord2f(0.f, VTOP); glVertex2f(X, Y);
+            glTexCoord2f(1.f, VTOP); glVertex2f(X + W, Y);
+            glTexCoord2f(1.f, VBOT); glVertex2f(X + W, Y + H);
+            glTexCoord2f(0.f, VBOT); glVertex2f(X, Y + H);
+            glEnd();
+
+            glXReleaseTexImageEXTFn(GLDisplay, GLXPIX, GLX_FRONT_LEFT_EXT);
+            glDeleteTextures(1, &tex);
+            glXDestroyPixmap(GLDisplay, GLXPIX);
+        }
+
+        xcb_free_pixmap(DisplayConnection, PIXMAP);
+        free(GEOMREPLY);
+    }
+
+    free(TREEREPLY);
+
+    glFlush();
+
+    // Rendering was invisible without this despite every draw call
+    // reporting success (correct MakeContextCurrent, valid GLXPixmap,
+    // GL_NO_ERROR) - the destination GLXWindow's FBConfig ended up
+    // double-buffered rather than the single-buffered one assumed when
+    // picking it, so every frame was actually landing in the back buffer
+    // and never reaching the screen. Swapping unconditionally is the
+    // standard, safe fix any real GL application uses regardless of which
+    // buffering mode it ended up with - a harmless no-op if the config
+    // genuinely were single-buffered, required if (as turned out to be the
+    // actual case here) it isn't.
+    glXSwapBuffers(GLDisplay, GLWindow);
 }
 
 bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {

@@ -21,6 +21,17 @@
 #include <xcb/render.h>
 #include <xcb/xcb_renderutil.h>
 
+// GLX/GL for milestone 2 of the bundled compositor (see ROADMAP.md) - the
+// only place Xlib appears anywhere in this otherwise pure-XCB codebase,
+// since glXBindTexImageEXT/glXCreatePixmap and friends are Xlib-only API
+// with no complete xcb-glx equivalent. Kept to a dedicated, separate Xlib
+// connection (CWindowManager::GLDisplay) purely for GL/GLX calls - the
+// existing xcb_connection_t remains the only connection used for every
+// other WM responsibility, so this never risks interfering with the main
+// event loop.
+#include <GL/glx.h>
+#include <GL/glxext.h>
+
 #include <glib-2.0/glib.h>
 
 #include <memory>
