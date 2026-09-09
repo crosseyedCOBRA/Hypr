@@ -1023,6 +1023,43 @@ PopupWindow {
                     }
                 }
 
+                Column {
+                    id: noMediaCard
+                    width: 230
+                    spacing: 8
+                    visible: ModulesConfig.showInTray("mediaPlayer", ControlCenterState.panel) && !MediaService.currentPlayer
+
+                    Item {
+                        width: parent.width
+                        height: 130
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: Style.radiusS
+                            color: Colors.pill
+                        }
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            NIcon {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                icon: ""
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXXXL
+                            }
+
+                            NText {
+                                text: "No Media Playing"
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeS
+                            }
+                        }
+                    }
+                }
+
                 Grid {
                     columns: 2
                     spacing: 8
