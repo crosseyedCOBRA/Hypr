@@ -16,6 +16,9 @@
 #include <xcb/xcb_util.h>
 #include <xcb/xcb_cursor.h>
 #include <xcb/shape.h>
+#include <xcb/composite.h>
+#include <xcb/damage.h>
+#include <xcb/render.h>
 
 #include <glib-2.0/glib.h>
 

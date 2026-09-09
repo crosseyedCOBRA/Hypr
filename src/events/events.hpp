@@ -20,6 +20,7 @@ namespace Events {
     EVENT(Configure);
 
     EVENT(RandRScreenChange);
+    EVENT(DamageNotify);
 
     // Bypass some events for floating windows
     CWindow*        remapWindow(int, bool floating = false, int forcemonitor = -1);

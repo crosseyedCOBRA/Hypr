@@ -186,6 +186,50 @@ void CWindowManager::setupManager() {
 
     Debug::log(LOG, "Config done.");
 
+    // ---- COMPOSITOR (optional, off by default) ---- //
+    // See ROADMAP.md's "Bundled compositor" entry for the full plan and
+    // milestone breakdown - this is milestone 1 only: redirect + damage
+    // tracking, no redraw step yet. Gated behind config so building/
+    // running this binary is a complete no-op for anyone who hasn't
+    // explicitly opted in - nothing here should ever run on a real user's
+    // session until the feature is actually finished.
+    if (ConfigManager::getInt("enable_compositor")) {
+        const auto COMPOSITEEXTENSION = xcb_get_extension_data(DisplayConnection, &xcb_composite_id);
+        const auto DAMAGEEXTENSION = xcb_get_extension_data(DisplayConnection, &xcb_damage_id);
+
+        if (!COMPOSITEEXTENSION || !COMPOSITEEXTENSION->present) {
+            Debug::log(ERR, "Composite extension missing - compositor stays disabled.");
+        } else if (!DAMAGEEXTENSION || !DAMAGEEXTENSION->present) {
+            Debug::log(ERR, "Damage extension missing - compositor stays disabled.");
+        } else {
+            DamageEventBase = DAMAGEEXTENSION->first_event;
+
+            // Manual mode: WE decide when/what to paint, matching every real
+            // compositor - the alternative (automatic) just re-implements
+            // the no-compositor default and isn't useful here. This can
+            // legitimately fail (BadAccess) if another compositor already
+            // has the root redirected, same class of failure the
+            // SubstructureRedirect check above guards - unlike that one,
+            // failing here isn't fatal, since compositing is still an
+            // optional add-on layer at this stage, not core WM function.
+            const auto REDIRECTCOOKIE = xcb_composite_redirect_subwindows_checked(
+                DisplayConnection, Screen->root, XCB_COMPOSITE_REDIRECT_MANUAL);
+
+            if (const auto REDIRECTERROR = xcb_request_check(DisplayConnection, REDIRECTCOOKIE); REDIRECTERROR != NULL) {
+                Debug::log(ERR, "Failed to redirect subwindows for compositing (X error code " +
+                                    std::to_string(REDIRECTERROR->error_code) +
+                                    ") - is another compositor already running? Compositor stays disabled.");
+                free(REDIRECTERROR);
+            } else {
+                CompositingEnabled = true;
+                Debug::log(LOG, "Compositor enabled: subwindows redirected, Damage event base at " +
+                                     std::to_string(DamageEventBase) + ".");
+            }
+        }
+    }
+
+    Debug::log(LOG, "Compositor setup done.");
+
     // Add workspaces to the monitors
     for (long unsigned int i = 0; i < monitors.size(); ++i) {
         CWorkspace protoWorkspace;
@@ -346,7 +390,7 @@ void CWindowManager::recieveEvent() {
 
             default:
 
-                if ((EVENTCODE != 14) && (EVENTCODE != 13) && (EVENTCODE != 0) && (EVENTCODE != 22) && (TYPE - RandREventBase != XCB_RANDR_SCREEN_CHANGE_NOTIFY))
+                if ((EVENTCODE != 14) && (EVENTCODE != 13) && (EVENTCODE != 0) && (EVENTCODE != 22) && (TYPE - RandREventBase != XCB_RANDR_SCREEN_CHANGE_NOTIFY) && (TYPE - DamageEventBase != XCB_DAMAGE_NOTIFY))
                     Debug::log(WARN, "Unknown event: " + std::to_string(ev->response_type & ~0x80));
                 break;
         }
@@ -354,6 +398,15 @@ void CWindowManager::recieveEvent() {
         if ((int)TYPE - RandREventBase == XCB_RANDR_SCREEN_CHANGE_NOTIFY && RandREventBase > 0) {
             Events::eventRandRScreenChange(ev);
             Debug::log(LOG, "Event dispatched RANDR_SCREEN_CHANGE");
+        }
+
+        // Same runtime-offset dispatch pattern as RandR's own screen-change
+        // notify above - Damage is an extension event, so its code isn't a
+        // compile-time constant the switch above can match directly.
+        // CompositingEnabled-gated, same as everywhere else this feature
+        // touches, so this is unreachable when the compositor is off.
+        if (CompositingEnabled && (int)TYPE - DamageEventBase == XCB_DAMAGE_NOTIFY && DamageEventBase > 0) {
+            Events::eventDamageNotify(ev);
         }
 
         free(ev);
@@ -784,6 +837,18 @@ void CWindowManager::addWindowToVectorSafe(CWindow window) {
         if (w.getDrawable() == window.getDrawable())
             return; // Do not add if already present.
     }
+
+    // See ROADMAP.md's compositor plan - every window needs its own Damage
+    // object once compositing is on, tracking which regions of it need
+    // repainting. Guarded by CompositingEnabled, so this is a complete
+    // no-op (as always) while the feature is off.
+    if (CompositingEnabled && window.getDrawable() && !window.getDamageObject()) {
+        const xcb_damage_damage_t DAMAGEID = xcb_generate_id(DisplayConnection);
+        xcb_damage_create(DisplayConnection, DAMAGEID, window.getDrawable(), XCB_DAMAGE_REPORT_LEVEL_NON_EMPTY);
+        window.setDamageObject(DAMAGEID);
+        Debug::log(LOG, "Created Damage object " + std::to_string(DAMAGEID) + " for window " + std::to_string(window.getDrawable()));
+    }
+
     windows.push_back(window);
 }
 
@@ -1411,6 +1476,14 @@ void CWindowManager::closeWindowAllChecks(int64_t id) {
         g_pWindowManager->fixWindowOnClose(CLOSEDWINDOW);
     
     const bool WASDOCK = CLOSEDWINDOW->getDock();
+
+    // Mirror image of addWindowToVectorSafe()'s own Damage creation - free
+    // the X resource before this window's own tracking entry is gone,
+    // since nothing else ever gets a chance to clean it up otherwise.
+    if (g_pWindowManager->CompositingEnabled && CLOSEDWINDOW->getDamageObject()) {
+        xcb_damage_destroy(g_pWindowManager->DisplayConnection, CLOSEDWINDOW->getDamageObject());
+        CLOSEDWINDOW->setDamageObject(0);
+    }
 
     // delete off of the arr
     g_pWindowManager->removeWindowFromVectorSafe(id);

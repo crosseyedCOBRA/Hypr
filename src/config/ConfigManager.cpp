@@ -29,6 +29,16 @@ void ConfigManager::init() {
 
     configValues["max_fps"].intValue = 60;
 
+    // Off by default - see ROADMAP.md's "Bundled compositor" entry for the
+    // full plan/milestones. Milestone 1 (this flag existing at all) only
+    // does XComposite redirect + XDamage tracking, with no redraw step yet
+    // - turning this on before a later milestone lands a passthrough draw
+    // will make every window go blank, since manual redirection stops the
+    // X server from painting them automatically and nothing is compositing
+    // yet. Not meant to be turned on by real users until the feature is
+    // actually complete.
+    configValues["enable_compositor"].intValue = 0;
+
     // Set Colors ARGB
     configValues["col.active_border"].intValue = 0x77FF3333;
     configValues["col.inactive_border"].intValue = 0x77222222;

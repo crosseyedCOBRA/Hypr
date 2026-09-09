@@ -59,6 +59,12 @@ public:
     EXPOSED_MEMBER(IsFloating, bool, b);
     EXPOSED_MEMBER(Drawable, int64_t, i);  // int64_t because it's my internal ID system too.
 
+    // XDamage object XID for this window, created in addWindowToVectorSafe()
+    // once the compositor is enabled, destroyed in closeWindowAllChecks() -
+    // 0 means "none created" (either compositing is off, or this window
+    // hasn't been through that path yet). See ROADMAP.md's compositor plan.
+    EXPOSED_MEMBER(DamageObject, uint32_t, i);
+
     // For splitting ratios
     EXPOSED_MEMBER(SplitRatio, float, f);
 

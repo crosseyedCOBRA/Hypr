@@ -1232,3 +1232,22 @@ void Events::eventRandRScreenChange(xcb_generic_event_t* event) {
     // Make all windows dirty and recalc all workspaces
     g_pWindowManager->recalcAllWorkspaces();
 }
+
+// Milestone 1 of ROADMAP.md's compositor plan - only ever dispatched when
+// CompositingEnabled is true (see recieveEvent()'s own dispatch check), so
+// this is unreachable, and thus a complete no-op, on any build/session
+// that hasn't explicitly turned the feature on. Right now this only logs
+// and acknowledges the damage; no redraw step exists yet (that's milestone
+// 2 onward) - `xcb_damage_subtract` is not optional busywork here, it's
+// required by the Damage protocol itself: without it, the X server
+// considers the region still damaged and won't send another non-empty
+// notification for it, so real repaint tracking would silently stop
+// working after each window's very first damage event.
+void Events::eventDamageNotify(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_damage_notify_event_t*>(event);
+
+    Debug::log(LOG, "Damage notify on window " + std::to_string(E->drawable) +
+                         " (damage object " + std::to_string(E->damage) + ")");
+
+    xcb_damage_subtract(g_pWindowManager->DisplayConnection, E->damage, XCB_NONE, XCB_NONE);
+}

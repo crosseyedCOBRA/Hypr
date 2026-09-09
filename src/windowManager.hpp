@@ -26,6 +26,18 @@ public:
     int                         RandREventBase = -1;
     uint32_t                    Values[3];
 
+    // Compositor (see ROADMAP.md's "Bundled compositor" entry for the full
+    // plan) - off by default (config's own "enable_compositor", 0 unless a
+    // user opts in) and only ever set true once `xcb_composite_
+    // redirect_subwindows` has actually succeeded, so every other piece of
+    // compositor-only code below can gate itself on this one flag rather
+    // than re-checking config/extension presence every time. DamageEventBase
+    // works exactly like RandREventBase above - a runtime-determined offset
+    // needed to recognize the Damage extension's own notify events, since
+    // extension event codes aren't compile-time constants.
+    int                         DamageEventBase = -1;
+    bool                        CompositingEnabled = false;
+
     // holds the objects of all active monitors.
     std::vector<SMonitor>       monitors;
 
