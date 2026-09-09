@@ -87,16 +87,20 @@ Variants {
             Rectangle {
                 id: barSurface
                 anchors.fill: parent
-                // Colors.bg (itself ThemeConfig.background under the hood)
-                // at BarConfig.backgroundOpacity alpha - was a hardcoded
+                // Colors.barBg (ThemeConfig.barBackground, falling back to
+                // the same Colors.bg every other panel uses when unset) at
+                // BarConfig.backgroundOpacity alpha - was a hardcoded
                 // literal matching Colors.bg's own then-fixed default, only
                 // ever an approximation by convention rather than a real
                 // binding. Genuinely wrong once Colors.bg became
                 // user-themeable (ThemeConfig.qml/Settings' Colors tab) -
                 // a palette change silently wouldn't have reached the bar
                 // at all otherwise, unlike every other Colors.bg consumer.
+                // Switched from Colors.bg directly to Colors.barBg once a
+                // separate bar-color override existed (Settings' Colors
+                // tab) - see Colors.qml's own comment.
                 color: {
-                    const c = Qt.color(Colors.bg)
+                    const c = Qt.color(Colors.barBg)
                     return Qt.rgba(c.r, c.g, c.b, BarConfig.backgroundOpacity)
                 }
 

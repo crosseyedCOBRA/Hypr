@@ -666,6 +666,33 @@ PopupWindow {
                                 }
                             }
 
+                            Row {
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+
+                                NText { text: "Bar color"; width: 170; anchors.verticalCenter: parent.verticalCenter; color: Colors.text; pointSize: Style.fontSizeM }
+                                Rectangle { width: 24; height: 24; radius: 4; anchors.verticalCenter: parent.verticalCenter; color: Colors.barBg; border.width: 1; border.color: Colors.textMuted }
+                                NTextInput {
+                                    width: 120
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: ThemeConfig.barBackground
+                                    placeholderText: "Follows Background"
+                                    onEditingFinished: ThemeConfig.setBarBackground(text)
+                                    onAccepted: ThemeConfig.setBarBackground(text)
+                                }
+                            }
+
+                            NText {
+                                text: "Leave the bar color field blank to have the bar follow the Background color above - set it to override just the bar with its own color instead."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 6
+                                bottomPadding: 16
+                            }
+
                             NText {
                                 text: "\"Text muted\", pill/hover backgrounds, and the error/danger red stay fixed for now - only these five colors and the border accent below are themeable."
                                 width: parent.width

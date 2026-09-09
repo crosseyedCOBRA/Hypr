@@ -19,6 +19,12 @@ import QtQuick
 // backlog item for a possible future extension.
 QtObject {
     readonly property string bg: ThemeConfig.background
+    // Bar.qml's own background - separate from bg so the bar can have a
+    // distinct color from every other panel/popup (Settings, Control
+    // Center, the calendar flyout, etc., which all still use bg directly).
+    // Falls back to bg whenever ThemeConfig.barBackground is unset (the
+    // default - most users want the bar to just match everything else).
+    readonly property string barBg: ThemeConfig.barBackground || ThemeConfig.background
     readonly property string pill: "#1b204c"
     readonly property string pillActive: "#2d3a74"
     readonly property string text: ThemeConfig.text

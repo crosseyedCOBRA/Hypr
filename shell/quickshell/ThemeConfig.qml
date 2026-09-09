@@ -44,6 +44,11 @@ QtObject {
             property string tertiary: "#c55a63"
             property string text: "#e8e6f0"
             property string background: "#0c0b1a"
+            // Empty (the default) means "follow background" - most users
+            // want the bar to just match the rest of the shell, so this is
+            // an override rather than a required sixth color to fill in.
+            // See barBackground below and Colors.barBg.
+            property string barBackground: ""
         }
     }
 
@@ -52,12 +57,20 @@ QtObject {
     readonly property string tertiary: colorsFile.adapter.tertiary || "#c55a63"
     readonly property string text: colorsFile.adapter.text || "#e8e6f0"
     readonly property string background: colorsFile.adapter.background || "#0c0b1a"
+    // Empty string (not a fallback hex) when unset - Colors.barBg is what
+    // actually resolves "unset -> follow background", same reasoning
+    // BarConfig.launcherIcon's own fallback-to-default already established.
+    // Kept as a raw pass-through here (not defaulted to a color) so the
+    // Settings UI/Colors.barBg can tell "genuinely unset" apart from "set
+    // to a color that happens to match the default".
+    readonly property string barBackground: colorsFile.adapter.barBackground || ""
 
     function setPrimary(val) { colorsFile.adapter.primary = val }
     function setSecondary(val) { colorsFile.adapter.secondary = val }
     function setTertiary(val) { colorsFile.adapter.tertiary = val }
     function setText(val) { colorsFile.adapter.text = val }
     function setBackground(val) { colorsFile.adapter.background = val }
+    function setBarBackground(val) { colorsFile.adapter.barBackground = val }
 
     // --- window border accent (zaris.conf, not colors.json - see above) ---
 
@@ -133,7 +146,12 @@ QtObject {
             function () { root.setTertiary(p.tertiary) },
             function () { root.setText(p.text) },
             function () { root.setBackground(p.background) },
-            function () { root.setBorderAccent(p.borderAccent) }
+            function () { root.setBorderAccent(p.borderAccent) },
+            // Reset any custom bar-color override back to "follow
+            // background" - a preset should give a coherent full look,
+            // not leave one mismatched custom bar color behind from
+            // whatever was set before switching presets.
+            function () { root.setBarBackground("") }
         ]
         presetStepTimer.start()
     }
