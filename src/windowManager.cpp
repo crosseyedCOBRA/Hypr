@@ -2370,6 +2370,34 @@ void main() {
 }
 )glsl";
 
+// Milestone 4's drop shadow: the same rounded-box SDF as above (distance
+// to the window's own true rounded-rect boundary - winSize/radius here
+// are the window's real size/corner radius, not the larger shadow quad's
+// own), just with no texture sampling and a much wider smoothstep band
+// (`blur`) standing in for a soft Gaussian falloff - shares the same
+// vertex shader (ZARIS_GL_VERTEX_SHADER), so vLocalPos already means the
+// same thing here: local pixel position relative to the window's own
+// top-left corner, just extending beyond (0,0)-(winSize) out into the
+// shadow's own wider margin (see compositorRepaintGL()'s shadow quad).
+static const char* ZARIS_GL_SHADOW_FRAGMENT_SHADER = R"glsl(
+uniform vec2 winSize;
+uniform float radius;
+uniform float blur;
+uniform vec4 shadowColor;
+varying vec2 vLocalPos;
+
+float roundedBoxSDF(vec2 p, vec2 halfSize, float r) {
+    vec2 d = abs(p - halfSize) - halfSize + vec2(r, r);
+    return min(max(d.x, d.y), 0.0) + length(max(d, vec2(0.0, 0.0))) - r;
+}
+
+void main() {
+    float dist = roundedBoxSDF(vLocalPos, winSize * 0.5, radius);
+    float alpha = 1.0 - smoothstep(-blur, blur, dist);
+    gl_FragColor = vec4(shadowColor.rgb, shadowColor.a * alpha);
+}
+)glsl";
+
 // Returns 0 (and logs why) on failure rather than throwing/aborting -
 // compositorSetupGL() treats that as just another reason GLReady should
 // stay false, same as every other setup step.
@@ -2450,11 +2478,12 @@ void CWindowManager::compositorSetupGL() {
     glUniform1iFn          = (PFNGLUNIFORM1IPROC)glXGetProcAddressARB((const GLubyte*)"glUniform1i");
     glUniform1fFn          = (PFNGLUNIFORM1FPROC)glXGetProcAddressARB((const GLubyte*)"glUniform1f");
     glUniform2fFn          = (PFNGLUNIFORM2FPROC)glXGetProcAddressARB((const GLubyte*)"glUniform2f");
+    glUniform4fFn          = (PFNGLUNIFORM4FPROC)glXGetProcAddressARB((const GLubyte*)"glUniform4f");
 
     if (!glCreateShaderFn || !glShaderSourceFn || !glCompileShaderFn || !glGetShaderivFn || !glGetShaderInfoLogFn ||
         !glDeleteShaderFn || !glCreateProgramFn || !glAttachShaderFn || !glLinkProgramFn || !glGetProgramivFn ||
         !glGetProgramInfoLogFn || !glDeleteProgramFn || !glUseProgramFn || !glGetUniformLocationFn || !glUniform1iFn ||
-        !glUniform1fFn || !glUniform2fFn) {
+        !glUniform1fFn || !glUniform2fFn || !glUniform4fFn) {
         Debug::log(ERR, "compositorSetupGL: could not resolve one or more GLSL 2.0 entry points - GL compositing stays disabled.");
         return;
     }
@@ -2560,9 +2589,19 @@ void CWindowManager::compositorSetupGL() {
     const GLuint VERTEXSHADER = compileShader(GL_VERTEX_SHADER, ZARIS_GL_VERTEX_SHADER);
     const GLuint FRAGMENTSHADER = VERTEXSHADER ? compileShader(GL_FRAGMENT_SHADER, ZARIS_GL_FRAGMENT_SHADER) : 0;
 
-    if (!VERTEXSHADER || !FRAGMENTSHADER) {
+    // Milestone 4's shadow fragment shader shares this same vertex shader
+    // (see ZARIS_GL_SHADOW_FRAGMENT_SHADER's own comment) - compiled here,
+    // attached to both programs below, and only deleted once both links
+    // are done, rather than right after the first program links it.
+    const GLuint SHADOWFRAGMENTSHADER = (VERTEXSHADER && FRAGMENTSHADER) ? compileShader(GL_FRAGMENT_SHADER, ZARIS_GL_SHADOW_FRAGMENT_SHADER) : 0;
+
+    if (!VERTEXSHADER || !FRAGMENTSHADER || !SHADOWFRAGMENTSHADER) {
         if (VERTEXSHADER)
             glDeleteShaderFn(VERTEXSHADER);
+        if (FRAGMENTSHADER)
+            glDeleteShaderFn(FRAGMENTSHADER);
+        if (SHADOWFRAGMENTSHADER)
+            glDeleteShaderFn(SHADOWFRAGMENTSHADER);
         XFree(CONFIGS);
         GLFBConfigsByVisual.clear();
         return;
@@ -2573,17 +2612,26 @@ void CWindowManager::compositorSetupGL() {
     glAttachShaderFn(GLShaderProgram, FRAGMENTSHADER);
     glLinkProgramFn(GLShaderProgram);
 
-    GLint linked = GL_FALSE;
+    GLShadowShaderProgram = glCreateProgramFn();
+    glAttachShaderFn(GLShadowShaderProgram, VERTEXSHADER);
+    glAttachShaderFn(GLShadowShaderProgram, SHADOWFRAGMENTSHADER);
+    glLinkProgramFn(GLShadowShaderProgram);
+
+    GLint linked = GL_FALSE, shadowLinked = GL_FALSE;
     glGetProgramivFn(GLShaderProgram, GL_LINK_STATUS, &linked);
+    glGetProgramivFn(GLShadowShaderProgram, GL_LINK_STATUS, &shadowLinked);
     glDeleteShaderFn(VERTEXSHADER);
     glDeleteShaderFn(FRAGMENTSHADER);
+    glDeleteShaderFn(SHADOWFRAGMENTSHADER);
 
-    if (!linked) {
+    if (!linked || !shadowLinked) {
         char log[512];
-        glGetProgramInfoLogFn(GLShaderProgram, sizeof(log), NULL, log);
+        glGetProgramInfoLogFn(linked ? GLShadowShaderProgram : GLShaderProgram, sizeof(log), NULL, log);
         Debug::log(ERR, "compositorSetupGL: shader link failed: " + std::string(log) + " - GL compositing stays disabled.");
         glDeleteProgramFn(GLShaderProgram);
-        GLShaderProgram = 0;
+        glDeleteProgramFn(GLShadowShaderProgram);
+        GLShaderProgram       = 0;
+        GLShadowShaderProgram = 0;
         XFree(CONFIGS);
         GLFBConfigsByVisual.clear();
         return;
@@ -2593,16 +2641,44 @@ void CWindowManager::compositorSetupGL() {
     GLUniformWinSize = glGetUniformLocationFn(GLShaderProgram, "winSize");
     GLUniformRadius  = glGetUniformLocationFn(GLShaderProgram, "radius");
 
+    GLShadowUniformWinSize = glGetUniformLocationFn(GLShadowShaderProgram, "winSize");
+    GLShadowUniformRadius  = glGetUniformLocationFn(GLShadowShaderProgram, "radius");
+    GLShadowUniformBlur    = glGetUniformLocationFn(GLShadowShaderProgram, "blur");
+    GLShadowUniformColor   = glGetUniformLocationFn(GLShadowShaderProgram, "shadowColor");
+
     // One-time snapshot of whatever's currently on the root window - the
     // wallpaper, drawn there before compositing ever started - to redraw
     // as every frame's base layer. See GLBackgroundTexture's own comment
     // in windowManager.hpp for why this is needed now that corners are
     // genuinely partially transparent, unlike milestones 1b/2.
+    //
+    // Deliberately grabbed via a plain Xlib XGetImage, not glCopyTexImage2D
+    // from the just-created GLXWindow - caught live while verifying this
+    // milestone: with a solid, known root color set for the test, the
+    // "captured" background rendered back as solid black instead. Milestone
+    // 2's own bug (this same GLXWindow needing an explicit glXSwapBuffers to
+    // ever show anything) already proved this drawable isn't a simple alias
+    // onto root's real on-screen storage on this software (llvmpipe) GL
+    // stack - it's backed by its own separate buffer that starts blank
+    // until the first real swap. Reading root's actual pixels straight over
+    // XCB/Xlib instead sidesteps that GL-buffer-aliasing question entirely.
+    const auto ROOTIMAGE = XGetImage(GLDisplay, Screen->root, 0, 0, Screen->width_in_pixels, Screen->height_in_pixels, AllPlanes, ZPixmap);
+
     glGenTextures(1, &GLBackgroundTexture);
     glBindTexture(GL_TEXTURE_2D, GLBackgroundTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, Screen->width_in_pixels, Screen->height_in_pixels, 0);
+
+    if (ROOTIMAGE) {
+        // BGRA: the standard in-memory byte order for a 32-bit ZPixmap on
+        // this kind of little-endian X server/GL combination - matches
+        // what every other window's own texture-from-pixmap binding
+        // already assumes implicitly (RGBA/RGB via GLX_TEXTURE_FORMAT_EXT).
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, Screen->width_in_pixels, Screen->height_in_pixels, 0, GL_BGRA, GL_UNSIGNED_BYTE, ROOTIMAGE->data);
+        XDestroyImage(ROOTIMAGE);
+    } else {
+        Debug::log(ERR, "compositorSetupGL: XGetImage on root failed - background snapshot will render blank.");
+    }
 
     // A GLX context can only be current on one thread at a time - this
     // setup runs on the main thread, but compositorRepaintGL() runs on the
@@ -2708,6 +2784,53 @@ void CWindowManager::compositorRepaintGL() {
         if (!GEOMREPLY)
             continue;
 
+        const float X = GEOMREPLY->x, Y = GEOMREPLY->y, W = GEOMREPLY->width, H = GEOMREPLY->height;
+
+        // Same "no rounding for fullscreen, or the lone window on a
+        // no_gaps_when_only workspace" exception applyShapeToWindow()
+        // itself already applies (see that function's own comment on why
+        // it now skips its old hard clip once GLReady) - mirrored here so
+        // a fullscreen window's corners (and shadow, below) aren't
+        // rounded either.
+        float radius = (float)(ConfigManager::getInt("rounding") + ConfigManager::getInt("border_size"));
+        bool  isFullscreen = false;
+
+        if (const auto PWINDOW = getWindowFromDrawable((int64_t)WIN); PWINDOW) {
+            isFullscreen = PWINDOW->getFullscreen();
+
+            if (isFullscreen || (ConfigManager::getInt("layout:no_gaps_when_only") && getWindowsOnWorkspace(PWINDOW->getWorkspaceID()) == 1))
+                radius = 0.f;
+        }
+
+        // Milestone 4: the drop shadow, drawn immediately behind this
+        // window and before its own content - correct stacking falls out
+        // naturally from the same bottom-to-top loop order every other
+        // per-window draw here already uses. Skipped for a fullscreen
+        // window: its shadow would extend past the screen edge on every
+        // side for zero visible benefit. A flat analytic falloff (see
+        // ZARIS_GL_SHADOW_FRAGMENT_SHADER's own comment), not a real
+        // blur - cheap, and good enough for a shadow's soft edge.
+        if (!isFullscreen) {
+            constexpr float SHADOWMARGIN = 24.f;
+            constexpr float SHADOWBLUR   = 24.f;
+
+            glUseProgramFn(GLShadowShaderProgram);
+            glUniform2fFn(GLShadowUniformWinSize, W, H);
+            glUniform1fFn(GLShadowUniformRadius, radius);
+            glUniform1fFn(GLShadowUniformBlur, SHADOWBLUR);
+            glUniform4fFn(GLShadowUniformColor, 0.f, 0.f, 0.f, 0.45f);
+
+            glBegin(GL_QUADS);
+            glMultiTexCoord2f(GL_TEXTURE1, -SHADOWMARGIN, -SHADOWMARGIN);     glVertex2f(X - SHADOWMARGIN, Y - SHADOWMARGIN);
+            glMultiTexCoord2f(GL_TEXTURE1, W + SHADOWMARGIN, -SHADOWMARGIN); glVertex2f(X + W + SHADOWMARGIN, Y - SHADOWMARGIN);
+            glMultiTexCoord2f(GL_TEXTURE1, W + SHADOWMARGIN, H + SHADOWMARGIN); glVertex2f(X + W + SHADOWMARGIN, Y + H + SHADOWMARGIN);
+            glMultiTexCoord2f(GL_TEXTURE1, -SHADOWMARGIN, H + SHADOWMARGIN); glVertex2f(X - SHADOWMARGIN, Y + H + SHADOWMARGIN);
+            glEnd();
+
+            glUseProgramFn(GLShaderProgram);
+            glUniform1iFn(GLUniformTex, 0);
+        }
+
         // Same "re-fetch fresh every frame, no long-term cache" tradeoff
         // as compositorRepaintXRender() - see that function's own comment.
         // Unlike that function, this one MUST wait for a reply (a real
@@ -2745,22 +2868,8 @@ void CWindowManager::compositorRepaintGL() {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glXBindTexImageEXTFn(GLDisplay, GLXPIX, GLX_FRONT_LEFT_EXT, NULL);
 
-            const float X = GEOMREPLY->x, Y = GEOMREPLY->y, W = GEOMREPLY->width, H = GEOMREPLY->height;
             const float VTOP = VISUALCFG.yInverted ? 0.f : 1.f;
             const float VBOT = VISUALCFG.yInverted ? 1.f : 0.f;
-
-            // Same "no rounding for fullscreen, or the lone window on a
-            // no_gaps_when_only workspace" exception applyShapeToWindow()
-            // itself already applies (see that function's own comment on
-            // why it now skips its old hard clip once GLReady) - mirrored
-            // here so a fullscreen window's corners aren't rounded either.
-            float radius = (float)(ConfigManager::getInt("rounding") + ConfigManager::getInt("border_size"));
-
-            if (const auto PWINDOW = getWindowFromDrawable((int64_t)WIN); PWINDOW) {
-                if (PWINDOW->getFullscreen() ||
-                    (ConfigManager::getInt("layout:no_gaps_when_only") && getWindowsOnWorkspace(PWINDOW->getWorkspaceID()) == 1))
-                    radius = 0.f;
-            }
 
             glUniform2fFn(GLUniformWinSize, W, H);
             glUniform1fFn(GLUniformRadius, radius);

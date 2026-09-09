@@ -102,6 +102,7 @@ public:
     PFNGLUNIFORM1IPROC          glUniform1iFn          = nullptr;
     PFNGLUNIFORM1FPROC          glUniform1fFn          = nullptr;
     PFNGLUNIFORM2FPROC          glUniform2fFn          = nullptr;
+    PFNGLUNIFORM4FPROC          glUniform4fFn          = nullptr;
 
     // Milestone 3: replaces the old plain textured-quad draw with a small
     // GLSL program doing an anti-aliased rounded-rect test (a signed-
@@ -113,6 +114,22 @@ public:
     GLint                        GLUniformTex       = -1;
     GLint                        GLUniformWinSize   = -1;
     GLint                        GLUniformRadius    = -1;
+
+    // Milestone 4: a second program, sharing the same vertex shader (see
+    // compositorSetupGL()) but with its own fragment shader - draws a
+    // soft-edged rounded rect with no texture sampling at all, used as
+    // each window's drop shadow. Reuses the exact same rounded-box SDF
+    // formula as the window shader above, just with a much wider
+    // smoothstep band (`blur`) standing in for a real Gaussian falloff -
+    // cheap, analytic, and good enough for a shadow's soft edge without
+    // needing an actual multi-pass blur (that's milestone 5's job, for
+    // background blur specifically, where a flat analytic falloff
+    // wouldn't be a substitute for the real thing).
+    GLuint                       GLShadowShaderProgram  = 0;
+    GLint                        GLShadowUniformWinSize = -1;
+    GLint                        GLShadowUniformRadius  = -1;
+    GLint                        GLShadowUniformBlur    = -1;
+    GLint                        GLShadowUniformColor   = -1;
 
     // A one-time snapshot of the root window's own pre-compositor pixel
     // content (the wallpaper, drawn there by whatever wallpaper tool
