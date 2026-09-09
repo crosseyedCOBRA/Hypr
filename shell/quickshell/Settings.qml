@@ -681,6 +681,86 @@ PopupWindow {
                                     pointSize: Style.fontSizeS
                                 }
                             }
+
+                            NText {
+                                text: "Icons"
+                                color: Colors.text
+                                pointSize: Style.fontSizeM
+                                font.weight: Style.fontWeightBold
+                                topPadding: 12
+                                bottomPadding: 4
+                            }
+
+                            Row {
+                                id: launcherIconRow
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+
+                                NText {
+                                    text: "Launcher icon"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                Image {
+                                    width: 24
+                                    height: 24
+                                    fillMode: Image.PreserveAspectFit
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    source: "file://" + BarConfig.launcherIcon
+                                }
+
+                                NTextInput {
+                                    width: launcherIconRow.width - 170 - 24 - 24
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: BarConfig.launcherIcon
+                                    onEditingFinished: BarConfig.setLauncherIcon(text)
+                                    onAccepted: BarConfig.setLauncherIcon(text)
+                                }
+                            }
+
+                            Row {
+                                id: ccIconRow
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+
+                                NText {
+                                    text: "Control Center icon"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                Image {
+                                    width: 24
+                                    height: 24
+                                    fillMode: Image.PreserveAspectCrop
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    source: "file://" + BarConfig.controlCenterIcon
+                                }
+
+                                NTextInput {
+                                    width: ccIconRow.width - 170 - 24 - 24
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: BarConfig.controlCenterIcon
+                                    onEditingFinished: BarConfig.setControlCenterIcon(text)
+                                    onAccepted: BarConfig.setControlCenterIcon(text)
+                                }
+                            }
+
+                            NText {
+                                text: "Absolute file paths to any image - not limited to the bundled assets in ~/.config/quickshell/assets/."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 6
+                            }
                         }
 
                         // ==================== Modules ====================

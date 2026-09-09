@@ -26,7 +26,7 @@ Image {
     required property var barPanel
     required property Item barSurfaceItem
 
-    source: "file://" + Quickshell.env("HOME") + "/.config/quickshell/assets/zaris-logo-square.png"
+    source: "file://" + BarConfig.controlCenterIcon
     width: 26
     height: 26
     fillMode: Image.PreserveAspectCrop

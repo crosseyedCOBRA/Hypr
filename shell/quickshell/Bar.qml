@@ -126,7 +126,7 @@ Variants {
                     spacing: 10
 
                     Image {
-                        source: "file://" + Quickshell.env("HOME") + "/.config/quickshell/assets/artix.svg"
+                        source: "file://" + BarConfig.launcherIcon
                         width: 22
                         height: 22
                         anchors.verticalCenter: parent.verticalCenter
@@ -181,7 +181,7 @@ Variants {
 
                     Image {
                         id: taskbarLauncherIcon
-                        source: "file://" + Quickshell.env("HOME") + "/.config/quickshell/assets/artix.svg"
+                        source: "file://" + BarConfig.launcherIcon
                         width: 22
                         height: 22
                         anchors.verticalCenter: parent.verticalCenter

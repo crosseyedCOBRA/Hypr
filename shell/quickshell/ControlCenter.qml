@@ -299,6 +299,37 @@ PopupWindow {
                 }
             }
 
+            // Running kernel version - its own small, always-visible
+            // section (not gated by ModulesConfig's enable/tray system the
+            // way the bar's own copy of this module is) since the kernel
+            // module's bar default flipped to disabled - the user still
+            // wanted it visible somewhere by default, just not taking up
+            // bar space. A second, independent KernelVersion instance
+            // (its own one-shot `uname -r` Process) rather than sharing
+            // the bar's - the same "duplicate the self-contained module
+            // rather than share the bar's own instance" approach this file
+            // already uses for cpuSource/cpuTempSource/gpuTempSource above.
+            // textColor is Colors.text (this panel's own neutral text
+            // color), not the bar's accent-colored textColor prop, so it
+            // reads as regular themed Control Center text and follows a
+            // palette change like everything else here.
+            Row {
+                width: root.contentWidth
+                spacing: 8
+
+                NText {
+                    text: "Running Kernel"
+                    color: Colors.textMuted
+                    pointSize: Style.fontSizeXS
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+
+                KernelVersion {
+                    textColor: Colors.text
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
+
             Row {
                 width: root.contentWidth
                 spacing: 14

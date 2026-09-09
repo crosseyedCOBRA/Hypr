@@ -43,7 +43,14 @@ QtObject {
 
         adapter: JsonAdapter {
             id: cfg
-            property var kernel: ({ enabled: true, screens: "primary", tray: false })
+            // Off by default in the bar (per explicit user request) -
+            // Control Center now has its own always-visible "Running
+            // Kernel" section (ControlCenter.qml) independent of this
+            // module entirely, so the kernel version is still visible
+            // somewhere out of the box even with this disabled. Still a
+            // real, re-enableable bar module - toggle "Enabled" in
+            // Settings' Modules tab to bring it back into the bar too.
+            property var kernel: ({ enabled: false, screens: "primary", tray: false })
             property var cpu: ({ enabled: true, screens: "all", tray: false })
             property var cpuTemp: ({ enabled: true, screens: "all", tray: false })
             property var gpuTemp: ({ enabled: true, screens: "all", tray: false })

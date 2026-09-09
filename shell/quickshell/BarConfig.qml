@@ -34,6 +34,14 @@ import Quickshell.Io
 //                            implicitHeight/exclusiveZone). Clamped to a
 //                            sane range so a bad hand-edit can't produce an
 //                            unusably thin or huge bar.
+//   "launcherIcon": absolute path - the bar's launcher-toggle icon (any
+//                            image file, not limited to the bundled
+//                            assets). Empty/missing falls back to the
+//                            original artix.svg default.
+//   "controlCenterIcon": absolute path - the bar's Control Center launcher
+//                            icon, same shape as launcherIcon above.
+//                            Empty/missing falls back to the original
+//                            zaris-logo-square.png default.
 QtObject {
     id: root
 
@@ -49,6 +57,8 @@ QtObject {
             property string position: "top"
             property real backgroundOpacity: 0.75
             property int height: 44
+            property string launcherIcon: ""
+            property string controlCenterIcon: ""
         }
     }
 
@@ -62,6 +72,8 @@ QtObject {
         const h = configFile.adapter.height
         return (typeof h === "number" && h >= 32 && h <= 96) ? Math.round(h) : 44
     }
+    readonly property string launcherIcon: configFile.adapter.launcherIcon || (Quickshell.env("HOME") + "/.config/quickshell/assets/artix.svg")
+    readonly property string controlCenterIcon: configFile.adapter.controlCenterIcon || (Quickshell.env("HOME") + "/.config/quickshell/assets/zaris-logo-square.png")
 
     function setLayoutMode(val) {
         configFile.adapter.layoutMode = val
@@ -77,6 +89,14 @@ QtObject {
 
     function setHeight(val) {
         configFile.adapter.height = Math.round(val)
+    }
+
+    function setLauncherIcon(val) {
+        configFile.adapter.launcherIcon = val
+    }
+
+    function setControlCenterIcon(val) {
+        configFile.adapter.controlCenterIcon = val
     }
 
     // Shared "which way should a bar-anchored popup open" helper - every

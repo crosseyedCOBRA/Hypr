@@ -15,7 +15,7 @@
         "tray": true
     },
     "kernel": {
-        "enabled": true,
+        "enabled": false,
         "screens": "primary",
         "tray": false
     },
