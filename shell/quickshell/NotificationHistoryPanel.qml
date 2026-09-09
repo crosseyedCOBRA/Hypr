@@ -6,14 +6,31 @@ import Quickshell
 // NotificationHistoryService.qml's dunst-backed history rather than ported
 // from anywhere. Filter tabs (All/Today/Yesterday/Earlier) and per-item
 // delete + clear-all match the reference screenshot the user supplied.
-FloatingWindow {
+//
+// Built on PopupWindow rather than a FloatingWindow (this used to be one,
+// centered via a `float`+`center` WM windowrule matching Bluetooth/
+// Clipboard History/Wallpaper Picker/the avatar picker's own still-current
+// pattern) - per explicit request, clicking the bar's notification bell
+// should open this anchored right under it (right above it in taskbar
+// mode's bottom-bar case), the same "opens attached to where you clicked,
+// not centered on screen" treatment Settings/Control Center/the calendar
+// flyout/the taskbar launcher already got. Centered under the bell icon
+// itself (anchor.rect.x, same as CalendarFlyout centers under the clock)
+// rather than left-aligned under it (the taskbar launcher's own choice,
+// for a start-menu-style trigger) - this is a small inline tray icon
+// opening a much wider panel, not a dedicated launcher button.
+PopupWindow {
     id: panel
 
-    visible: NotificationHistoryPanelState.visible
-    title: "Notifications"
+    visible: NotificationHistoryPanelState.visible && !!NotificationHistoryPanelState.anchorItem
+    color: Colors.bg
 
     implicitWidth: 420
     implicitHeight: 480
+
+    anchor.item: NotificationHistoryPanelState.anchorItem
+    anchor.rect.x: NotificationHistoryPanelState.anchorItem ? (NotificationHistoryPanelState.anchorItem.width - implicitWidth) / 2 : 0
+    anchor.rect.y: BarConfig.popupAnchorY(NotificationHistoryPanelState.anchorItem, implicitHeight)
 
     property int currentTab: 0
 

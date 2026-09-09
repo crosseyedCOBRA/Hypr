@@ -23,6 +23,9 @@ Item {
 
     MouseArea {
         anchors.fill: parent
-        onClicked: NotificationHistoryPanelState.visible = !NotificationHistoryPanelState.visible
+        onClicked: {
+            NotificationHistoryPanelState.anchorItem = root
+            NotificationHistoryPanelState.visible = !NotificationHistoryPanelState.visible
+        }
     }
 }
