@@ -115,10 +115,10 @@ PopupWindow {
         { id: "layout", label: "Layout", icon: "" },
         { id: "colors", label: "Colors", icon: "" },
         { id: "profile", label: "Profile", icon: "" },
-        { id: "weather", label: "Weather", icon: "" },
         { id: "bar", label: "Bar", icon: "" },
         { id: "modules", label: "Modules", icon: "" },
-        { id: "dock", label: "Dock", icon: "" }
+        { id: "dock", label: "Dock", icon: "" },
+        { id: "weather", label: "Weather", icon: "" }
     ]
 
     readonly property var moduleNames: ({
