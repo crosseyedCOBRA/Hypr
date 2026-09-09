@@ -123,6 +123,126 @@ PopupWindow {
         }
     }
 
+    // ==================== Module chip drag-and-drop ====================
+    // Backs the Bar Modules/Control Center tabs' drag-to-reorder chips
+    // (ModuleChip.qml). Deliberately NOT per-chip Drag/DropArea +
+    // reparenting (the more "native" QML pattern) - a dragged chip is
+    // itself one of a Repeater's generated delegates, and reparenting a
+    // Repeater-owned item away mid-drag risks fighting the Repeater's own
+    // child bookkeeping, confirmed a real concern rather than a
+    // theoretical one by checking how Qt's own Repeater documentation
+    // describes item ownership. Instead: the real chip stays exactly
+    // where it is (dimmed) for the whole drag, a single shared ghost
+    // Rectangle (dragGhost below) follows the cursor, and only on release
+    // does anything about the actual module order change - at which point
+    // the Repeater naturally regenerates every chip in its new
+    // position/section anyway, so nothing ever needs un-reparenting.
+    property bool chipDragActive: false
+    property string chipDragId: ""
+    property string chipDragLabel: ""
+    // "left"/"center"/"right" for the Bar Modules tab, "tray" for Control
+    // Center - which reorder function endChipDrag() should call.
+    property string chipDragOrigin: ""
+    property real chipDragX: 0
+    property real chipDragY: 0
+    property real chipDragOffsetX: 0
+    property real chipDragOffsetY: 0
+
+    function startChipDrag(id, label, origin, windowX, windowY, chipW, chipH) {
+        settingsWindow.chipDragActive = true
+        settingsWindow.chipDragId = id
+        settingsWindow.chipDragLabel = label
+        settingsWindow.chipDragOrigin = origin
+        settingsWindow.chipDragOffsetX = chipW / 2
+        settingsWindow.chipDragOffsetY = chipH / 2
+        settingsWindow.chipDragX = windowX
+        settingsWindow.chipDragY = windowY
+    }
+
+    function updateChipDrag(windowX, windowY) {
+        settingsWindow.chipDragX = windowX
+        settingsWindow.chipDragY = windowY
+    }
+
+    // Point-in-rect against a drop zone Item's own mapped bounds - shared
+    // by both tabs' drop zones.
+    function pointInZone(zoneItem, windowX, windowY) {
+        if (!zoneItem)
+            return false
+        const local = zoneItem.mapFromItem(null, windowX, windowY)
+        return local.x >= 0 && local.x <= zoneItem.width && local.y >= 0 && local.y <= zoneItem.height
+    }
+
+    // Insertion index within a drop zone's chip Flow, excluding the
+    // dragged chip itself from consideration - "insert before the first
+    // remaining chip whose row is below the drop point, or whose row
+    // contains it and whose center sits to the drop point's right";
+    // falls off the end (appends) if nothing matches. A reasonable
+    // approximation for the handful-of-chips-per-section case this is
+    // built for, not attempting pixel-perfect multi-row wrap precision.
+    function computeInsertIndex(flowItem, draggedId, windowX, windowY) {
+        const local = flowItem.mapFromItem(null, windowX, windowY)
+        const candidates = []
+        for (let i = 0; i < flowItem.children.length; i++) {
+            const child = flowItem.children[i]
+            if (child.moduleId !== undefined && child.moduleId !== draggedId)
+                candidates.push(child)
+        }
+        for (let i = 0; i < candidates.length; i++) {
+            const child = candidates[i]
+            const cx = child.x + child.width / 2
+            const inRow = local.y >= child.y && local.y <= child.y + child.height
+            if (local.y < child.y || (inRow && local.x < cx))
+                return i
+        }
+        return candidates.length
+    }
+
+    // Called on release - hit-tests the drop point against whichever
+    // tab's drop zones are actually visible right now (bar_left/
+    // bar_center/bar_right/tray - the zone ids referenced here are
+    // declared further down this same file, inside each tab's own
+    // content Column; a plain JS function like this one only resolves
+    // them at call time, once the whole window is already built, so the
+    // "used before declared" ordering here is fine) and commits the
+    // reorder through ModulesConfig.
+    function endChipDrag(windowX, windowY) {
+        const id = settingsWindow.chipDragId
+        const origin = settingsWindow.chipDragOrigin
+        settingsWindow.chipDragActive = false
+        if (id === "")
+            return
+
+        if (origin === "tray") {
+            if (!settingsWindow.pointInZone(trayZone, windowX, windowY))
+                return
+            const ids = ModulesConfig.trayModulesForSettings().filter(function (i) { return i !== id })
+            const idx = settingsWindow.computeInsertIndex(trayFlow, id, windowX, windowY)
+            ids.splice(idx, 0, id)
+            ModulesConfig.reorderTrayModules(ids)
+            return
+        }
+
+        const zones = [
+            { section: "left", zone: barLeftZone, flow: barLeftFlow },
+            { section: "center", zone: barCenterZone, flow: barCenterFlow },
+            { section: "right", zone: barRightZone, flow: barRightFlow }
+        ]
+        for (let i = 0; i < zones.length; i++) {
+            if (!settingsWindow.pointInZone(zones[i].zone, windowX, windowY))
+                continue
+            const ids = ModulesConfig.barModulesForSettings(zones[i].section).filter(function (mid) { return mid !== id })
+            const idx = settingsWindow.computeInsertIndex(zones[i].flow, id, windowX, windowY)
+            ids.splice(idx, 0, id)
+            ModulesConfig.reorderBarSection(zones[i].section, ids)
+            return
+        }
+        // Dropped outside every zone - no-op, the chip just stays where
+        // it was (the Repeater never actually moved it in the first
+        // place, since the real reorder only happens here on a
+        // successful drop).
+    }
+
     readonly property var categories: [
         { id: "general", label: "General", icon: "" },
         { id: "defaults", label: "Defaults", icon: "" },
@@ -139,7 +259,8 @@ PopupWindow {
         { id: "battery", label: "Battery", icon: "" },
         { id: "profile", label: "Profile", icon: "" },
         { id: "datetime", label: "Date/Time", icon: "" },
-        { id: "modules", label: "Modules", icon: "" },
+        { id: "barModules", label: "Bar Modules", icon: "" },
+        { id: "controlCenterModules", label: "Control Center", icon: "" },
         { id: "weather", label: "Weather", icon: "" }
     ]
 
@@ -160,6 +281,23 @@ PopupWindow {
         notifications: "Notifications",
         wallpaper: "Wallpaper picker",
         battery: "Battery status"
+    })
+
+    // Control Center tab's own chip labels - a few of these read
+    // differently in Control Center's actual tile grid than
+    // moduleNames' own bar-context wording above (network -> "Ethernet",
+    // matching ControlCenter.qml's own tile after the earlier "Network"
+    // to "Ethernet" rename; nightLight/dnd/clipboard/stayAwake trimmed to
+    // match ControlCenter.qml's own tile labels exactly) - falls back to
+    // moduleNames for any id not listed here.
+    readonly property var ccModuleNames: ({
+        stayAwake: "Stay Awake",
+        dnd: "Do Not Disturb",
+        nightLight: "Night Light",
+        network: "Ethernet",
+        wifi: "Wifi",
+        clipboard: "Clipboard",
+        bluetooth: "Bluetooth"
     })
 
     function categoryLabel(id) {
@@ -1282,83 +1420,231 @@ PopupWindow {
                             }
                         }
 
-                        // ==================== Modules ====================
+                        // ==================== Bar Modules ====================
+                        // Drag-and-drop chip UI, replacing the old flat
+                        // enable/screens/tray table for the bar-shown half
+                        // of ModulesConfig - see Settings' own
+                        // chipDrag*/ModuleChip.qml/ModulesConfig.qml
+                        // comments for the full mechanism. Per-monitor
+                        // "screens" scoping (previously an All/Primary
+                        // quick toggle here) is hand-edit-only now - a
+                        // deliberate scope trade for the new reorder
+                        // capability, see ROADMAP.md's own writeup.
                         Column {
                             width: parent.width
-                            spacing: 4
-                            visible: settingsWindow.activeCategory === "modules"
-
-                            Row {
-                                width: parent.width
-                                height: 28
-
-                                NText { text: "Module"; width: 170; color: Colors.textMuted; pointSize: Style.fontSizeS; font.weight: Style.fontWeightBold }
-                                NText { text: "Enabled"; width: 80; color: Colors.textMuted; pointSize: Style.fontSizeS; font.weight: Style.fontWeightBold }
-                                NText { text: "Screens"; width: 140; color: Colors.textMuted; pointSize: Style.fontSizeS; font.weight: Style.fontWeightBold }
-                                NText { text: "In tray"; width: 80; color: Colors.textMuted; pointSize: Style.fontSizeS; font.weight: Style.fontWeightBold }
-                            }
-
-                            Repeater {
-                                model: ModulesConfig.moduleIds
-
-                                Row {
-                                    id: row
-                                    required property string modelData
-                                    width: contentColumn.width
-                                    height: 40
-
-                                    readonly property var entry: ModulesConfig.configFile.adapter[modelData]
-
-                                    NText {
-                                        text: settingsWindow.moduleNames[row.modelData] || row.modelData
-                                        width: 170
-                                        color: Colors.text
-                                        pointSize: Style.fontSizeM
-                                        anchors.verticalCenter: parent.verticalCenter
-                                    }
-
-                                    ToggleSwitch {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        checked: row.entry.enabled !== false
-                                        onToggled: newChecked => ModulesConfig.setEnabled(row.modelData, newChecked)
-                                    }
-
-                                    Item { width: 36; height: 1 }
-
-                                    NTabBar {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        tabHeight: 22
-
-                                        NTabButton {
-                                            text: "All"
-                                            pointSize: Style.fontSizeS
-                                            checked: row.entry.screens === "all" || row.entry.screens === undefined
-                                            onClicked: ModulesConfig.setScreens(row.modelData, "all")
-                                        }
-
-                                        NTabButton {
-                                            text: "Primary"
-                                            pointSize: Style.fontSizeS
-                                            checked: row.entry.screens === "primary"
-                                            onClicked: ModulesConfig.setScreens(row.modelData, "primary")
-                                        }
-                                    }
-
-                                    ToggleSwitch {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        checked: row.entry.tray === true
-                                        onToggled: newChecked => ModulesConfig.setTray(row.modelData, newChecked)
-                                    }
-                                }
-                            }
+                            spacing: 16
+                            visible: settingsWindow.activeCategory === "barModules"
 
                             NText {
-                                text: "\"Screens\" here only covers All / Primary - to pin a module to specific monitors by name, edit modules.json directly (\"screens\": [\"DisplayPort-1\"], matching `xrandr` output names)."
+                                text: "Drag a chip to reorder it or move it between sections. Click \u00d7 to remove a module from the bar."
                                 width: parent.width
                                 wrapMode: Text.WordWrap
                                 color: Colors.textMuted
                                 pointSize: Style.fontSizeXS
-                                topPadding: 10
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 6
+
+                                NText { text: "Left"; color: Colors.text; pointSize: Style.fontSizeM; font.weight: Style.fontWeightBold }
+
+                                Rectangle {
+                                    id: barLeftZone
+                                    width: parent.width
+                                    height: Math.max(50, barLeftFlow.implicitHeight + 16)
+                                    radius: Style.radiusS
+                                    color: Colors.pill
+                                    border.width: 2
+                                    border.color: settingsWindow.chipDragActive && settingsWindow.pointInZone(barLeftZone, settingsWindow.chipDragX, settingsWindow.chipDragY) ? Colors.mPrimary : "transparent"
+
+                                    Flow {
+                                        id: barLeftFlow
+                                        anchors.fill: parent
+                                        anchors.margins: 8
+                                        spacing: 6
+
+                                        Repeater {
+                                            model: ModulesConfig.barModulesForSettings("left")
+
+                                            ModuleChip {
+                                                required property string modelData
+                                                moduleId: modelData
+                                                label: settingsWindow.moduleNames[modelData] || modelData
+                                                dimmed: settingsWindow.chipDragActive && settingsWindow.chipDragId === modelData
+                                                onChipPressed: (wx, wy) => settingsWindow.startChipDrag(modelData, label, "left", wx, wy, width, height)
+                                                onChipPositionChanged: (wx, wy) => settingsWindow.updateChipDrag(wx, wy)
+                                                onChipReleased: (wx, wy) => settingsWindow.endChipDrag(wx, wy)
+                                                onRemoveClicked: ModulesConfig.removeFromBar(modelData)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                NComboBox {
+                                    width: 260
+                                    placeholder: "Add a module..."
+                                    currentKey: ""
+                                    model: ModulesConfig.barModulesAvailableToAdd().map(function (id) { return { key: id, name: settingsWindow.moduleNames[id] || id } })
+                                    onSelected: key => ModulesConfig.addToBarSection(key, "left")
+                                }
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 6
+
+                                NText { text: "Center"; color: Colors.text; pointSize: Style.fontSizeM; font.weight: Style.fontWeightBold }
+
+                                Rectangle {
+                                    id: barCenterZone
+                                    width: parent.width
+                                    height: Math.max(50, barCenterFlow.implicitHeight + 16)
+                                    radius: Style.radiusS
+                                    color: Colors.pill
+                                    border.width: 2
+                                    border.color: settingsWindow.chipDragActive && settingsWindow.pointInZone(barCenterZone, settingsWindow.chipDragX, settingsWindow.chipDragY) ? Colors.mPrimary : "transparent"
+
+                                    Flow {
+                                        id: barCenterFlow
+                                        anchors.fill: parent
+                                        anchors.margins: 8
+                                        spacing: 6
+
+                                        Repeater {
+                                            model: ModulesConfig.barModulesForSettings("center")
+
+                                            ModuleChip {
+                                                required property string modelData
+                                                moduleId: modelData
+                                                label: settingsWindow.moduleNames[modelData] || modelData
+                                                dimmed: settingsWindow.chipDragActive && settingsWindow.chipDragId === modelData
+                                                onChipPressed: (wx, wy) => settingsWindow.startChipDrag(modelData, label, "center", wx, wy, width, height)
+                                                onChipPositionChanged: (wx, wy) => settingsWindow.updateChipDrag(wx, wy)
+                                                onChipReleased: (wx, wy) => settingsWindow.endChipDrag(wx, wy)
+                                                onRemoveClicked: ModulesConfig.removeFromBar(modelData)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                NComboBox {
+                                    width: 260
+                                    placeholder: "Add a module..."
+                                    currentKey: ""
+                                    model: ModulesConfig.barModulesAvailableToAdd().map(function (id) { return { key: id, name: settingsWindow.moduleNames[id] || id } })
+                                    onSelected: key => ModulesConfig.addToBarSection(key, "center")
+                                }
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 6
+
+                                NText { text: "Right"; color: Colors.text; pointSize: Style.fontSizeM; font.weight: Style.fontWeightBold }
+
+                                Rectangle {
+                                    id: barRightZone
+                                    width: parent.width
+                                    height: Math.max(50, barRightFlow.implicitHeight + 16)
+                                    radius: Style.radiusS
+                                    color: Colors.pill
+                                    border.width: 2
+                                    border.color: settingsWindow.chipDragActive && settingsWindow.pointInZone(barRightZone, settingsWindow.chipDragX, settingsWindow.chipDragY) ? Colors.mPrimary : "transparent"
+
+                                    Flow {
+                                        id: barRightFlow
+                                        anchors.fill: parent
+                                        anchors.margins: 8
+                                        spacing: 6
+
+                                        Repeater {
+                                            model: ModulesConfig.barModulesForSettings("right")
+
+                                            ModuleChip {
+                                                required property string modelData
+                                                moduleId: modelData
+                                                label: settingsWindow.moduleNames[modelData] || modelData
+                                                dimmed: settingsWindow.chipDragActive && settingsWindow.chipDragId === modelData
+                                                onChipPressed: (wx, wy) => settingsWindow.startChipDrag(modelData, label, "right", wx, wy, width, height)
+                                                onChipPositionChanged: (wx, wy) => settingsWindow.updateChipDrag(wx, wy)
+                                                onChipReleased: (wx, wy) => settingsWindow.endChipDrag(wx, wy)
+                                                onRemoveClicked: ModulesConfig.removeFromBar(modelData)
+                                            }
+                                        }
+                                    }
+                                }
+
+                                NComboBox {
+                                    width: 260
+                                    placeholder: "Add a module..."
+                                    currentKey: ""
+                                    model: ModulesConfig.barModulesAvailableToAdd().map(function (id) { return { key: id, name: settingsWindow.moduleNames[id] || id } })
+                                    onSelected: key => ModulesConfig.addToBarSection(key, "right")
+                                }
+                            }
+
+                            NText {
+                                text: "Per-monitor placement (\"screens\": [\"DisplayPort-1\"], matching `xrandr` output names) is hand-edit-only in modules.json - not covered by this tab."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+                        }
+
+                        // ==================== Control Center (modules) ====================
+                        Column {
+                            width: parent.width
+                            spacing: 16
+                            visible: settingsWindow.activeCategory === "controlCenterModules"
+
+                            NText {
+                                text: "Reorders Control Center's Balanced/Do Not Disturb/Ethernet/Wifi/Clipboard/Bluetooth/Stay Awake/Night Light row. Its other sections (gauges, weather, media, audio, Wallpaper/Screenshot) aren't reorderable yet."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+
+                            Rectangle {
+                                id: trayZone
+                                width: parent.width
+                                height: Math.max(50, trayFlow.implicitHeight + 16)
+                                radius: Style.radiusS
+                                color: Colors.pill
+                                border.width: 2
+                                border.color: settingsWindow.chipDragActive && settingsWindow.pointInZone(trayZone, settingsWindow.chipDragX, settingsWindow.chipDragY) ? Colors.mPrimary : "transparent"
+
+                                Flow {
+                                    id: trayFlow
+                                    anchors.fill: parent
+                                    anchors.margins: 8
+                                    spacing: 6
+
+                                    Repeater {
+                                        model: ModulesConfig.trayModulesForSettings()
+
+                                        ModuleChip {
+                                            required property string modelData
+                                            moduleId: modelData
+                                            label: settingsWindow.ccModuleNames[modelData] || settingsWindow.moduleNames[modelData] || modelData
+                                            dimmed: settingsWindow.chipDragActive && settingsWindow.chipDragId === modelData
+                                            onChipPressed: (wx, wy) => settingsWindow.startChipDrag(modelData, label, "tray", wx, wy, width, height)
+                                            onChipPositionChanged: (wx, wy) => settingsWindow.updateChipDrag(wx, wy)
+                                            onChipReleased: (wx, wy) => settingsWindow.endChipDrag(wx, wy)
+                                            onRemoveClicked: ModulesConfig.removeFromTray(modelData)
+                                        }
+                                    }
+                                }
+                            }
+
+                            NComboBox {
+                                width: 260
+                                placeholder: "Add a module..."
+                                currentKey: ""
+                                model: ModulesConfig.trayModulesAvailableToAdd().map(function (id) { return { key: id, name: settingsWindow.ccModuleNames[id] || settingsWindow.moduleNames[id] || id } })
+                                onSelected: key => ModulesConfig.addToTray(key)
                             }
                         }
 
@@ -2035,6 +2321,50 @@ PopupWindow {
                             }
                         }
                     }
+                }
+            }
+        }
+
+        // Drag ghost + capture surface for the Bar Modules/Control Center
+        // tabs' chip drag-and-drop - see settingsWindow's own
+        // chipDrag*/startChipDrag/endChipDrag comment for the full
+        // mechanism. Sits above everything else (last child = top z-order)
+        // but is itself click-through (`enabled`/only visible) while no
+        // drag is active, so it never interferes with normal clicks
+        // anywhere else in Settings.
+        MouseArea {
+            anchors.fill: parent
+            visible: settingsWindow.chipDragActive
+            enabled: settingsWindow.chipDragActive
+            hoverEnabled: true
+            onPositionChanged: mouse => {
+                const p = mapToItem(null, mouse.x, mouse.y)
+                settingsWindow.updateChipDrag(p.x, p.y)
+            }
+            onReleased: mouse => {
+                const p = mapToItem(null, mouse.x, mouse.y)
+                settingsWindow.endChipDrag(p.x, p.y)
+            }
+
+            Rectangle {
+                id: dragGhost
+                visible: settingsWindow.chipDragActive
+                x: settingsWindow.chipDragX - settingsWindow.chipDragOffsetX
+                y: settingsWindow.chipDragY - settingsWindow.chipDragOffsetY
+                width: ghostText.implicitWidth + 20
+                height: 30
+                radius: height / 2
+                color: Colors.pillActive
+                border.color: Colors.mPrimary
+                border.width: 1
+                opacity: 0.9
+
+                NText {
+                    id: ghostText
+                    anchors.centerIn: parent
+                    text: settingsWindow.chipDragLabel
+                    color: Colors.text
+                    pointSize: Style.fontSizeS
                 }
             }
         }

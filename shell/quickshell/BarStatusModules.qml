@@ -1,87 +1,81 @@
 import QtQuick
 
-// The bar's status module row (tray, kernel, CPU/GPU, network, clipboard,
-// notifications, wallpaper, battery, volume, stay-awake, night light, DND,
-// Bluetooth) - its own file since Bar.qml now uses it identically in both
-// of its layouts (BarConfig.layoutMode "statusbar" and "taskbar" - see
-// Bar.qml's own layout comment) rather than duplicating this whole list
-// between them. `barPanel` is passed in explicitly since this is a
-// separate file rather than a nested Component closing over Bar.qml's own
-// `panel` id.
+// One of the bar's three module zones (Left/Center/Right), rendering
+// whichever modules Settings' new "Bar Modules" tab has assigned to
+// `section` in their configured order (ModulesConfig.orderedBarModules) -
+// previously this was one single hardcoded Row of every status module,
+// always in the same fixed order, always on the right. See Bar.qml's own
+// comment for why the "taskbar" layout mode ignores section assignment
+// entirely (its left/center are already spoken for by the embedded
+// dock/workspaces) via `anySection: true` instead.
+//
+// SystemTrayRow (the real X11/StatusNotifierItem system tray, not a
+// ModulesConfig module at all) and VolumeControl (deliberately excluded
+// from ModulesConfig gating - see its own header comment) both stay
+// pinned to fixed positions within the "right" section specifically
+// (SystemTrayRow first, VolumeControl last) rather than becoming
+// reorderable/movable modules themselves - this exactly reproduces the
+// original hardcoded layout's default visual order (tray icons, then
+// every module in moduleIds order, then volume, then Control Center)
+// for anyone who's never touched the new Bar Modules tab, since every
+// module defaults to section "right" with moduleIds order preserved.
+//
+// Each module id maps to a specific, differently-propped component below
+// (icon glyphs, sensor labels, text/active colors) - a Repeater +
+// per-delegate Loader picks the right one by id by only enabling the one
+// `Component` whose `active` matches, rather than trying to force every
+// module into one generic shape.
 Row {
     id: root
 
     required property var barPanel
+    required property string section
+    // "taskbar" layout mode only - see this file's own header comment.
+    property bool anySection: false
 
     spacing: 14
 
     SystemTrayRow {
         window: root.barPanel
-        visible: root.barPanel.isPrimary
+        visible: root.section === "right" && root.barPanel.isPrimary
         anchors.verticalCenter: parent.verticalCenter
     }
 
-    KernelVersion {
-        visible: ModulesConfig.showInBar("kernel", root.barPanel)
-        textColor: Colors.blue
-        anchors.verticalCenter: parent.verticalCenter
-    }
+    Repeater {
+        model: root.anySection
+            ? ModulesConfig.orderedBarModulesAnySection(root.barPanel)
+            : ModulesConfig.orderedBarModules(root.section, root.barPanel)
 
-    CpuLoad {
-        visible: ModulesConfig.showInBar("cpu", root.barPanel)
-        textColor: Colors.coral
-        anchors.verticalCenter: parent.verticalCenter
-    }
+        Item {
+            id: delegateItem
+            required property string modelData
+            width: loader.item ? loader.item.implicitWidth : 0
+            height: loader.item ? loader.item.implicitHeight : 0
 
-    HwmonSensor {
-        visible: ModulesConfig.showInBar("cpuTemp", root.barPanel)
-        sensorLabel: "Tctl" // k10temp CPU die sensor -- verify with
-                             // `grep . /sys/class/hwmon/hwmon*/temp*_label`
-                             // and adjust if different
-        iconGlyph: "\uf2c9"
-        textColor: Colors.blue
-        anchors.verticalCenter: parent.verticalCenter
-    }
-
-    HwmonSensor {
-        visible: ModulesConfig.showInBar("gpuTemp", root.barPanel)
-        sensorLabel: "edge" // amdgpu GPU sensor -- same caveat as above
-        iconGlyph: "\uf2c9"
-        textColor: Colors.teal
-        anchors.verticalCenter: parent.verticalCenter
-    }
-
-    NetworkStatus {
-        visible: ModulesConfig.showInBar("network", root.barPanel)
-        textColor: Colors.blue
-        anchors.verticalCenter: parent.verticalCenter
-    }
-
-    ClipboardIndicator {
-        visible: ModulesConfig.showInBar("clipboard", root.barPanel)
-        textColor: Colors.textMuted
-        activeColor: Colors.blue
-        anchors.verticalCenter: parent.verticalCenter
-    }
-
-    NotificationIndicator {
-        visible: ModulesConfig.showInBar("notifications", root.barPanel)
-        textColor: Colors.textMuted
-        activeColor: Colors.purple
-        anchors.verticalCenter: parent.verticalCenter
-    }
-
-    WallpaperIndicator {
-        visible: ModulesConfig.showInBar("wallpaper", root.barPanel)
-        textColor: Colors.textMuted
-        activeColor: Colors.teal
-        anchors.verticalCenter: parent.verticalCenter
-    }
-
-    BatteryIndicator {
-        visible: ModulesConfig.showInBar("battery", root.barPanel) && BatteryService.batteryPresent
-        textColor: Colors.textMuted
-        anchors.verticalCenter: parent.verticalCenter
+            Loader {
+                id: loader
+                anchors.verticalCenter: parent.verticalCenter
+                sourceComponent: {
+                    switch (delegateItem.modelData) {
+                    case "kernel": return kernelComponent
+                    case "cpu": return cpuComponent
+                    case "cpuTemp": return cpuTempComponent
+                    case "gpuTemp": return gpuTempComponent
+                    case "network": return networkComponent
+                    case "clipboard": return clipboardComponent
+                    case "notifications": return notificationsComponent
+                    case "wallpaper": return wallpaperComponent
+                    case "battery": return batteryComponent
+                    case "stayAwake": return stayAwakeComponent
+                    case "nightLight": return nightLightComponent
+                    case "dnd": return dndComponent
+                    case "bluetooth": return bluetoothComponent
+                    case "wifi": return wifiComponent
+                    default: return null
+                    }
+                }
+            }
+        }
     }
 
     VolumeControl {
@@ -89,35 +83,121 @@ Row {
         // ("volume", ...) - see VolumeControl.qml's own header comment.
         // Falls back to its own internal `visible: sink && sink.ready`
         // binding.
+        visible: root.section === "right"
         textColor: Colors.purple
         anchors.verticalCenter: parent.verticalCenter
     }
 
-    StayAwake {
-        visible: ModulesConfig.showInBar("stayAwake", root.barPanel)
-        textColor: Colors.textMuted
-        activeColor: Colors.coral
-        anchors.verticalCenter: parent.verticalCenter
+    Component {
+        id: kernelComponent
+        KernelVersion {
+            textColor: Colors.blue
+        }
     }
 
-    NightLight {
-        visible: ModulesConfig.showInBar("nightLight", root.barPanel)
-        textColor: Colors.textMuted
-        activeColor: Colors.blue
-        anchors.verticalCenter: parent.verticalCenter
+    Component {
+        id: cpuComponent
+        CpuLoad {
+            textColor: Colors.coral
+        }
     }
 
-    Dnd {
-        visible: ModulesConfig.showInBar("dnd", root.barPanel)
-        textColor: Colors.textMuted
-        activeColor: Colors.red
-        anchors.verticalCenter: parent.verticalCenter
+    Component {
+        id: cpuTempComponent
+        HwmonSensor {
+            sensorLabel: "Tctl" // k10temp CPU die sensor -- verify with
+                                 // `grep . /sys/class/hwmon/hwmon*/temp*_label`
+                                 // and adjust if different
+            iconGlyph: ""
+            textColor: Colors.blue
+        }
     }
 
-    BluetoothIndicator {
-        visible: ModulesConfig.showInBar("bluetooth", root.barPanel)
-        textColor: Colors.textMuted
-        activeColor: Colors.blue
-        anchors.verticalCenter: parent.verticalCenter
+    Component {
+        id: gpuTempComponent
+        HwmonSensor {
+            sensorLabel: "edge" // amdgpu GPU sensor -- same caveat as above
+            iconGlyph: ""
+            textColor: Colors.teal
+        }
+    }
+
+    Component {
+        id: networkComponent
+        NetworkStatus {
+            textColor: Colors.blue
+        }
+    }
+
+    Component {
+        id: clipboardComponent
+        ClipboardIndicator {
+            textColor: Colors.textMuted
+            activeColor: Colors.blue
+        }
+    }
+
+    Component {
+        id: notificationsComponent
+        NotificationIndicator {
+            textColor: Colors.textMuted
+            activeColor: Colors.purple
+        }
+    }
+
+    Component {
+        id: wallpaperComponent
+        WallpaperIndicator {
+            textColor: Colors.textMuted
+            activeColor: Colors.teal
+        }
+    }
+
+    Component {
+        id: batteryComponent
+        BatteryIndicator {
+            visible: BatteryService.batteryPresent
+            textColor: Colors.textMuted
+        }
+    }
+
+    Component {
+        id: stayAwakeComponent
+        StayAwake {
+            textColor: Colors.textMuted
+            activeColor: Colors.coral
+        }
+    }
+
+    Component {
+        id: nightLightComponent
+        NightLight {
+            textColor: Colors.textMuted
+            activeColor: Colors.blue
+        }
+    }
+
+    Component {
+        id: dndComponent
+        Dnd {
+            textColor: Colors.textMuted
+            activeColor: Colors.red
+        }
+    }
+
+    Component {
+        id: bluetoothComponent
+        BluetoothIndicator {
+            textColor: Colors.textMuted
+            activeColor: Colors.blue
+        }
+    }
+
+    Component {
+        id: wifiComponent
+        WifiToggle {
+            textColor: Colors.textMuted
+            activeColor: Colors.blue
+        }
     }
 }

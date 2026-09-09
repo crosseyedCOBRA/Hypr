@@ -123,32 +123,54 @@ Variants {
             Item {
                 anchors.fill: parent
 
-                // --- left: logo + workspaces ---
+                // --- left: logo + workspaces, then any left-assigned modules ---
                 Row {
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    spacing: 10
+                    spacing: 14
 
-                    Image {
-                        source: "file://" + BarConfig.launcherIcon
-                        width: 22
-                        height: 22
+                    Row {
+                        spacing: 10
                         anchors.verticalCenter: parent.verticalCenter
 
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: LauncherState.visible = !LauncherState.visible
+                        Image {
+                            source: "file://" + BarConfig.launcherIcon
+                            width: 22
+                            height: 22
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: LauncherState.visible = !LauncherState.visible
+                            }
+                        }
+
+                        Workspaces {
+                            anchors.verticalCenter: parent.verticalCenter
                         }
                     }
 
-                    Workspaces {
+                    BarStatusModules {
+                        barPanel: panel
+                        section: "left"
                         anchors.verticalCenter: parent.verticalCenter
                     }
                 }
 
-                // --- center: clock ---
-                BarClockText {
+                // --- center: clock, then any center-assigned modules ---
+                Row {
                     anchors.centerIn: parent
+                    spacing: 14
+
+                    BarClockText {
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    BarStatusModules {
+                        barPanel: panel
+                        section: "center"
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
 
                 // --- right: system status + Control Center ---
@@ -159,6 +181,7 @@ Variants {
 
                     BarStatusModules {
                         barPanel: panel
+                        section: "right"
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
@@ -222,6 +245,8 @@ Variants {
 
                     BarStatusModules {
                         barPanel: panel
+                        section: "right"
+                        anySection: true
                         anchors.verticalCenter: parent.verticalCenter
                     }
 

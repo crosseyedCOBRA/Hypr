@@ -449,46 +449,7 @@ PopupWindow {
                     columns: 2
                     spacing: 10
 
-                    Rectangle {
-                        width: root.tileWidth
-                        height: root.tileHeight
-                        radius: Style.radiusS
-                        color: stayAwakeToggleArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("stayAwake", ControlCenterState.panel)
-
-                    Behavior on color {
-                        ColorAnimation { duration: Style.animationFast }
-                    }
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        StayAwake {
-                            id: stayAwakeToggle
-                            clickable: false
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            textColor: Colors.textMuted
-                            activeColor: Colors.coral
-                        }
-
-                        NText {
-                            text: "Stay Awake"
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXS
-                        }
-                    }
-
-                    MouseArea {
-                        id: stayAwakeToggleArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: stayAwakeToggle.toggle()
-                    }
-                }
-
-                // Power profile - a single button that cycles through the
+                    // Power profile - a single button that cycles through the
                 // three power-profiles-daemon profiles on each click,
                 // rather than the three separate tiles this shipped with
                 // originally (a user request after seeing that version
@@ -534,235 +495,153 @@ PopupWindow {
                     }
                 }
 
-                Rectangle {
-                    width: root.tileWidth
-                    height: root.tileHeight
-                    radius: Style.radiusS
-                    color: dndToggleArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("dnd", ControlCenterState.panel)
+                // The other seven quick-toggle tiles - previously seven
+                // near-identical hand-authored Rectangle blocks (DND, Night
+                // Light, Ethernet, Wifi, Clipboard, Bluetooth, plus Stay
+                // Awake now folded in here too), now one Repeater driven by
+                // Settings' new "Control Center" tab (ModulesConfig
+                // .trayModuleIds/.orderedTrayModules - see that file's own
+                // comment for exactly which modules qualify and why). Each
+                // of the six *ModulesConfig* module-toggle components
+                // (Dnd/NightLight/StayAwake/NetworkToggle/WifiToggle/
+                // BluetoothIndicator) shares the exact same
+                // clickable/textColor/activeColor/toggle() interface, so
+                // the click handler can call `loader.item.toggle()`
+                // polymorphically without needing to know which one it
+                // actually loaded - only Clipboard (a plain icon that opens
+                // ClipboardHistoryPanel, not a stateful toggle) needs its
+                // own special case.
+                Repeater {
+                    model: ModulesConfig.orderedTrayModules(ControlCenterState.panel)
 
-                    Behavior on color {
-                        ColorAnimation { duration: Style.animationFast }
-                    }
+                    Rectangle {
+                        id: tileDelegate
+                        required property string modelData
+                        width: root.tileWidth
+                        height: root.tileHeight
+                        radius: Style.radiusS
+                        color: tileArea.containsMouse ? Colors.pillActive : Colors.pill
 
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        Dnd {
-                            id: dndToggle
-                            clickable: false
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            textColor: Colors.textMuted
-                            activeColor: Colors.red
+                        Behavior on color {
+                            ColorAnimation { duration: Style.animationFast }
                         }
 
-                        NText {
-                            text: "Do Not Disturb"
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXS
-                        }
-                    }
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: 4
 
-                    MouseArea {
-                        id: dndToggleArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: dndToggle.toggle()
+                            Loader {
+                                id: iconLoader
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                sourceComponent: {
+                                    switch (tileDelegate.modelData) {
+                                    case "stayAwake": return stayAwakeIconComponent
+                                    case "dnd": return dndIconComponent
+                                    case "nightLight": return nightLightIconComponent
+                                    case "network": return networkIconComponent
+                                    case "wifi": return wifiIconComponent
+                                    case "clipboard": return clipboardIconComponent
+                                    case "bluetooth": return bluetoothIconComponent
+                                    default: return null
+                                    }
+                                }
+                            }
+
+                            NText {
+                                text: {
+                                    switch (tileDelegate.modelData) {
+                                    case "stayAwake": return "Stay Awake"
+                                    case "dnd": return "Do Not Disturb"
+                                    case "nightLight": return "Night Light"
+                                    case "network": return "Ethernet"
+                                    case "wifi": return "Wifi"
+                                    case "clipboard": return "Clipboard"
+                                    case "bluetooth": return "Bluetooth"
+                                    default: return ""
+                                    }
+                                }
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+                        }
+
+                        MouseArea {
+                            id: tileArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                if (tileDelegate.modelData === "clipboard")
+                                    ClipboardHistoryPanelState.visible = !ClipboardHistoryPanelState.visible
+                                else if (iconLoader.item && iconLoader.item.toggle)
+                                    iconLoader.item.toggle()
+                            }
+                        }
                     }
                 }
-                Rectangle {
-                    width: root.tileWidth
-                    height: root.tileHeight
-                    radius: Style.radiusS
-                    color: nightLightToggleArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("nightLight", ControlCenterState.panel)
-
-                    Behavior on color {
-                        ColorAnimation { duration: Style.animationFast }
-                    }
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        NightLight {
-                            id: nightLightToggle
-                            clickable: false
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            textColor: Colors.textMuted
-                            activeColor: Colors.blue
-                        }
-
-                        NText {
-                            text: "Night Light"
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXS
-                        }
-                    }
-
-                    MouseArea {
-                        id: nightLightToggleArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: nightLightToggle.toggle()
-                    }
                 }
-                Rectangle {
-                    width: root.tileWidth
-                    height: root.tileHeight
-                    radius: Style.radiusS
-                    color: networkToggleArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("network", ControlCenterState.panel)
+            }
 
-                    Behavior on color {
-                        ColorAnimation { duration: Style.animationFast }
-                    }
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        NetworkToggle {
-                            id: networkToggle
-                            clickable: false
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            textColor: Colors.textMuted
-                            activeColor: Colors.blue
-                        }
-
-                        NText {
-                            text: "Ethernet"
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXS
-                        }
-                    }
-
-                    MouseArea {
-                        id: networkToggleArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: networkToggle.toggle()
-                    }
+            Component {
+                id: stayAwakeIconComponent
+                StayAwake {
+                    clickable: false
+                    textColor: Colors.textMuted
+                    activeColor: Colors.coral
                 }
-                Rectangle {
-                    width: root.tileWidth
-                    height: root.tileHeight
-                    radius: Style.radiusS
-                    color: wifiToggleArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("wifi", ControlCenterState.panel)
+            }
 
-                    Behavior on color {
-                        ColorAnimation { duration: Style.animationFast }
-                    }
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        WifiToggle {
-                            id: wifiToggle
-                            clickable: false
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            textColor: Colors.textMuted
-                            activeColor: Colors.blue
-                        }
-
-                        NText {
-                            text: "Wifi"
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXS
-                        }
-                    }
-
-                    MouseArea {
-                        id: wifiToggleArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: wifiToggle.toggle()
-                    }
+            Component {
+                id: dndIconComponent
+                Dnd {
+                    clickable: false
+                    textColor: Colors.textMuted
+                    activeColor: Colors.red
                 }
+            }
 
-                Rectangle {
-                    width: root.tileWidth
-                    height: root.tileHeight
-                    radius: Style.radiusS
-                    color: clipboardTileArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("clipboard", ControlCenterState.panel)
-
-                    Behavior on color {
-                        ColorAnimation { duration: Style.animationFast }
-                    }
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        NIcon {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            icon: ""
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXL
-                        }
-
-                        NText {
-                            text: "Clipboard"
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXS
-                        }
-                    }
-
-                    MouseArea {
-                        id: clipboardTileArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: ClipboardHistoryPanelState.visible = !ClipboardHistoryPanelState.visible
-                    }
+            Component {
+                id: nightLightIconComponent
+                NightLight {
+                    clickable: false
+                    textColor: Colors.textMuted
+                    activeColor: Colors.blue
                 }
+            }
 
-                Rectangle {
-                    width: root.tileWidth
-                    height: root.tileHeight
-                    radius: Style.radiusS
-                    color: bluetoothToggleArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("bluetooth", ControlCenterState.panel)
-
-                    Behavior on color {
-                        ColorAnimation { duration: Style.animationFast }
-                    }
-
-                    Column {
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        BluetoothIndicator {
-                            id: bluetoothToggle
-                            clickable: false
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            textColor: Colors.textMuted
-                            activeColor: Colors.blue
-                        }
-
-                        NText {
-                            text: "Bluetooth"
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            color: Colors.textMuted
-                            pointSize: Style.fontSizeXS
-                        }
-                    }
-
-                    MouseArea {
-                        id: bluetoothToggleArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: bluetoothToggle.toggle()
-                    }
+            Component {
+                id: networkIconComponent
+                NetworkToggle {
+                    clickable: false
+                    textColor: Colors.textMuted
+                    activeColor: Colors.blue
                 }
+            }
+
+            Component {
+                id: wifiIconComponent
+                WifiToggle {
+                    clickable: false
+                    textColor: Colors.textMuted
+                    activeColor: Colors.blue
+                }
+            }
+
+            Component {
+                id: clipboardIconComponent
+                NIcon {
+                    icon: ""
+                    color: Colors.textMuted
+                    pointSize: Style.fontSizeXL
+                }
+            }
+
+            Component {
+                id: bluetoothIconComponent
+                BluetoothIndicator {
+                    clickable: false
+                    textColor: Colors.textMuted
+                    activeColor: Colors.blue
                 }
             }
 
