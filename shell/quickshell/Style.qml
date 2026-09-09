@@ -20,14 +20,17 @@ import Quickshell
 Singleton {
     id: root
 
-    readonly property real fontSizeXXS: 8
-    readonly property real fontSizeXS: 9
-    readonly property real fontSizeS: 10
-    readonly property real fontSizeM: 11
-    readonly property real fontSizeL: 13
-    readonly property real fontSizeXL: 16
-    readonly property real fontSizeXXL: 18
-    readonly property real fontSizeXXXL: 24
+    // Scaled by DefaultsConfig.fontScale (Settings' Defaults tab "Font
+    // size") - 1.0 at its default, so this is a no-op change from the
+    // original flat values until the user actually picks a different size.
+    readonly property real fontSizeXXS: 8 * DefaultsConfig.fontScale
+    readonly property real fontSizeXS: 9 * DefaultsConfig.fontScale
+    readonly property real fontSizeS: 10 * DefaultsConfig.fontScale
+    readonly property real fontSizeM: 11 * DefaultsConfig.fontScale
+    readonly property real fontSizeL: 13 * DefaultsConfig.fontScale
+    readonly property real fontSizeXL: 16 * DefaultsConfig.fontScale
+    readonly property real fontSizeXXL: 18 * DefaultsConfig.fontScale
+    readonly property real fontSizeXXXL: 24 * DefaultsConfig.fontScale
 
     readonly property int fontWeightRegular: 400
     readonly property int fontWeightMedium: 500

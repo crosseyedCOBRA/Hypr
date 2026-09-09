@@ -16,6 +16,10 @@ Text {
     property var features: ({})
 
     opacity: enabled ? 1.0 : 0.6
+    // DefaultsConfig.fontFamily falls back to Qt.application.font.family
+    // (the real system default) when unset, so this is a no-op until the
+    // user actually picks a font in Settings' Defaults tab.
+    font.family: DefaultsConfig.fontFamily
     font.weight: Style.fontWeightMedium
     font.pointSize: Math.max(1, root.pointSize)
     font.features: root.features

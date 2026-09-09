@@ -83,6 +83,7 @@ PopupWindow {
 
     readonly property var categories: [
         { id: "general", label: "General", icon: "" },
+        { id: "defaults", label: "Defaults", icon: "" },
         { id: "layout", label: "Layout", icon: "" },
         { id: "colors", label: "Colors", icon: "" },
         { id: "profile", label: "Profile", icon: "" },
@@ -263,6 +264,87 @@ PopupWindow {
                                 color: Colors.textMuted
                                 pointSize: Style.fontSizeXS
                                 topPadding: 10
+                            }
+                        }
+
+                        // ==================== Defaults ====================
+                        Column {
+                            width: parent.width
+                            spacing: 16
+                            visible: settingsWindow.activeCategory === "defaults"
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Icon theme"
+                                description: "Applies to this shell's own icons (Dock/Launcher) and GTK apps."
+                                model: DefaultsConfig.availableIconThemes
+                                currentKey: DefaultsConfig.iconTheme
+                                placeholder: "System default"
+                                onSelected: key => DefaultsConfig.setIconTheme(key)
+                            }
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Font family"
+                                description: "Applies to this shell's own text and GTK apps."
+                                model: DefaultsConfig.availableFonts
+                                currentKey: DefaultsConfig.fontFamily
+                                placeholder: "System default"
+                                onSelected: key => DefaultsConfig.setFontFamily(key)
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Font size"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NSlider {
+                                    width: 160
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    from: 8
+                                    to: 16
+                                    value: DefaultsConfig.fontSize
+                                    onMoved: DefaultsConfig.setFontSize(value)
+                                }
+
+                                NText {
+                                    text: Math.round(DefaultsConfig.fontSize) + "pt"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.textMuted
+                                    pointSize: Style.fontSizeS
+                                }
+                            }
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Default web browser"
+                                description: "Applied immediately via xdg-settings - no restart needed."
+                                model: DefaultsConfig.availableBrowsers
+                                currentKey: DefaultsConfig.defaultBrowser
+                                placeholder: "Not set"
+                                onSelected: key => DefaultsConfig.setDefaultBrowser(key)
+                            }
+
+                            NText {
+                                text: "Icon theme and GTK font changes need a real restart to actually take visual effect - Qt/GTK only read them at their own startup. \"Reload Shell UI\" below reloads Zaris's own QML live (useful after hand-editing a config file), but it can't reach into Qt's icon theme - that specifically needs the shell process itself restarted (kill and relaunch qs, or log out and back in)."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 4
+                            }
+
+                            NButton {
+                                text: "Reload Shell UI"
+                                onClicked: DefaultsConfig.restartShell()
                             }
                         }
 
