@@ -114,11 +114,11 @@ PopupWindow {
         { id: "defaults", label: "Defaults", icon: "" },
         { id: "layout", label: "Layout", icon: "" },
         { id: "colors", label: "Colors", icon: "" },
+        { id: "bar", label: "Bar", icon: "" },
+        { id: "dock", label: "Dock", icon: "" },
         { id: "profile", label: "Profile", icon: "" },
         { id: "datetime", label: "Date/Time", icon: "" },
-        { id: "bar", label: "Bar", icon: "" },
         { id: "modules", label: "Modules", icon: "" },
-        { id: "dock", label: "Dock", icon: "" },
         { id: "weather", label: "Weather", icon: "" }
     ]
 
