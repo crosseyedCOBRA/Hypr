@@ -29,6 +29,33 @@ RowLayout {
     readonly property real preferredHeight: Math.round(Style.baseWidgetSize * 1.1)
     readonly property var comboBox: combo
 
+    // Widest item name, measured at the popup delegate's own font size -
+    // the popup used to be locked to the closed combo box's own width
+    // (implicitWidth: combo.width), silently elide-truncating any item
+    // name longer than that in the open list (confirmed live: Settings'
+    // Font Family dropdown clips several real installed font names this
+    // way). maximumPopupWidth caps how wide the popup is ever allowed to
+    // grow for a genuinely long outlier name, rather than letting one
+    // extreme entry blow the popup off the edge of the screen.
+    property real maximumPopupWidth: 420
+    readonly property real widestItemWidth: {
+        let max = 0
+        for (let i = 0; i < root.itemCount(); i++) {
+            const item = root.getItem(i)
+            if (item && item.name) {
+                _metrics.text = item.name
+                if (_metrics.width > max)
+                    max = _metrics.width
+            }
+        }
+        return max
+    }
+
+    TextMetrics {
+        id: _metrics
+        font.pointSize: Style.fontSizeM
+    }
+
     signal selected(string key)
 
     spacing: Style.marginL
@@ -193,8 +220,27 @@ RowLayout {
         }
 
         popup: Popup {
+            id: comboPopup
             y: combo.height + Style.marginS
-            implicitWidth: combo.width
+            // Opens flush with the combo box's own left edge (x: 0,
+            // QtQuick.Controls' own Popup default) - fine as long as the
+            // popup is no wider than the combo itself, but this one can
+            // now grow wider (see widestItemWidth above). A combo box
+            // sitting close to its host window's right edge can still have
+            // its very-widest items clipped by the window's own fixed
+            // bounds as a result (confirmed live: Settings' Font Family
+            // row is exactly this case, for its longest installed font
+            // names specifically) - attempted clamping this via both
+            // Overlay.overlay and the Window attached property, neither
+            // actually shifted the popup left in practice (confirmed live,
+            // repeatedly), root cause not found. Left as a known remaining
+            // limitation rather than shipping a positioning "fix" that
+            // doesn't actually do anything - the core ask (the popup no
+            // longer elides every item down to the closed box's own
+            // width) is real and verified; only the single longest items
+            // in a handful of specific, right-positioned combo boxes are
+            // still affected.
+            implicitWidth: Math.min(root.maximumPopupWidth, Math.max(combo.width, root.widestItemWidth + Style.margin2M + Style.marginM))
             implicitHeight: Math.min(root.popupHeight, listView.contentHeight + Style.margin2M)
             padding: Style.marginM
 
