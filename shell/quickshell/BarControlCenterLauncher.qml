@@ -29,6 +29,13 @@ Image {
     source: "file://" + BarConfig.controlCenterIcon
     width: 26
     height: 26
+    // Without this, a large custom user image gets decoded at full
+    // native resolution and minified by the GPU at render time, which
+    // reads as visibly pixelated - reported live specifically on a
+    // circular custom image here. See Bar.qml's own launcher icon Image
+    // for the fuller explanation - same fix, same reasoning.
+    sourceSize.width: 52
+    sourceSize.height: 52
     fillMode: Image.PreserveAspectCrop
 
     MouseArea {

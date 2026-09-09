@@ -137,6 +137,23 @@ Variants {
                             source: "file://" + BarConfig.launcherIcon
                             width: 22
                             height: 22
+                            // Without this, a large custom user image (a
+                            // real photo, not a small bundled icon) gets
+                            // decoded at its full native resolution and
+                            // then minified by the GPU at render time,
+                            // which reads as visibly pixelated/aliased -
+                            // reported live specifically on a circular
+                            // custom image. Setting sourceSize makes Qt do
+                            // the downscale once, at load time, with a
+                            // real resampling filter instead. 2x the
+                            // display size for a crisp look on HiDPI
+                            // without decoding arbitrarily large sources
+                            // needlessly - harmless on already-small
+                            // sources (including SVGs, where this also
+                            // controls rasterization resolution) since
+                            // it's just a cap, never an upscale.
+                            sourceSize.width: 44
+                            sourceSize.height: 44
                             anchors.verticalCenter: parent.verticalCenter
 
                             MouseArea {
@@ -214,6 +231,10 @@ Variants {
                         source: "file://" + BarConfig.launcherIcon
                         width: 22
                         height: 22
+                        // See the statusbar layout's own identical Image
+                        // above for why - same launcher icon, same fix.
+                        sourceSize.width: 44
+                        sourceSize.height: 44
                         anchors.verticalCenter: parent.verticalCenter
 
                         MouseArea {

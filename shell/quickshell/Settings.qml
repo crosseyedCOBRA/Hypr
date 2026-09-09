@@ -1449,6 +1449,10 @@ PopupWindow {
                                 Image {
                                     width: 24
                                     height: 24
+                                    // See Bar.qml's own launcher icon Image
+                                    // for why - same fix, same reasoning.
+                                    sourceSize.width: 48
+                                    sourceSize.height: 48
                                     fillMode: Image.PreserveAspectFit
                                     anchors.verticalCenter: parent.verticalCenter
                                     source: "file://" + BarConfig.launcherIcon
@@ -1488,6 +1492,10 @@ PopupWindow {
                                 Image {
                                     width: 24
                                     height: 24
+                                    // See Bar.qml's own launcher icon Image
+                                    // for why - same fix, same reasoning.
+                                    sourceSize.width: 48
+                                    sourceSize.height: 48
                                     fillMode: Image.PreserveAspectCrop
                                     anchors.verticalCenter: parent.verticalCenter
                                     source: "file://" + BarConfig.controlCenterIcon
