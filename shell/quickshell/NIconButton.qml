@@ -61,11 +61,29 @@ Item {
         }
 
         NIcon {
+            // anchors.fill (rather than the x/y pixel math this used to
+            // use, centering the glyph's own tight content bounding box as
+            // a block) so NIcon's own horizontalAlignment/verticalAlignment
+            // - already AlignHCenter/AlignVCenter, but inert without a
+            // real width/height to center within - actually does the
+            // centering via Qt's real text layout, which accounts for a
+            // glyph's per-character advance width/side-bearing correctly.
+            // Several Nerd Font icon glyphs (confirmed live via a throwaway
+            // test harness rendering a glyph's tight content-box border
+            // directly: the volume/speaker icon was the clearest offender)
+            // have real, uneven left/right bearing baked into the font
+            // itself - centering their tight content box as a single block
+            // (the old approach) still left visibly more empty space on
+            // one side than the other, which is what "icons are still off
+            // center" was actually describing after the unrelated panel-
+            // wide centering issue (NScrollView's padding) was already
+            // fixed. Confirmed via the same test harness that this
+            // approach renders visibly more centered for exactly that
+            // glyph, not just in theory.
+            anchors.fill: parent
             icon: root.icon
             pointSize: Style.toOdd(visualButton.width * 0.48)
             color: root.enabled && root.hovering ? colorFgHover : colorFg
-            x: Style.pixelAlignCenter(visualButton.width, width)
-            y: Style.pixelAlignCenter(visualButton.height, contentHeight)
 
             Behavior on color {
                 ColorAnimation { duration: Style.animationFast; easing.type: Easing.InOutQuad }
