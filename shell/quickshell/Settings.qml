@@ -836,6 +836,49 @@ PopupWindow {
                                 onAccepted: HostService.setCustomDisplayName(text)
                             }
 
+                            NText {
+                                text: "Profile picture"
+                                color: Colors.text
+                                pointSize: Style.fontSizeM
+                            }
+
+                            Row {
+                                id: avatarPathRow
+                                width: parent.width
+                                height: 40
+                                spacing: 12
+
+                                NTextInput {
+                                    width: avatarPathRow.width - 24 - 36
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    placeholderText: "/path/to/image.png"
+                                    onEditingFinished: AvatarPickerPanelState.setAvatar(text)
+                                    onAccepted: AvatarPickerPanelState.setAvatar(text)
+                                }
+
+                                NIconButton {
+                                    baseSize: 28
+                                    icon: ""
+                                    enabled: DefaultsConfig.defaultFileExplorer !== ""
+                                    tooltipText: DefaultsConfig.defaultFileExplorer !== "" ? "Browse..." : "Set a Default File Explorer first (Defaults tab)"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    onClicked: {
+                                        const entry = DesktopEntries.byId(DefaultsConfig.defaultFileExplorer)
+                                        if (entry)
+                                            entry.execute()
+                                    }
+                                }
+                            }
+
+                            NText {
+                                text: "Copied to ~/.face on Enter/blur - opens your Default File Explorer to browse for one, doesn't pick a file directly. No \"currently set\" path to show, only whichever image was copied there last."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 4
+                            }
+
                         }
 
                         // ==================== Weather ====================

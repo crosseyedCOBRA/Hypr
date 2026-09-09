@@ -185,16 +185,24 @@ PopupWindow {
 
                         Image {
                             id: faceImage
-                            // The `?v=` query string does nothing to which
-                            // file actually loads (file:// URLs ignore
-                            // query strings) - it's purely there so
-                            // AvatarPickerPanel.qml bumping
+                            // Purely a display now - clicking this avatar
+                            // used to open AvatarPickerPanel.qml directly;
+                            // picture changing is a Settings-only affordance
+                            // now (Profile tab), per explicit request. The
+                            // `?v=` query string does nothing to which file
+                            // actually loads (file:// URLs ignore query
+                            // strings) - it's purely there so
+                            // AvatarPickerPanelState.setAvatar() bumping
                             // AvatarPickerPanelState.version after
-                            // overwriting ~/.face in place forces QML's
-                            // image cache (keyed on the full URL string,
-                            // not the file's actual contents) to treat it
-                            // as a different image and reload, rather than
-                            // keep showing whatever it cached before.
+                            // overwriting ~/.face in place (whether that
+                            // came from AvatarPickerPanel.qml's own grid or
+                            // Settings' typed-path field, both now go
+                            // through the same shared setAvatar()) forces
+                            // QML's image cache (keyed on the full URL
+                            // string, not the file's actual contents) to
+                            // treat it as a different image and reload,
+                            // rather than keep showing whatever it cached
+                            // before.
                             source: "file://" + Quickshell.env("HOME") + "/.face?v=" + AvatarPickerPanelState.version
                             asynchronous: true
                             fillMode: Image.PreserveAspectCrop
@@ -226,22 +234,6 @@ PopupWindow {
                             source: "file://" + Quickshell.env("HOME") + "/.config/quickshell/assets/zaris-logo-circle.png"
                             visible: faceImage.status !== Image.Ready
                             fillMode: Image.PreserveAspectFit
-                        }
-
-                        MouseArea {
-                            id: avatarArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: AvatarPickerPanelState.visible = true
-                        }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: width / 2
-                            color: "transparent"
-                            border.width: avatarArea.containsMouse ? 2 : 0
-                            border.color: Colors.pillActive
                         }
                     }
 

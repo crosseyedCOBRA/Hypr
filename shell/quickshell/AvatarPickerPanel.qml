@@ -47,11 +47,12 @@ FloatingWindow {
         scanProc.running = true
     }
 
+    // The actual cp-to-~/.face-plus-version-bump mechanism now lives in
+    // AvatarPickerPanelState.qml (setAvatar()/setProc there) - shared with
+    // Settings.qml's own Profile-tab picture field, so this just delegates
+    // instead of keeping its own independent copy of the same Process.
     function setAvatar(path) {
-        if (!path)
-            return
-        setProc.command = ["cp", path, Quickshell.env("HOME") + "/.face"]
-        setProc.running = true
+        AvatarPickerPanelState.setAvatar(path)
     }
 
     onVisibleChanged: {
@@ -65,23 +66,6 @@ FloatingWindow {
             onStreamFinished: {
                 panel.images = this.text.split("\n").filter(function (l) { return l.length > 0 }).sort()
                 panel.scanning = false
-            }
-        }
-    }
-
-    Process {
-        id: setProc
-        // The version bump (ControlCenter.qml's cache-busting query string)
-        // and panel close only happen here, after `cp` actually finishes -
-        // bumping them right after setting `running: true` raced the copy:
-        // Image would try to load the new source before the file existed
-        // yet, land in Image.Error, and never retry on its own once the
-        // file did show up a moment later (confirmed with a debug status
-        // readout in Xephyr before this fix).
-        onExited: (exitCode, exitStatus) => {
-            if (exitCode === 0) {
-                AvatarPickerPanelState.version = AvatarPickerPanelState.version + 1
-                AvatarPickerPanelState.visible = false
             }
         }
     }
