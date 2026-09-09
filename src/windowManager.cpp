@@ -912,7 +912,19 @@ void CWindowManager::applyShapeToWindow(CWindow* pWindow) {
     if (!pWindow)
         return;
 
-    const auto ROUNDING = pWindow->getFullscreen() || (ConfigManager::getInt("layout:no_gaps_when_only") && getWindowsOnWorkspace(pWindow->getWorkspaceID()) == 1) ? 0 : ConfigManager::getInt("rounding");
+    // Milestone 3: once the GL compositor path is actually painting frames
+    // (GLReady), corner rounding moves entirely to an anti-aliased SDF test
+    // in the fragment shader (see compositorRepaintGL()) - forcing this to
+    // 0 here means the hard XShape clip this whole function otherwise
+    // builds degenerates to a plain rectangle for the *rounding* portion
+    // specifically. Everything else this function does (the border's own
+    // shape, and the animation-in-progress off-monitor clipping rectangles
+    // further down) is untouched and still applies exactly as before -
+    // only the ROUNDING-driven arcs are affected, since the whole point is
+    // to stop the client's own drawing being clipped at the corners at
+    // all, so the shader has real (uncut) pixel data to round smoothly
+    // instead of re-rounding an already-hard-cut source.
+    const auto ROUNDING = pWindow->getFullscreen() || GLReady || (ConfigManager::getInt("layout:no_gaps_when_only") && getWindowsOnWorkspace(pWindow->getWorkspaceID()) == 1) ? 0 : ConfigManager::getInt("rounding");
 
     const auto SHAPEQUERY = xcb_get_extension_data(DisplayConnection, &xcb_shape_id);
 
@@ -2310,6 +2322,76 @@ static int zarisXlibErrorHandler(Display* display, XErrorEvent* error) {
     return 0;
 }
 
+// Milestone 3: an anti-aliased rounded-rectangle test, done per-fragment
+// against the window's own local pixel position rather than the old
+// milestone-1b/2 hard XShape clip (see applyShapeToWindow()'s own updated
+// comment - that clip is skipped entirely once GLReady, specifically so
+// the client's real, uncut rectangular content reaches this shader intact).
+// GLSL 1.10 (OpenGL 2.0) targeted deliberately, since it's the one version
+// guaranteed to exist alongside the legacy/fixed-function immediate-mode
+// vertex submission (glBegin/glVertex2f) the rest of this compositor still
+// uses - gl_MultiTexCoord1 carries each vertex's own LOCAL pixel position
+// (0,0 to window width,height) so the fragment shader can compute distance
+// to the nearest rounded corner without needing gl_FragCoord's own screen-
+// space/window-space orientation quirks. The rounded-box signed-distance
+// formula itself (roundedBoxSDF below) is a standard, widely-published
+// graphics technique (popularized by Inigo Quilez's own distance-function
+// articles), not anything specific to any particular compositor's own
+// source - written here from the general technique, matching this
+// project's own licensing note in ROADMAP.md about not porting picom's
+// actual shader code.
+static const char* ZARIS_GL_VERTEX_SHADER = R"glsl(
+varying vec2 vTexCoord;
+varying vec2 vLocalPos;
+void main() {
+    vTexCoord = gl_MultiTexCoord0.xy;
+    vLocalPos = gl_MultiTexCoord1.xy;
+    gl_Position = ftransform();
+}
+)glsl";
+
+static const char* ZARIS_GL_FRAGMENT_SHADER = R"glsl(
+uniform sampler2D tex;
+uniform vec2 winSize;
+uniform float radius;
+varying vec2 vTexCoord;
+varying vec2 vLocalPos;
+
+float roundedBoxSDF(vec2 p, vec2 halfSize, float r) {
+    vec2 d = abs(p - halfSize) - halfSize + vec2(r, r);
+    return min(max(d.x, d.y), 0.0) + length(max(d, vec2(0.0, 0.0))) - r;
+}
+
+void main() {
+    vec4 texColor = texture2D(tex, vTexCoord);
+    float dist = roundedBoxSDF(vLocalPos, winSize * 0.5, radius);
+    float alpha = 1.0 - smoothstep(-1.0, 1.0, dist);
+    gl_FragColor = vec4(texColor.rgb, texColor.a * alpha);
+}
+)glsl";
+
+// Returns 0 (and logs why) on failure rather than throwing/aborting -
+// compositorSetupGL() treats that as just another reason GLReady should
+// stay false, same as every other setup step.
+static GLuint compileShader(GLenum type, const char* source) {
+    const GLuint SHADER = g_pWindowManager->glCreateShaderFn(type);
+    g_pWindowManager->glShaderSourceFn(SHADER, 1, &source, NULL);
+    g_pWindowManager->glCompileShaderFn(SHADER);
+
+    GLint success = GL_FALSE;
+    g_pWindowManager->glGetShaderivFn(SHADER, GL_COMPILE_STATUS, &success);
+
+    if (!success) {
+        char log[512];
+        g_pWindowManager->glGetShaderInfoLogFn(SHADER, sizeof(log), NULL, log);
+        Debug::log(ERR, "compositorSetupGL: shader compile failed: " + std::string(log));
+        g_pWindowManager->glDeleteShaderFn(SHADER);
+        return 0;
+    }
+
+    return SHADER;
+}
+
 void CWindowManager::compositorSetupGL() {
     // Every early-return below leaves GLReady false, which means
     // compositorRepaint() keeps using the already-proven XRender path -
@@ -2346,6 +2428,34 @@ void CWindowManager::compositorSetupGL() {
 
     if (!glXBindTexImageEXTFn || !glXReleaseTexImageEXTFn) {
         Debug::log(ERR, "compositorSetupGL: could not resolve glXBindTexImageEXT/glXReleaseTexImageEXT - GL compositing stays disabled.");
+        return;
+    }
+
+    // Milestone 3's shader entry points - see their own declarations in
+    // windowManager.hpp for why these need resolving manually at all.
+    glCreateShaderFn       = (PFNGLCREATESHADERPROC)glXGetProcAddressARB((const GLubyte*)"glCreateShader");
+    glShaderSourceFn       = (PFNGLSHADERSOURCEPROC)glXGetProcAddressARB((const GLubyte*)"glShaderSource");
+    glCompileShaderFn      = (PFNGLCOMPILESHADERPROC)glXGetProcAddressARB((const GLubyte*)"glCompileShader");
+    glGetShaderivFn        = (PFNGLGETSHADERIVPROC)glXGetProcAddressARB((const GLubyte*)"glGetShaderiv");
+    glGetShaderInfoLogFn   = (PFNGLGETSHADERINFOLOGPROC)glXGetProcAddressARB((const GLubyte*)"glGetShaderInfoLog");
+    glDeleteShaderFn       = (PFNGLDELETESHADERPROC)glXGetProcAddressARB((const GLubyte*)"glDeleteShader");
+    glCreateProgramFn      = (PFNGLCREATEPROGRAMPROC)glXGetProcAddressARB((const GLubyte*)"glCreateProgram");
+    glAttachShaderFn       = (PFNGLATTACHSHADERPROC)glXGetProcAddressARB((const GLubyte*)"glAttachShader");
+    glLinkProgramFn        = (PFNGLLINKPROGRAMPROC)glXGetProcAddressARB((const GLubyte*)"glLinkProgram");
+    glGetProgramivFn       = (PFNGLGETPROGRAMIVPROC)glXGetProcAddressARB((const GLubyte*)"glGetProgramiv");
+    glGetProgramInfoLogFn  = (PFNGLGETPROGRAMINFOLOGPROC)glXGetProcAddressARB((const GLubyte*)"glGetProgramInfoLog");
+    glDeleteProgramFn      = (PFNGLDELETEPROGRAMPROC)glXGetProcAddressARB((const GLubyte*)"glDeleteProgram");
+    glUseProgramFn         = (PFNGLUSEPROGRAMPROC)glXGetProcAddressARB((const GLubyte*)"glUseProgram");
+    glGetUniformLocationFn = (PFNGLGETUNIFORMLOCATIONPROC)glXGetProcAddressARB((const GLubyte*)"glGetUniformLocation");
+    glUniform1iFn          = (PFNGLUNIFORM1IPROC)glXGetProcAddressARB((const GLubyte*)"glUniform1i");
+    glUniform1fFn          = (PFNGLUNIFORM1FPROC)glXGetProcAddressARB((const GLubyte*)"glUniform1f");
+    glUniform2fFn          = (PFNGLUNIFORM2FPROC)glXGetProcAddressARB((const GLubyte*)"glUniform2f");
+
+    if (!glCreateShaderFn || !glShaderSourceFn || !glCompileShaderFn || !glGetShaderivFn || !glGetShaderInfoLogFn ||
+        !glDeleteShaderFn || !glCreateProgramFn || !glAttachShaderFn || !glLinkProgramFn || !glGetProgramivFn ||
+        !glGetProgramInfoLogFn || !glDeleteProgramFn || !glUseProgramFn || !glGetUniformLocationFn || !glUniform1iFn ||
+        !glUniform1fFn || !glUniform2fFn) {
+        Debug::log(ERR, "compositorSetupGL: could not resolve one or more GLSL 2.0 entry points - GL compositing stays disabled.");
         return;
     }
 
@@ -2441,6 +2551,59 @@ void CWindowManager::compositorSetupGL() {
     Debug::log(LOG, "compositorSetupGL: GL ready. Version: " + std::string(GLVERSTR ? (const char*)GLVERSTR : "?") +
                          ", Renderer: " + std::string(GLRENDSTR ? (const char*)GLRENDSTR : "?"));
 
+    // Milestone 3: the rounded-corner shader. Failure here disables the
+    // whole GL path (falls back to milestone 1b's XRender passthrough,
+    // same as every other GL setup failure above) rather than limping on
+    // with plain rectangular corners - keeps this function's own
+    // all-or-nothing simplicity rather than needing a second, partial
+    // "GLReady but no rounding" state.
+    const GLuint VERTEXSHADER = compileShader(GL_VERTEX_SHADER, ZARIS_GL_VERTEX_SHADER);
+    const GLuint FRAGMENTSHADER = VERTEXSHADER ? compileShader(GL_FRAGMENT_SHADER, ZARIS_GL_FRAGMENT_SHADER) : 0;
+
+    if (!VERTEXSHADER || !FRAGMENTSHADER) {
+        if (VERTEXSHADER)
+            glDeleteShaderFn(VERTEXSHADER);
+        XFree(CONFIGS);
+        GLFBConfigsByVisual.clear();
+        return;
+    }
+
+    GLShaderProgram = glCreateProgramFn();
+    glAttachShaderFn(GLShaderProgram, VERTEXSHADER);
+    glAttachShaderFn(GLShaderProgram, FRAGMENTSHADER);
+    glLinkProgramFn(GLShaderProgram);
+
+    GLint linked = GL_FALSE;
+    glGetProgramivFn(GLShaderProgram, GL_LINK_STATUS, &linked);
+    glDeleteShaderFn(VERTEXSHADER);
+    glDeleteShaderFn(FRAGMENTSHADER);
+
+    if (!linked) {
+        char log[512];
+        glGetProgramInfoLogFn(GLShaderProgram, sizeof(log), NULL, log);
+        Debug::log(ERR, "compositorSetupGL: shader link failed: " + std::string(log) + " - GL compositing stays disabled.");
+        glDeleteProgramFn(GLShaderProgram);
+        GLShaderProgram = 0;
+        XFree(CONFIGS);
+        GLFBConfigsByVisual.clear();
+        return;
+    }
+
+    GLUniformTex     = glGetUniformLocationFn(GLShaderProgram, "tex");
+    GLUniformWinSize = glGetUniformLocationFn(GLShaderProgram, "winSize");
+    GLUniformRadius  = glGetUniformLocationFn(GLShaderProgram, "radius");
+
+    // One-time snapshot of whatever's currently on the root window - the
+    // wallpaper, drawn there before compositing ever started - to redraw
+    // as every frame's base layer. See GLBackgroundTexture's own comment
+    // in windowManager.hpp for why this is needed now that corners are
+    // genuinely partially transparent, unlike milestones 1b/2.
+    glGenTextures(1, &GLBackgroundTexture);
+    glBindTexture(GL_TEXTURE_2D, GLBackgroundTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, Screen->width_in_pixels, Screen->height_in_pixels, 0);
+
     // A GLX context can only be current on one thread at a time - this
     // setup runs on the main thread, but compositorRepaintGL() runs on the
     // separate tick thread (see Events::handle()), so the main thread must
@@ -2480,6 +2643,33 @@ void CWindowManager::compositorRepaintGL() {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glEnable(GL_TEXTURE_2D);
+
+    // Base layer, plain fixed-function (no rounding, no blending needed -
+    // it's the one thing every frame draws fully opaque, covering the
+    // whole screen). See GLBackgroundTexture's own comment in
+    // windowManager.hpp for why this needs to happen every frame now,
+    // unlike milestones 1b/2.
+    glUseProgramFn(0);
+    glDisable(GL_BLEND);
+    glBindTexture(GL_TEXTURE_2D, GLBackgroundTexture);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.f, 1.f); glVertex2f(0, 0);
+    glTexCoord2f(1.f, 1.f); glVertex2f(SCREENW, 0);
+    glTexCoord2f(1.f, 0.f); glVertex2f(SCREENW, SCREENH);
+    glTexCoord2f(0.f, 0.f); glVertex2f(0, SCREENH);
+    glEnd();
+
+    // Every window from here on is drawn through the rounded-corner
+    // shader (see its own comment above compileShader()) - corners are
+    // now genuinely partially transparent at the anti-aliased edge, so
+    // real alpha blending is required (unlike the flat opaque overwrite
+    // milestones 1b/2 used); the interior of every window is still
+    // effectively alpha=1, so this doesn't change how anything already
+    // opaque looks.
+    glUseProgramFn(GLShaderProgram);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glUniform1iFn(GLUniformTex, 0);
 
     // Same ground-truth stacking-order query compositorRepaintXRender()
     // uses, for the same reason - see that function's own comment.
@@ -2559,11 +2749,27 @@ void CWindowManager::compositorRepaintGL() {
             const float VTOP = VISUALCFG.yInverted ? 0.f : 1.f;
             const float VBOT = VISUALCFG.yInverted ? 1.f : 0.f;
 
+            // Same "no rounding for fullscreen, or the lone window on a
+            // no_gaps_when_only workspace" exception applyShapeToWindow()
+            // itself already applies (see that function's own comment on
+            // why it now skips its old hard clip once GLReady) - mirrored
+            // here so a fullscreen window's corners aren't rounded either.
+            float radius = (float)(ConfigManager::getInt("rounding") + ConfigManager::getInt("border_size"));
+
+            if (const auto PWINDOW = getWindowFromDrawable((int64_t)WIN); PWINDOW) {
+                if (PWINDOW->getFullscreen() ||
+                    (ConfigManager::getInt("layout:no_gaps_when_only") && getWindowsOnWorkspace(PWINDOW->getWorkspaceID()) == 1))
+                    radius = 0.f;
+            }
+
+            glUniform2fFn(GLUniformWinSize, W, H);
+            glUniform1fFn(GLUniformRadius, radius);
+
             glBegin(GL_QUADS);
-            glTexCoord2f(0.f, VTOP); glVertex2f(X, Y);
-            glTexCoord2f(1.f, VTOP); glVertex2f(X + W, Y);
-            glTexCoord2f(1.f, VBOT); glVertex2f(X + W, Y + H);
-            glTexCoord2f(0.f, VBOT); glVertex2f(X, Y + H);
+            glMultiTexCoord2f(GL_TEXTURE0, 0.f, VTOP); glMultiTexCoord2f(GL_TEXTURE1, 0.f, 0.f); glVertex2f(X, Y);
+            glMultiTexCoord2f(GL_TEXTURE0, 1.f, VTOP); glMultiTexCoord2f(GL_TEXTURE1, W, 0.f);   glVertex2f(X + W, Y);
+            glMultiTexCoord2f(GL_TEXTURE0, 1.f, VBOT); glMultiTexCoord2f(GL_TEXTURE1, W, H);     glVertex2f(X + W, Y + H);
+            glMultiTexCoord2f(GL_TEXTURE0, 0.f, VBOT); glMultiTexCoord2f(GL_TEXTURE1, 0.f, H);   glVertex2f(X, Y + H);
             glEnd();
 
             glXReleaseTexImageEXTFn(GLDisplay, GLXPIX, GLX_FRONT_LEFT_EXT);

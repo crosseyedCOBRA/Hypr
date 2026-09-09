@@ -81,6 +81,55 @@ public:
     PFNGLXBINDTEXIMAGEEXTPROC    glXBindTexImageEXTFn    = nullptr;
     PFNGLXRELEASETEXIMAGEEXTPROC glXReleaseTexImageEXTFn = nullptr;
 
+    // GLSL 2.0 entry points, resolved the same way as the two GLX ones
+    // just above and for the same reason - this system's GL/gl.h only
+    // statically declares up to roughly GL 1.2/1.4, nothing from the
+    // shader API milestone 3 needs.
+    PFNGLCREATESHADERPROC       glCreateShaderFn       = nullptr;
+    PFNGLSHADERSOURCEPROC       glShaderSourceFn       = nullptr;
+    PFNGLCOMPILESHADERPROC      glCompileShaderFn      = nullptr;
+    PFNGLGETSHADERIVPROC        glGetShaderivFn        = nullptr;
+    PFNGLGETSHADERINFOLOGPROC   glGetShaderInfoLogFn   = nullptr;
+    PFNGLDELETESHADERPROC       glDeleteShaderFn       = nullptr;
+    PFNGLCREATEPROGRAMPROC      glCreateProgramFn      = nullptr;
+    PFNGLATTACHSHADERPROC       glAttachShaderFn       = nullptr;
+    PFNGLLINKPROGRAMPROC        glLinkProgramFn        = nullptr;
+    PFNGLGETPROGRAMIVPROC       glGetProgramivFn       = nullptr;
+    PFNGLGETPROGRAMINFOLOGPROC  glGetProgramInfoLogFn  = nullptr;
+    PFNGLDELETEPROGRAMPROC      glDeleteProgramFn      = nullptr;
+    PFNGLUSEPROGRAMPROC         glUseProgramFn         = nullptr;
+    PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocationFn = nullptr;
+    PFNGLUNIFORM1IPROC          glUniform1iFn          = nullptr;
+    PFNGLUNIFORM1FPROC          glUniform1fFn          = nullptr;
+    PFNGLUNIFORM2FPROC          glUniform2fFn          = nullptr;
+
+    // Milestone 3: replaces the old plain textured-quad draw with a small
+    // GLSL program doing an anti-aliased rounded-rect test (a signed-
+    // distance-function test against each fragment's position within the
+    // window, see compositorSetupGL()'s own comment for why this is an
+    // original implementation of a standard technique, not ported from
+    // anywhere) - 0 (and GLReady never set) if compiling/linking it fails.
+    GLuint                       GLShaderProgram    = 0;
+    GLint                        GLUniformTex       = -1;
+    GLint                        GLUniformWinSize   = -1;
+    GLint                        GLUniformRadius    = -1;
+
+    // A one-time snapshot of the root window's own pre-compositor pixel
+    // content (the wallpaper, drawn there by whatever wallpaper tool
+    // before compositing ever starts), redrawn as the base layer every
+    // frame before any window quads. Needed because milestone 3's rounded
+    // corners are genuinely partially-transparent at the edges (unlike
+    // milestones 1b/2, which only ever drew fully-opaque rectangles) - so
+    // simply never clearing the framebuffer (milestone 1b/2's own
+    // approach, relying on the root's own already-correct pixels staying
+    // untouched wherever nothing draws over them) would leave a visible
+    // "ghost" of a window's previous rounded-corner position behind after
+    // it moves, since nothing would ever repaint over that sliver again.
+    // Known limitation: captured once, so a *later* live wallpaper change
+    // won't be reflected without restarting the compositor - not handled
+    // this pass, see ROADMAP.md.
+    GLuint                       GLBackgroundTexture = 0;
+
     // holds the objects of all active monitors.
     std::vector<SMonitor>       monitors;
 
