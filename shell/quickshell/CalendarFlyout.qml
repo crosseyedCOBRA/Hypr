@@ -77,6 +77,7 @@ PopupWindow {
             }
 
             WeatherWidget {
+                width: parent.width
                 iconPointSize: Style.fontSizeXXL
             }
         }

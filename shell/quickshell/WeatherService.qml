@@ -69,6 +69,15 @@ QtObject {
     property int weatherCode: 0
     property bool isDay: true
 
+    // 5-day forecast (today + the next 4), shared by WeatherWidget.qml -
+    // both Control Center's weather card and the calendar flyout embed
+    // that one component, so this only needed fetching once here rather
+    // than duplicated per-embedding. Each entry: {label, weatherCode,
+    // highF, lowF} - label is "Today" for index 0, otherwise a short
+    // weekday name (Qt.locale().dayName, matching CalendarWidget.qml's own
+    // day-of-week header convention rather than hand-rolling day names).
+    property var forecastDays: []
+
     // WMO weather codes (open-meteo's `weather_code`) collapsed to the
     // short descriptions used by most weather services' own code tables.
     function conditionText(code) {
@@ -197,14 +206,27 @@ QtObject {
                 root.isDay = data.current.is_day === 1
                 root.highF = data.daily.temperature_2m_max[0]
                 root.lowF = data.daily.temperature_2m_min[0]
+
+                const days = []
+                for (let i = 0; i < data.daily.time.length; i++) {
+                    const label = i === 0 ? "Today" : Qt.locale().dayName(new Date(data.daily.time[i]).getDay(), Locale.ShortFormat)
+                    days.push({
+                        label: label,
+                        weatherCode: data.daily.weather_code[i],
+                        highF: data.daily.temperature_2m_max[i],
+                        lowF: data.daily.temperature_2m_min[i]
+                    })
+                }
+                root.forecastDays = days
+
                 root.haveData = true
             } catch (e) {
                 root.errorText = "" + e
             }
         }
         xhr.open("GET", "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon
-            + "&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min"
-            + "&temperature_unit=fahrenheit&timezone=auto&forecast_days=1")
+            + "&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code"
+            + "&temperature_unit=fahrenheit&timezone=auto&forecast_days=5")
         xhr.send()
     }
 
