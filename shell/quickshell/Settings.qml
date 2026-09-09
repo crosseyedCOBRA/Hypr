@@ -71,7 +71,13 @@ PopupWindow {
     // CalendarFlyout.qml, so this is unconditional here.
     grabFocus: true
 
-    implicitWidth: 680
+    // Widened from 680 to fit the Colors tab's preset grid at a genuine
+    // 4-per-row (110px card + 10px spacing = 470px minimum content width
+    // for 4 across; content width is implicitWidth - 180 sidebar - 40
+    // NScrollView margins) - 3 rows max now covers the full 12-preset cap
+    // (5 built-in + up to 7 saved) without ever needing the Flow to wrap
+    // into a 4th row.
+    implicitWidth: 740
     // Tall enough that every category's content fits without the
     // NScrollView ever actually needing to scroll - the Defaults tab (six
     // Default-app dropdowns plus a Screenshot folder field, added on top
@@ -766,6 +772,7 @@ PopupWindow {
                                     Rectangle {
                                         id: presetCard
                                         required property var modelData
+                                        readonly property bool isCustom: ("" + modelData.id).indexOf("custom-") === 0
                                         width: 110
                                         height: 58
                                         radius: 6
@@ -801,6 +808,58 @@ PopupWindow {
                                             hoverEnabled: true
                                             onClicked: ThemeConfig.applyPreset(presetCard.modelData.id)
                                         }
+
+                                        // Only user-saved presets can be
+                                        // removed - the five built-ins stay
+                                        // fixed (see ThemeConfig.qml's own
+                                        // comment for why). Declared after
+                                        // presetHover above so it sits on
+                                        // top and consumes the click before
+                                        // the full-card MouseArea sees it.
+                                        NIconButton {
+                                            visible: presetCard.isCustom
+                                            anchors.top: parent.top
+                                            anchors.right: parent.right
+                                            anchors.margins: 2
+                                            baseSize: 16
+                                            icon: ""
+                                            tooltipText: "Remove preset"
+                                            onClicked: ThemeConfig.removeCustomPreset(presetCard.modelData.id)
+                                        }
+                                    }
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                spacing: 8
+                                topPadding: 4
+
+                                NTextInput {
+                                    id: newPresetNameInput
+                                    width: 220
+                                    placeholderText: "New preset name..."
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    onAccepted: {
+                                        if (text.trim() === "" || ThemeConfig.presets.length >= ThemeConfig.maxPresets)
+                                            return
+                                        ThemeConfig.addCustomPreset(text.trim())
+                                        text = ""
+                                    }
+                                }
+
+                                NButton {
+                                    text: ThemeConfig.presets.length >= ThemeConfig.maxPresets ? "Preset limit reached (" + ThemeConfig.maxPresets + ")" : "Save current colors as preset"
+                                    fontSize: Style.fontSizeS
+                                    backgroundColor: Colors.pill
+                                    textColor: Colors.text
+                                    enabled: ThemeConfig.presets.length < ThemeConfig.maxPresets
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    onClicked: {
+                                        if (newPresetNameInput.text.trim() === "")
+                                            return
+                                        ThemeConfig.addCustomPreset(newPresetNameInput.text.trim())
+                                        newPresetNameInput.text = ""
                                     }
                                 }
                             }

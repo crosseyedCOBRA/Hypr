@@ -108,13 +108,74 @@ QtObject {
     // accent - "Zaris Default" is exactly today's shipped values (including
     // the live border color already hand-picked to match the Artix logo),
     // so applying it is a genuine reset rather than a close approximation.
-    readonly property var presets: [
+    // Fixed/non-removable - see customPresets below for the user-saveable
+    // slots, which is where the actual add/remove capability lives. Kept
+    // hardcoded rather than folded into the same persisted file, so there's
+    // always a guaranteed way back to a known-good starting point even if
+    // a user empties out every custom preset they've saved.
+    readonly property var builtinPresets: [
         { id: "default", name: "Zaris Default", primary: "#5b7fd6", secondary: "#4da4a6", tertiary: "#c55a63", text: "#e8e6f0", background: "#0c0b1a", borderAccent: "#3bb2d4" },
         { id: "nord", name: "Nord", primary: "#88c0d0", secondary: "#81a1c1", tertiary: "#b48ead", text: "#eceff4", background: "#2e3440", borderAccent: "#88c0d0" },
         { id: "dracula", name: "Dracula", primary: "#bd93f9", secondary: "#ff79c6", tertiary: "#50fa7b", text: "#f8f8f2", background: "#282a36", borderAccent: "#bd93f9" },
         { id: "catppuccin", name: "Catppuccin Mocha", primary: "#89b4fa", secondary: "#94e2d5", tertiary: "#f38ba8", text: "#cdd6f4", background: "#1e1e2e", borderAccent: "#89b4fa" },
         { id: "gruvbox", name: "Gruvbox Dark", primary: "#83a598", secondary: "#b8bb26", tertiary: "#fe8019", text: "#ebdbb2", background: "#282828", borderAccent: "#fabd2f" }
     ]
+
+    // User-saved presets - "Save current colors as a new named preset" in
+    // Settings' Colors tab. Own small file rather than folded into
+    // colors.json (colors.json is "what's live right now", this is "a
+    // library of things that could become live") - same FileView+
+    // JsonAdapter pattern as every other *Config.qml.
+    property FileView presetsFile: FileView {
+        path: Quickshell.env("HOME") + "/.config/quickshell/presets.json"
+        watchChanges: true
+        onFileChanged: reload()
+        onAdapterUpdated: writeAdapter()
+
+        adapter: JsonAdapter {
+            property var custom: []
+        }
+    }
+
+    readonly property var customPresets: presetsFile.adapter.custom || []
+
+    // The full picker list Settings' Colors tab renders - built-ins first,
+    // then whatever's been saved, capped at 12 total between the two (see
+    // addCustomPreset below for where that cap is actually enforced).
+    readonly property var presets: root.builtinPresets.concat(root.customPresets)
+
+    readonly property int maxPresets: 12
+
+    // Snapshots the five colors + border accent currently live (not
+    // whatever's in a Settings text field mid-edit) under a user-typed
+    // name. Silently no-ops past the cap - Settings' own Save button
+    // disables itself at the cap instead of ever calling this past it, so
+    // this is a backstop, not the primary guard.
+    function addCustomPreset(name) {
+        if (root.presets.length >= root.maxPresets)
+            return
+        const trimmed = (name || "").trim()
+        if (trimmed === "")
+            return
+        const entry = {
+            id: "custom-" + Date.now(),
+            name: trimmed,
+            primary: root.primary,
+            secondary: root.secondary,
+            tertiary: root.tertiary,
+            text: root.text,
+            background: root.background,
+            borderAccent: root.borderAccent
+        }
+        presetsFile.adapter.custom = root.customPresets.concat([entry])
+    }
+
+    // Built-ins aren't removable at all (see builtinPresets' own comment) -
+    // this only ever finds a match among customPresets, a plain no-op
+    // otherwise.
+    function removeCustomPreset(id) {
+        presetsFile.adapter.custom = root.customPresets.filter(function (p) { return p.id !== id })
+    }
 
     // Applying a preset means six rapid-fire writes (five colorsFile
     // fields plus the border accent) in one synchronous call - confirmed
