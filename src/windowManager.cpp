@@ -370,6 +370,18 @@ void CWindowManager::recieveEvent() {
         // Set thread state, halt animations until done.
         mainThreadBusy = true;
 
+        // Milestone 6: any real (non-ignored) event might plausibly change
+        // what's on screen (a window mapping/unmapping/moving/resizing, a
+        // focus change repainting a border, etc.) - marking dirty here,
+        // once, for every event rather than hunting down and separately
+        // flagging each individual visually-relevant event type is a
+        // deliberate simplicity/safety tradeoff: it costs an occasional
+        // repaint that turns out not to have been strictly necessary (e.g.
+        // a plain mouse-motion event over empty desktop), but can never
+        // miss a real visual change and leave stale content on screen,
+        // which would be a far worse bug than one redundant frame.
+        CompositorDirty = true;
+
         const uint8_t TYPE = XCB_EVENT_RESPONSE_TYPE(ev);
         const auto EVENTCODE = ev->response_type & ~0x80;
 
@@ -2223,6 +2235,33 @@ void CWindowManager::compositorRepaint() {
     if (!CompositingEnabled)
         return;
 
+    // Milestone 6: skip the repaint entirely on an idle tick. CompositorDirty
+    // gets set from recieveEvent() on literally any real event (see that
+    // function's own comment on why broadly, rather than hunting down
+    // every visually-relevant event type individually) - but window-move/
+    // resize *animations* don't necessarily generate a fresh X event every
+    // single tick on their own (the position is interpolated and pushed
+    // via xcb_configure_window from AnimationUtil::move(), which doesn't
+    // itself route back through recieveEvent()), so an animation actively
+    // in progress needs its own explicit check here or it would visually
+    // freeze mid-slide the moment CompositorDirty happened to already be
+    // false for that tick.
+    if (!CompositorDirty) {
+        bool anyAnimating = false;
+
+        for (auto& w : windows) {
+            if (w.getIsAnimated()) {
+                anyAnimating = true;
+                break;
+            }
+        }
+
+        if (!anyAnimating)
+            return;
+    }
+
+    CompositorDirty = false;
+
     // Milestone 2's GL path when it's actually up, otherwise milestone 1b's
     // plain XRender path - see the member declarations in windowManager.hpp
     // for why both are kept rather than the GL path fully replacing the
@@ -2366,7 +2405,18 @@ void main() {
     vec4 texColor = texture2D(tex, vTexCoord);
     float dist = roundedBoxSDF(vLocalPos, winSize * 0.5, radius);
     float alpha = 1.0 - smoothstep(-1.0, 1.0, dist);
-    gl_FragColor = vec4(texColor.rgb, texColor.a * alpha);
+    // texColor.rgb arrives already premultiplied by texColor.a - Quickshell/
+    // Qt's own ARGB32 rendering (and X11/XRender's ARGB32 convention more
+    // generally) both use premultiplied alpha, confirmed live this
+    // milestone via a direct pixel readback of the real Bar's own redirected
+    // pixmap at a reduced backgroundOpacity (a near-black, heavily-darkened
+    // RGB at low alpha - exactly what premultiplication produces, not raw
+    // "straight" alpha). Multiplying by the corner-rounding `alpha` too
+    // extends that same premultiplication to cover this second, independent
+    // alpha source, so the two compose correctly together - see
+    // glBlendFunc's own comment in compositorRepaintGL() for the matching
+    // half of this fix.
+    gl_FragColor = vec4(texColor.rgb * alpha, texColor.a * alpha);
 }
 )glsl";
 
@@ -2394,7 +2444,14 @@ float roundedBoxSDF(vec2 p, vec2 halfSize, float r) {
 void main() {
     float dist = roundedBoxSDF(vLocalPos, winSize * 0.5, radius);
     float alpha = 1.0 - smoothstep(-blur, blur, dist);
-    gl_FragColor = vec4(shadowColor.rgb, shadowColor.a * alpha);
+    // Premultiplied output, matching the window shader's own fix (see its
+    // comment) and the blend func in compositorRepaintGL() - shadowColor.rgb
+    // is a plain, non-premultiplied uniform here, so it needs multiplying
+    // by the *total* alpha (shadowColor.a * alpha) itself, not just by
+    // `alpha` alone the way the window shader multiplies its already-
+    // premultiplied texColor.rgb by `alpha` alone.
+    float totalAlpha = shadowColor.a * alpha;
+    gl_FragColor = vec4(shadowColor.rgb * totalAlpha, totalAlpha);
 }
 )glsl";
 
@@ -2794,6 +2851,17 @@ void CWindowManager::compositorDrawBlurBehind(float x, float y, float w, float h
     if (w < 4.f || h < 4.f)
         return;
 
+    // The caller (compositorRepaintGL()) leaves GL_BLEND enabled across
+    // this whole call (needed for the shadow/window draws immediately
+    // before and after it) - but every downsample/upsample pass below
+    // renders into a *freshly allocated* FBO texture (glTexImage2D with
+    // NULL data, so its initial content is undefined per the GL spec), and
+    // blending a draw onto genuinely undefined memory is a real bug, not
+    // just untidy. Disabled for the whole chain (a plain overwrite is
+    // exactly what every pass here wants anyway) and restored before
+    // returning, since the caller expects blending still on afterward.
+    glDisable(GL_BLEND);
+
     // Capture whatever's already been drawn to the screen within this
     // rect so far this frame (the background, plus every lower-stacked
     // window already drawn this same frame) - a real GL read of the
@@ -2923,7 +2991,15 @@ void CWindowManager::compositorDrawBlurBehind(float x, float y, float w, float h
         prevH   = levelH[i];
     }
 
-    // Restore state for the main pass this was called from the middle of.
+    // Restore state for the main pass this was called from the middle of -
+    // including GL_BLEND, disabled at the top of this function for the
+    // downsample/upsample chain's own draws (see that comment) but needed
+    // again both for the final blurred quad drawn just below (its captured
+    // content is opaque RGB with an implicit alpha of 1 everywhere except
+    // at the rounded edge, so blending it in lets that edge blend smoothly
+    // against the shadow drawn just before it, rather than a hard cut) and
+    // for the caller's own subsequent shadow/window draws once this
+    // function returns.
     glBindFramebufferFn(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, screenW, screenH);
     glMatrixMode(GL_PROJECTION);
@@ -2931,6 +3007,7 @@ void CWindowManager::compositorDrawBlurBehind(float x, float y, float w, float h
     glOrtho(0, screenW, screenH, 0, -1, 1);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+    glEnable(GL_BLEND);
 
     if (ok) {
         // The final blurred texture, drawn at the real window rect,
@@ -3017,9 +3094,22 @@ void CWindowManager::compositorRepaintGL() {
     // milestones 1b/2 used); the interior of every window is still
     // effectively alpha=1, so this doesn't change how anything already
     // opaque looks.
+    //
+    // GL_ONE (not GL_SRC_ALPHA) for the source factor - both shaders now
+    // output premultiplied color (see their own comments), so the source
+    // is used as-is and only the destination gets scaled down by
+    // (1 - alpha). Milestone 6 found and fixed a real bug here: the
+    // original GL_SRC_ALPHA/GL_ONE_MINUS_SRC_ALPHA pair is the textbook
+    // choice for *straight* (non-premultiplied) alpha, but Quickshell/Qt's
+    // own ARGB32 rendering - confirmed via a direct pixel readback of the
+    // real Bar's own redirected pixmap at a reduced backgroundOpacity - is
+    // premultiplied, so that pairing was silently double-darkening
+    // translucent content down to solid black every time, the whole
+    // reason the Bar/Dock opacity sliders looked "dead" even after real
+    // GL_BLEND became active back in milestone 3.
     glUseProgramFn(GLShaderProgram);
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glUniform1iFn(GLUniformTex, 0);
 
     // Same ground-truth stacking-order query compositorRepaintXRender()

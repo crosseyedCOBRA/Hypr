@@ -48,6 +48,16 @@ public:
     int                         DamageEventBase = -1;
     bool                        CompositingEnabled = false;
 
+    // Milestone 6: skips the entire repaint (XRender or GL, whichever
+    // path is active) on any tick where nothing plausibly changed, rather
+    // than redrawing the whole screen unconditionally 60 times a second
+    // regardless of whether the desktop is actually idle - see
+    // compositorRepaint()'s own comment for the full reasoning and the
+    // separate always-repaint-while-animating check it also needs.
+    // Starts true so the very first tick after the compositor comes up
+    // always draws at least one real frame.
+    bool                        CompositorDirty = true;
+
     // Milestone 1b: the root window's own Picture (the XRender destination
     // every window gets composited onto) plus the PictFormat matching the
     // root visual, needed to create it. Both are set up once, right after
