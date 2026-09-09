@@ -9,7 +9,7 @@ import Quickshell
 NText {
     id: clockText
 
-    text: Qt.formatDateTime(clock.date, "dddd MMMM d yyyy HH:mm")
+    text: Qt.formatDateTime(clock.date, DateTimeConfig.clockFormat)
     color: Colors.text
     pointSize: Style.fontSizeM
     font.weight: Style.fontWeightBold

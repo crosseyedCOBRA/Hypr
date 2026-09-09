@@ -115,6 +115,7 @@ PopupWindow {
         { id: "layout", label: "Layout", icon: "" },
         { id: "colors", label: "Colors", icon: "" },
         { id: "profile", label: "Profile", icon: "" },
+        { id: "datetime", label: "Date/Time", icon: "" },
         { id: "bar", label: "Bar", icon: "" },
         { id: "modules", label: "Modules", icon: "" },
         { id: "dock", label: "Dock", icon: "" },
@@ -879,6 +880,55 @@ PopupWindow {
                                 topPadding: 4
                             }
 
+                        }
+
+                        // ==================== Date/Time ====================
+                        Column {
+                            width: parent.width
+                            spacing: 12
+                            visible: settingsWindow.activeCategory === "datetime"
+
+                            NComboBox {
+                                width: parent.width
+                                label: "First day of the week"
+                                model: DateTimeConfig.firstDayOfWeekOptions
+                                currentKey: DateTimeConfig.firstDayOfWeek
+                                onSelected: key => DateTimeConfig.setFirstDayOfWeek(key)
+                            }
+
+                            NText {
+                                text: "Controls the calendar's month grid, both in Control Center and the bar's calendar flyout."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                bottomPadding: 4
+                            }
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Date format"
+                                model: DateTimeConfig.dateFormatOptions
+                                currentKey: DateTimeConfig.dateFormat
+                                onSelected: key => DateTimeConfig.setDateFormat(key)
+                            }
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Time format"
+                                model: DateTimeConfig.timeFormatOptions
+                                currentKey: DateTimeConfig.timeFormat
+                                onSelected: key => DateTimeConfig.setTimeFormat(key)
+                            }
+
+                            NText {
+                                text: "Applies to the bar's clock. Previews above show today's actual date/time."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                topPadding: 4
+                            }
                         }
 
                         // ==================== Weather ====================

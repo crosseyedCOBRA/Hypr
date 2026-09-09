@@ -22,9 +22,9 @@ Column {
     readonly property var todayDate: new Date()
     property int viewMonth: todayDate.getMonth()
     property int viewYear: todayDate.getFullYear()
-    // Sunday - matches the bar clock's own hardcoded English date format,
-    // there's no locale/I18n system here to derive this from.
-    readonly property int firstDayOfWeek: 0
+    // Configurable via Settings' Date/Time tab (DateTimeConfig.qml) -
+    // Sunday (0) by default.
+    readonly property int firstDayOfWeek: DateTimeConfig.firstDayOfWeek
 
     function goToPreviousMonth() {
         const d = new Date(root.viewYear, root.viewMonth - 1, 1)

@@ -38,7 +38,24 @@ RowLayout {
     // grow for a genuinely long outlier name, rather than letting one
     // extreme entry blow the popup off the edge of the screen.
     property real maximumPopupWidth: 420
-    readonly property real widestItemWidth: {
+    // Recomputed imperatively (onModelChanged/onCompleted/font-size-change)
+    // rather than as a live declarative binding - the original form here
+    // was `readonly property var widestItemWidth: { ... _metrics.text =
+    // item.name ... }`, which writes to another Item's property from
+    // inside its own binding evaluation. That's fine for a model that
+    // starts empty and fills in later (DefaultsConfig's async-scanned
+    // dropdowns never tripped it), but confirmed live (Settings' new
+    // Date/Time tab, whose models are plain synchronous arrays ready at
+    // construction time) that evaluating it declaratively during the
+    // initial layout pass genuinely re-enters while dependencies are still
+    // settling - Qt's own binding-loop detector caught and broke it (10-50
+    // "Binding loop detected for property widestItemWidth" warnings per
+    // combo box in the qs log), rather than silently doing the wrong
+    // thing, but still real noise from a real anti-pattern worth fixing at
+    // the root instead of working around per-callsite.
+    property real widestItemWidth: 0
+
+    function _recomputeWidestItemWidth() {
         let max = 0
         for (let i = 0; i < root.itemCount(); i++) {
             const item = root.getItem(i)
@@ -48,7 +65,15 @@ RowLayout {
                     max = _metrics.width
             }
         }
-        return max
+        root.widestItemWidth = max
+    }
+
+    onModelChanged: root._recomputeWidestItemWidth()
+    Component.onCompleted: root._recomputeWidestItemWidth()
+
+    Connections {
+        target: Style
+        function onFontSizeMChanged() { root._recomputeWidestItemWidth() }
     }
 
     TextMetrics {
