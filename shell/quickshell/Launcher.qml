@@ -130,6 +130,26 @@ Item {
         visible: LauncherState.visible && BarConfig.layoutMode === "taskbar" && !!LauncherState.anchorItem
         color: Colors.bg
 
+        // PopupWindow is a real X11 override-redirect window (confirmed
+        // live via xprop/XQueryTree while chasing this bug), which bypasses
+        // the WM's own SubstructureRedirect-driven focus-on-map entirely -
+        // that's what the statusbar-mode FloatingWindow variant above gets
+        // for free (a real managed window, focused by the WM itself on
+        // creation), and what this variant never got, confirmed live via
+        // XGetInputFocus returning PointerRoot instead of this window's ID
+        // while it was open. grabFocus is Quickshell's own built-in
+        // property for exactly this (Wayland layer-shell's keyboard-
+        // interactivity concept, translated to this X11 backend) - it was
+        // simply never set anywhere in this codebase before now. Left off
+        // Tooltip.qml/CalendarFlyout.qml (also PopupWindow-based) deliberately:
+        // those open on hover/click without any text entry, and grabbing
+        // real keyboard focus there would rip it away from whatever the
+        // user was actually typing into elsewhere just from a mouse
+        // hovering something. The search field here is the whole reason
+        // this popup exists, so it should always get real keyboard input
+        // the instant it opens - matching the statusbar-mode variant.
+        grabFocus: true
+
         implicitWidth: 420
         implicitHeight: 500
 

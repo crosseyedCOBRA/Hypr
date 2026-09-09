@@ -874,17 +874,37 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
 // There's no way at the X11 level to distinguish specifically Settings/
 // Control Center from Quickshell's other PopupWindow-based popups (the
 // calendar flyout, taskbar launcher, tooltips) - confirmed live via xprop:
-// every one of them reports the same override_redirect=1, the same
+// every one of them reports the same override_redirect=1 and the same
 // _NET_WM_NAME "quickshell" (Quickshell's own app identity, not a per-
 // window title - PopupWindow doesn't expose a title property at all, per
-// ControlCenter.qml's own header comment), and the same
-// _NET_WM_WINDOW_TYPE_TOOLTIP window type regardless of which QML file
+// ControlCenter.qml's own header comment) regardless of which QML file
 // actually created it. Rather than guess at a narrower, unreliable
 // heuristic, every Quickshell override-redirect popup gets treated as
 // always-on-top uniformly - a tooltip or the calendar flyout getting
 // covered by a newly raised window would be just as much a real bug as
 // Settings/Control Center being covered, so this isn't overreach, just the
 // only option X11 actually offers here.
+//
+// _NET_WM_WINDOW_TYPE is normally _NET_WM_WINDOW_TYPE_TOOLTIP for all of
+// them (Quickshell's own default for PopupWindow) - except when a specific
+// popup sets PopupWindow's built-in `grabFocus: true` (Launcher.qml's
+// taskbar-mode variant, as of this fix), which flips it to
+// _NET_WM_WINDOW_TYPE_NORMAL instead. That's a real, deliberate signal
+// from the QML side, confirmed live via xprop (before/after adding
+// grabFocus: true), not an incidental side effect - Quickshell has no
+// other way to tell an X11 WM "this override-redirect popup wants real
+// keyboard focus" (there's no MapRequest to react to, and confirmed live
+// via a temporary ClientMessage-logging build that Quickshell never sends
+// a _NET_ACTIVE_WINDOW request for these either). Both type atoms count as
+// "this is one of ours" for always-on-top tracking; only the NORMAL one
+// also gets real X11 input focus below - Tooltip.qml/CalendarFlyout.qml
+// never set grabFocus and stay TOOLTIP-typed, so a hover-triggered tooltip
+// can never rip keyboard focus away from whatever the user is actually
+// typing into elsewhere, while a popup that deliberately opted in (the
+// taskbar launcher's search field, potentially Settings' text fields
+// later) gets it immediately on map - matching what the statusbar-mode
+// FloatingWindow variant already gets for free from the WM's normal
+// managed-window focus-on-map path (remapFloatingWindow).
 void Events::eventMapNotify(xcb_generic_event_t* event) {
     const auto E = reinterpret_cast<xcb_map_notify_event_t*>(event);
 
@@ -895,16 +915,22 @@ void Events::eventMapNotify(xcb_generic_event_t* event) {
         xcb_get_property(g_pWindowManager->DisplayConnection, false, E->window, ZARISATOMS["_NET_WM_WINDOW_TYPE"], XCB_GET_PROPERTY_TYPE_ANY, 0, 4096), NULL);
 
     const bool ISTOOLTIPTYPE = WMTYPEREPLY && xcbContainsAtom(WMTYPEREPLY, ZARISATOMS["_NET_WM_WINDOW_TYPE_TOOLTIP"]);
+    const bool ISNORMALTYPE = WMTYPEREPLY && xcbContainsAtom(WMTYPEREPLY, ZARISATOMS["_NET_WM_WINDOW_TYPE_NORMAL"]);
 
     if (WMTYPEREPLY)
         free(WMTYPEREPLY);
 
-    if (!ISTOOLTIPTYPE || getWindowName(E->window) != "quickshell")
+    if ((!ISTOOLTIPTYPE && !ISNORMALTYPE) || getWindowName(E->window) != "quickshell")
         return;
 
     if (std::find(g_pWindowManager->alwaysOnTopWindows.begin(), g_pWindowManager->alwaysOnTopWindows.end(), E->window) == g_pWindowManager->alwaysOnTopWindows.end()) {
         Debug::log(LOG, "Tracking new always-on-top Quickshell popup: " + std::to_string(E->window));
         g_pWindowManager->alwaysOnTopWindows.push_back(E->window);
+    }
+
+    if (ISNORMALTYPE) {
+        Debug::log(LOG, "Quickshell popup " + std::to_string(E->window) + " requested grabFocus - giving it real X11 input focus.");
+        xcb_set_input_focus(g_pWindowManager->DisplayConnection, XCB_INPUT_FOCUS_POINTER_ROOT, E->window, XCB_CURRENT_TIME);
     }
 }
 
