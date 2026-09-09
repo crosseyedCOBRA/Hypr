@@ -74,6 +74,17 @@ public:
 
     Vector2D                    QueuedPointerWarp = {-1, -1};
 
+    // Quickshell PopupWindows (Settings, Control Center, the calendar
+    // flyout, the taskbar-mode launcher, tooltips) that should stay raised
+    // above every other window - populated by Events::eventMapNotify (see
+    // its own comment for why every Quickshell popup gets treated
+    // uniformly rather than trying to single out just Settings/Control
+    // Center), reasserted every event-loop tick by reassertAlwaysOnTop()
+    // unless the popup's own monitor currently has a fullscreen window,
+    // and lazily pruned of dead/unmapped entries the same tick.
+    std::vector<xcb_window_t>   alwaysOnTopWindows;
+    void                        reassertAlwaysOnTop();
+
     CWindow*                    getWindowFromDrawable(int64_t);
     void                        addWindowToVectorSafe(CWindow);
     void                        removeWindowFromVectorSafe(int64_t);

@@ -1,5 +1,7 @@
 #include "events.hpp"
 
+#include <algorithm>
+
 gpointer handle(gpointer data) {
     int lazyUpdateCounter = 0;
 
@@ -852,6 +854,58 @@ void Events::eventMapWindow(xcb_generic_event_t* event) {
     EWMH::updateClientList();
     EWMH::setFrameExtents(E->window);
     EWMH::updateWindow(E->window);
+}
+
+// Quickshell's PopupWindow (Settings, Control Center, the taskbar-mode
+// launcher, the calendar flyout, tooltips - anything anchored to the bar
+// rather than opened as a real WM-managed floating window) is created as a
+// genuine X11 override-redirect window, same reasoning eventEnter()'s own
+// override-redirect skip already relies on for menus/tooltips (see its own
+// comment). Override-redirect windows never send a MapRequest - the
+// SubstructureRedirect that eventMapWindow()/XCB_MAP_REQUEST relies on
+// specifically excludes them - so this is a separate hook on plain
+// XCB_MAP_NOTIFY (already delivered for every child of root, override-
+// redirect or not, since XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY is selected on
+// root regardless) purely to catch these and register them for the
+// "Settings/Control Center should stay always-on-top of other windows,
+// except fullscreen ones" fix (reassertAlwaysOnTop(), called every event-
+// loop tick from handleEvent()).
+//
+// There's no way at the X11 level to distinguish specifically Settings/
+// Control Center from Quickshell's other PopupWindow-based popups (the
+// calendar flyout, taskbar launcher, tooltips) - confirmed live via xprop:
+// every one of them reports the same override_redirect=1, the same
+// _NET_WM_NAME "quickshell" (Quickshell's own app identity, not a per-
+// window title - PopupWindow doesn't expose a title property at all, per
+// ControlCenter.qml's own header comment), and the same
+// _NET_WM_WINDOW_TYPE_TOOLTIP window type regardless of which QML file
+// actually created it. Rather than guess at a narrower, unreliable
+// heuristic, every Quickshell override-redirect popup gets treated as
+// always-on-top uniformly - a tooltip or the calendar flyout getting
+// covered by a newly raised window would be just as much a real bug as
+// Settings/Control Center being covered, so this isn't overreach, just the
+// only option X11 actually offers here.
+void Events::eventMapNotify(xcb_generic_event_t* event) {
+    const auto E = reinterpret_cast<xcb_map_notify_event_t*>(event);
+
+    if (!E->override_redirect)
+        return;
+
+    const auto WMTYPEREPLY = xcb_get_property_reply(g_pWindowManager->DisplayConnection,
+        xcb_get_property(g_pWindowManager->DisplayConnection, false, E->window, ZARISATOMS["_NET_WM_WINDOW_TYPE"], XCB_GET_PROPERTY_TYPE_ANY, 0, 4096), NULL);
+
+    const bool ISTOOLTIPTYPE = WMTYPEREPLY && xcbContainsAtom(WMTYPEREPLY, ZARISATOMS["_NET_WM_WINDOW_TYPE_TOOLTIP"]);
+
+    if (WMTYPEREPLY)
+        free(WMTYPEREPLY);
+
+    if (!ISTOOLTIPTYPE || getWindowName(E->window) != "quickshell")
+        return;
+
+    if (std::find(g_pWindowManager->alwaysOnTopWindows.begin(), g_pWindowManager->alwaysOnTopWindows.end(), E->window) == g_pWindowManager->alwaysOnTopWindows.end()) {
+        Debug::log(LOG, "Tracking new always-on-top Quickshell popup: " + std::to_string(E->window));
+        g_pWindowManager->alwaysOnTopWindows.push_back(E->window);
+    }
 }
 
 void Events::eventButtonPress(xcb_generic_event_t* event) {

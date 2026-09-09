@@ -233,6 +233,11 @@ bool CWindowManager::handleEvent() {
     // refresh and apply the parameters of all dirty windows.
     refreshDirtyWindows();
 
+    // Keep Settings/Control Center/other Quickshell popups above every
+    // other window, except a fullscreen one (see reassertAlwaysOnTop's own
+    // comment and Events::eventMapNotify for how these get tracked).
+    reassertAlwaysOnTop();
+
     // Sanity checks
     for (const auto active : activeWorkspaces) {
         sanityCheckOnWorkspace(active);
@@ -305,6 +310,10 @@ void CWindowManager::recieveEvent() {
             case XCB_MAP_REQUEST:
                 Events::eventMapWindow(ev);
                 Debug::log(LOG, "Event dispatched MAP");
+                break;
+            case XCB_MAP_NOTIFY:
+                Events::eventMapNotify(ev);
+                Debug::log(LOG, "Event dispatched MAP_NOTIFY");
                 break;
             case XCB_BUTTON_PRESS:
                 Events::eventButtonPress(ev);
@@ -2046,6 +2055,46 @@ void CWindowManager::setAWindowTop(xcb_window_t window) {
     Events::ignoredEvents.push_back(COOKIE.sequence);
 }
 
+void CWindowManager::reassertAlwaysOnTop() {
+    if (alwaysOnTopWindows.empty())
+        return;
+
+    for (auto it = alwaysOnTopWindows.begin(); it != alwaysOnTopWindows.end();) {
+        const auto ATTRSREPLY = xcb_get_window_attributes_reply(DisplayConnection, xcb_get_window_attributes(DisplayConnection, *it), NULL);
+
+        if (!ATTRSREPLY || ATTRSREPLY->map_state != XCB_MAP_STATE_VIEWABLE) {
+            if (ATTRSREPLY)
+                free(ATTRSREPLY);
+            it = alwaysOnTopWindows.erase(it);
+            continue;
+        }
+
+        free(ATTRSREPLY);
+
+        // Skip raising this popup if a fullscreen window (a game) is
+        // currently active on the same monitor it lives on - per explicit
+        // request, always-on-top shouldn't fight a fullscreen window for
+        // the top of the stack. Popups always open attached to a specific
+        // bar, so their geometry never spans more than one monitor.
+        const auto GEOMREPLY = xcb_get_geometry_reply(DisplayConnection, xcb_get_geometry(DisplayConnection, *it), NULL);
+        bool coveredByFullscreen = false;
+
+        if (GEOMREPLY) {
+            if (const auto MONITOR = getMonitorFromCoord(Vector2D(GEOMREPLY->x, GEOMREPLY->y)); MONITOR) {
+                if (const auto WORKSPACE = getWorkspaceByID(activeWorkspaces[MONITOR->ID]); WORKSPACE && WORKSPACE->getHasFullscreenWindow())
+                    coveredByFullscreen = true;
+            }
+
+            free(GEOMREPLY);
+        }
+
+        if (!coveredByFullscreen)
+            setAWindowTop(*it);
+
+        ++it;
+    }
+}
+
 bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {
     // Should be floated also sets some properties
 
@@ -2301,6 +2350,28 @@ void CWindowManager::toggleWindowFullscrenn(const int& window) {
         setAllWorkspaceWindowsUnderFullscreen(activeWorkspaces[MONITOR->ID]);
     else
         setAllWorkspaceWindowsAboveFullscreen(activeWorkspaces[MONITOR->ID]);
+
+    // Neither branch above (nor anything in refreshDirtyWindows()'s own
+    // fullscreen handling) ever actually issues an XCB restack - a window
+    // going fullscreen visually covers Zaris-managed windows below it
+    // simply by being resized to fill the monitor while already
+    // reasonably near the top of the stack from having just been focused/
+    // clicked. That's not true for Quickshell's override-redirect popups
+    // (Settings, Control Center, etc. - see reassertAlwaysOnTop()'s own
+    // comment) - they're never part of the focus-driven raise dance at
+    // all, so if one was already open before this window went fullscreen,
+    // nothing was ever pushing it out of the way and it would sit on top
+    // of the game indefinitely, exactly the case the "except fullscreen
+    // ones" carve-out in reassertAlwaysOnTop() is meant to respect. A
+    // one-time real raise of the newly-fullscreened window to the actual
+    // top of X11's stacking order (not just the WM's own tracked windows -
+    // XCB stacking is global across all children of root, override-
+    // redirect included) puts it above any already-open always-on-top
+    // popup too; reassertAlwaysOnTop() then leaves it there by skipping
+    // its own raise for as long as this workspace's fullscreen flag stays
+    // set, rather than fighting back on the very next event-loop tick.
+    if (PWINDOW->getFullscreen())
+        setAWindowTop(window);
 
     // EWMH 
     Values[0] = ZARISATOMS["_NET_WM_STATE_FULLSCREEN"];
