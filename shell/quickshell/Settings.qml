@@ -54,6 +54,23 @@ PopupWindow {
     visible: SettingsState.visible && !!SettingsState.targetItem
     color: Colors.bg
 
+    // Same override-redirect focus gap as Launcher.qml's taskbar-mode
+    // popup (see its own comment for the full mechanism/investigation) -
+    // confirmed live this affects Settings specifically, not just in
+    // theory: without grabFocus, XGetInputFocus stays at PointerRoot
+    // while this window is open, meaning keystrokes only reach it while
+    // the mouse pointer happens to still be directly over it - the moment
+    // the pointer drifts even slightly (trivially easy mid-typing in real
+    // use), every further keystroke into any field here (icon paths,
+    // display name, weather location) is silently lost. Reported live as
+    // "it also does not let me type in those text boxes" - reproduced
+    // exactly that way (typed text landing fine while the simulated
+    // pointer stayed frozen over the field, then vanishing entirely the
+    // instant the pointer moved away mid-edit, before any real fix).
+    // Settings has real text entry throughout, unlike Tooltip.qml/
+    // CalendarFlyout.qml, so this is unconditional here.
+    grabFocus: true
+
     implicitWidth: 680
     // Tall enough that every category's content fits without the
     // NScrollView ever actually needing to scroll - the Modules tab (the
