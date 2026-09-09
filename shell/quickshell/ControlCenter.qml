@@ -278,6 +278,17 @@ PopupWindow {
                         // testing: anchoring here directly never showed
                         // anything, regardless of statement order).
                         onClicked: {
+                            // Always General specifically, regardless of
+                            // whichever tab Settings was last left open on -
+                            // per explicit request, this gear is the one
+                            // "just open Settings" entry point, distinct
+                            // from the other Control Center icons that
+                            // jump to their own specific tab (Ethernet,
+                            // Wifi, Battery, etc.) via this same
+                            // requestedCategory mechanism (see
+                            // AudioMixerPanel.qml's own gear button for the
+                            // first user of it).
+                            SettingsState.requestedCategory = "general"
                             SettingsState.targetItem = ControlCenterState.barItem
                             SettingsState.visible = true
                             ControlCenterState.visible = false
