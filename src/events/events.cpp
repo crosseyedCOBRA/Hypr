@@ -1037,6 +1037,21 @@ void Events::eventConfigure(xcb_generic_event_t* event) {
     PWINDOW->setDefaultSize(Vector2D(E->width, E->height));
     PWINDOW->setEffectiveSize(PWINDOW->getDefaultSize());
     PWINDOW->setEffectivePosition(PWINDOW->getDefaultPosition());
+    // Position/Size (as opposed to Default/EffectivePosition/Size above) are
+    // what recalcAllDocks() itself reads to decide which screen edge a dock
+    // window's reserved space belongs on (see its top/bottom/left/right
+    // check against getPosition()/getSize()). Only Default/Effective used to
+    // get updated here, so a dock that moves at runtime without remapping -
+    // e.g. Zaris's own bar toggling BarConfig.position between "top" and
+    // "bottom" - kept reporting its OLD position/size to recalcAllDocks()
+    // forever after the first map, since nothing ever refreshed Position/
+    // Size past that point. recalcAllDocks() then reserved space on the
+    // stale edge while the window itself visibly moved to the new one (that
+    // part already worked, since it moves the window using
+    // getDefaultPosition()/getDefaultSize()), leaving the old edge's
+    // reserved gap permanently unreclaimed and the new edge under-reserved.
+    PWINDOW->setPosition(PWINDOW->getDefaultPosition());
+    PWINDOW->setSize(PWINDOW->getDefaultSize());
 
     // Docks (bars/panels) often resize themselves shortly after mapping, once their
     // content finishes laying out (e.g. Quickshell's QML bindings resolve a tick late).
