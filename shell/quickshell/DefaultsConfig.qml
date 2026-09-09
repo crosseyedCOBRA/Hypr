@@ -89,6 +89,7 @@ QtObject {
             property string defaultImageViewer: ""
             property string defaultEmailClient: ""
             property string defaultPdfViewer: ""
+            property string screenshotFolder: ""
         }
     }
 
@@ -113,6 +114,7 @@ QtObject {
     readonly property string defaultImageViewer: configFile.adapter.defaultImageViewer
     readonly property string defaultEmailClient: configFile.adapter.defaultEmailClient
     readonly property string defaultPdfViewer: configFile.adapter.defaultPdfViewer
+    readonly property string screenshotFolder: configFile.adapter.screenshotFolder || (Quickshell.env("HOME") + "/Pictures/Screenshots")
 
     // --- icon theme: enumerate installed themes, then apply ---
 
@@ -434,6 +436,13 @@ QtObject {
     }
 
     property Process pdfViewerSetter: Process {}
+
+    // Plain path, not an "app" - screenshot.sh reads this as its own
+    // second CLI argument (ControlCenter.qml's screenshot tile passes it
+    // explicitly on every invocation), no xdg-mime/xdg-settings involved.
+    function setScreenshotFolder(val) {
+        configFile.adapter.screenshotFolder = val
+    }
 
     // A honest limitation, confirmed live rather than assumed: this only
     // does a hard *QML* reload (tears down and rebuilds the whole

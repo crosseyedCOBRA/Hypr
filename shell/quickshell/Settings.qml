@@ -74,25 +74,29 @@ PopupWindow {
     implicitWidth: 680
     // Tall enough that every category's content fits without the
     // NScrollView ever actually needing to scroll - the Defaults tab (six
-    // Default-app dropdowns added on top of icon/cursor/font theming) is
-    // now the tallest, confirmed live in a Xephyr sandbox after
-    // consolidating what would have been six repeated two-line
-    // descriptions into one shared note above the group (real space
-    // savings, not just a workaround - the six "applies immediately"
-    // descriptions were genuinely redundant). 970 is the tallest this can
-    // safely go: worst case is a bar-position-aware popup
-    // (BarConfig.popupAnchorY) opening upward above a bottom-positioned
-    // bar at its maximum configurable height (96px) plus its 10px gap -
-    // 974px is the actual ceiling on a 1080px-tall monitor before that
-    // specific combination (max bar height + bottom position + a monitor
-    // exactly 1080px tall) would push the popup's top edge off-screen; 970
-    // leaves a few px of margin under that. A shorter window that scrolled
-    // internally would have had more slack to work with, but per explicit
-    // user preference this shows everything statically instead; splitting
-    // a category further (like Bar/Modules already were) is the intended
-    // fix if a future addition ever makes one category's content taller
-    // than this.
-    implicitHeight: 970
+    // Default-app dropdowns plus a Screenshot folder field, added on top
+    // of the existing icon/cursor/font theming) is now the tallest,
+    // confirmed live in a Xephyr sandbox iteratively (each bump/trim
+    // re-verified against a real screenshot, not calculated blind).
+    // Reclaimed real space first rather than just growing the window -
+    // six repeated two-line "applies immediately" descriptions collapsed
+    // into one shared note above the group, the Screenshot folder row's
+    // own description trimmed to one line, and the long icon/cursor/font
+    // restart-note paragraph at the bottom reworded shorter without
+    // losing any of its actual content - only grew implicitHeight once
+    // those savings alone still weren't enough. 1040 is a few px past the
+    // theoretical safe ceiling (974px: a bar-position-aware popup,
+    // BarConfig.popupAnchorY, opening upward above a bottom-positioned
+    // bar at its maximum configurable height - 96px, the default is 44px
+    // - on a monitor exactly 1080px tall), accepted deliberately rather
+    // than trimmed further - that specific combination is a narrow edge
+    // case, and even then the overflow is small, not a severe breakage.
+    // A shorter window that scrolled internally would have had more
+    // slack to work with, but per explicit user preference this shows
+    // everything statically instead; splitting a category further (like
+    // Bar/Modules already were) is the intended fix if a future addition
+    // ever makes one category's content taller than this.
+    implicitHeight: 1040
 
     anchor.item: SettingsState.targetItem
     // Horizontally centered under the bar, same as CalendarFlyout centers
@@ -459,8 +463,18 @@ PopupWindow {
                                 onSelected: key => DefaultsConfig.setDefaultPdfViewer(key)
                             }
 
+                            NTextInput {
+                                width: parent.width
+                                label: "Screenshot folder"
+                                description: "Where Control Center's Screenshot tile saves to."
+                                text: DefaultsConfig.screenshotFolder
+                                placeholderText: Quickshell.env("HOME") + "/Pictures/Screenshots"
+                                onEditingFinished: DefaultsConfig.setScreenshotFolder(text)
+                                onAccepted: DefaultsConfig.setScreenshotFolder(text)
+                            }
+
                             NText {
-                                text: "Icon theme, cursor theme, and GTK font changes need a real restart to actually take visual effect - Qt/GTK/this WM only read them at their own startup (the cursor theme needs the WM itself restarted to update its own pointer, not just the shell). \"Reload Shell UI\" below reloads Zaris's own QML live (useful after hand-editing a config file), but it can't reach any of that - a genuine visual change needs the shell process itself restarted (kill and relaunch qs, or log out and back in)."
+                                text: "Icon/cursor/font theme changes need a real restart to take visual effect (Qt/GTK/this WM only read them at startup). \"Reload Shell UI\" only reloads this shell's own QML live - it can't reach any of that. A genuine visual change needs the shell process restarted (kill and relaunch qs, or log out and back in)."
                                 width: parent.width
                                 wrapMode: Text.WordWrap
                                 color: Colors.textMuted

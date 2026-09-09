@@ -1,10 +1,15 @@
 #!/bin/sh
-# Usage: screenshot.sh [region|full]
+# Usage: screenshot.sh [region|full] [folder]
 # region (default): interactive selection via slop, then captured by maim
 # full: entire screen
+# folder (default: ~/Pictures/Screenshots): configurable via Settings'
+# Defaults tab (DefaultsConfig.screenshotFolder) - Control Center's own
+# screenshot tile always passes it explicitly now, this default only
+# matters for a direct/manual invocation of this script.
 
-mkdir -p ~/Pictures/Screenshots
-filename=~/Pictures/Screenshots/"$(date +%Y-%m-%d_%H-%M-%S).png"
+folder="${2:-$HOME/Pictures/Screenshots}"
+mkdir -p "$folder"
+filename="$folder/$(date +%Y-%m-%d_%H-%M-%S).png"
 
 case "$1" in
   full)

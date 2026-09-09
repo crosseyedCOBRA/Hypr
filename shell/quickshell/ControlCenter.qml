@@ -847,10 +847,8 @@ PopupWindow {
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
                         onClicked: mouse => {
                             const script = Quickshell.env("HOME") + "/.config/zaris/screenshot.sh"
-                            if (mouse.button === Qt.LeftButton)
-                                Quickshell.execDetached([script])
-                            else
-                                Quickshell.execDetached([script, "full"])
+                            const mode = mouse.button === Qt.LeftButton ? "region" : "full"
+                            Quickshell.execDetached([script, mode, DefaultsConfig.screenshotFolder])
                         }
                     }
                 }
