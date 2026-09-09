@@ -119,6 +119,21 @@ QtObject {
             property var notifications: ({ enabled: true, screens: "all", tray: false })
             property var wallpaper: ({ enabled: true, screens: "all", tray: true })
             property var battery: ({ enabled: true, screens: "all", tray: true })
+
+            // Control Center's vertical gauge stack (CPU load/CPU temp/
+            // GPU temp/RAM) - deliberately NOT the same enabled/screens/
+            // tray shape as the modules above. Those four gauges aren't
+            // "modules" in the bar-or-Control-Center sense at all (there's
+            // no bar-row equivalent for this specific gauge presentation,
+            // and they're not meant to ever move to the bar) - just four
+            // independent, Control-Center-only on/off flags, each
+            // defaulting to shown, per the backlog's own "these 4 should
+            // always be shown by default, with a per-module way to turn
+            // each off individually."
+            property bool ccGaugeCpu: true
+            property bool ccGaugeCpuTemp: true
+            property bool ccGaugeGpuTemp: true
+            property bool ccGaugeRam: true
         }
     }
 
@@ -324,4 +339,9 @@ QtObject {
     function removeFromTray(id) {
         root.setEnabled(id, false)
     }
+
+    function setCcGaugeCpu(val) { configFile.adapter.ccGaugeCpu = val }
+    function setCcGaugeCpuTemp(val) { configFile.adapter.ccGaugeCpuTemp = val }
+    function setCcGaugeGpuTemp(val) { configFile.adapter.ccGaugeGpuTemp = val }
+    function setCcGaugeRam(val) { configFile.adapter.ccGaugeRam = val }
 }

@@ -155,6 +155,11 @@ PopupWindow {
         visible: false
     }
 
+    MemUsage {
+        id: memSource
+        visible: false
+    }
+
     Rectangle {
         anchors.fill: parent
         color: Colors.bg
@@ -985,13 +990,13 @@ PopupWindow {
                     }
                 }
 
-                Grid {
-                    columns: 2
-                    spacing: 8
+                Column {
+                    spacing: 6
                     anchors.verticalCenter: parent.verticalCenter
 
                     NCircularGauge {
-                        visible: ModulesConfig.showInTray("cpu", ControlCenterState.panel)
+                        diameter: 38
+                        visible: ModulesConfig.configFile.adapter.ccGaugeCpu
                         value: cpuSource.percent / 100
                         valueText: Math.round(cpuSource.percent) + "%"
                         icon: ""
@@ -999,7 +1004,8 @@ PopupWindow {
                     }
 
                     NCircularGauge {
-                        visible: ModulesConfig.showInTray("cpuTemp", ControlCenterState.panel)
+                        diameter: 38
+                        visible: ModulesConfig.configFile.adapter.ccGaugeCpuTemp
                         value: cpuTempSource.tempC / 100
                         valueText: cpuTempSource.haveReading ? Math.round(cpuTempSource.tempC) + "°" : "--"
                         icon: ""
@@ -1007,7 +1013,8 @@ PopupWindow {
                     }
 
                     NCircularGauge {
-                        visible: ModulesConfig.showInTray("gpuTemp", ControlCenterState.panel)
+                        diameter: 38
+                        visible: ModulesConfig.configFile.adapter.ccGaugeGpuTemp
                         value: gpuTempSource.tempC / 100
                         valueText: gpuTempSource.haveReading ? Math.round(gpuTempSource.tempC) + "°" : "--"
                         icon: ""
@@ -1015,11 +1022,12 @@ PopupWindow {
                     }
 
                     NCircularGauge {
-                        visible: ModulesConfig.showInTray("battery", ControlCenterState.panel) && BatteryService.batteryPresent
-                        value: BatteryService.batteryPercentage / 100
-                        valueText: BatteryService.batteryPercentage + "%"
-                        icon: BatteryService.batteryIcon
-                        fillColor: BatteryService.isCriticalBattery(BatteryService.primaryDevice) ? Colors.red : (BatteryService.isLowBattery(BatteryService.primaryDevice) ? Colors.coral : Colors.teal)
+                        diameter: 38
+                        visible: ModulesConfig.configFile.adapter.ccGaugeRam
+                        value: memSource.percent / 100
+                        valueText: Math.round(memSource.percent) + "%"
+                        icon: "󰍛"
+                        fillColor: Colors.purple
                     }
                 }
             }

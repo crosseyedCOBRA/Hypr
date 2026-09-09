@@ -1600,7 +1600,7 @@ PopupWindow {
                             visible: settingsWindow.activeCategory === "controlCenterModules"
 
                             NText {
-                                text: "Reorders Control Center's Balanced/Do Not Disturb/Ethernet/Wifi/Clipboard/Bluetooth/Stay Awake/Night Light row. Its other sections (gauges, weather, media, audio, Wallpaper/Screenshot) aren't reorderable yet."
+                                text: "Reorders Control Center's Ethernet/Wifi/Clipboard/Bluetooth/Stay Awake/Night Light row. Its other sections (weather, media, audio, Wallpaper/Screenshot, Balanced/Battery) aren't reorderable yet."
                                 width: parent.width
                                 wrapMode: Text.WordWrap
                                 color: Colors.textMuted
@@ -1645,6 +1645,102 @@ PopupWindow {
                                 currentKey: ""
                                 model: ModulesConfig.trayModulesAvailableToAdd().map(function (id) { return { key: id, name: settingsWindow.ccModuleNames[id] || settingsWindow.moduleNames[id] || id } })
                                 onSelected: key => ModulesConfig.addToTray(key)
+                            }
+
+                            NText {
+                                text: "System gauges"
+                                color: Colors.text
+                                pointSize: Style.fontSizeM
+                                font.weight: Style.fontWeightBold
+                                topPadding: 8
+                            }
+
+                            NText {
+                                text: "The vertical CPU load/CPU temperature/GPU temperature/RAM stack, shown by default - turn any of these off individually."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "CPU load"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                ToggleSwitch {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    checked: ModulesConfig.configFile.adapter.ccGaugeCpu
+                                    onToggled: newChecked => ModulesConfig.setCcGaugeCpu(newChecked)
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "CPU temperature"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                ToggleSwitch {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    checked: ModulesConfig.configFile.adapter.ccGaugeCpuTemp
+                                    onToggled: newChecked => ModulesConfig.setCcGaugeCpuTemp(newChecked)
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "GPU temperature"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                ToggleSwitch {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    checked: ModulesConfig.configFile.adapter.ccGaugeGpuTemp
+                                    onToggled: newChecked => ModulesConfig.setCcGaugeGpuTemp(newChecked)
+                                }
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "RAM usage"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                ToggleSwitch {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    checked: ModulesConfig.configFile.adapter.ccGaugeRam
+                                    onToggled: newChecked => ModulesConfig.setCcGaugeRam(newChecked)
+                                }
                             }
                         }
 

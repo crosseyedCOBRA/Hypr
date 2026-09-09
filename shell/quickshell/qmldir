@@ -95,6 +95,7 @@ AudioMixer 1.0 AudioMixer.qml
 AudioMixerPanel 1.0 AudioMixerPanel.qml
 CalendarWidget 1.0 CalendarWidget.qml
 ModuleChip 1.0 ModuleChip.qml
+MemUsage 1.0 MemUsage.qml
 WeatherWidget 1.0 WeatherWidget.qml
 CalendarFlyout 1.0 CalendarFlyout.qml
 BatteryIndicator 1.0 BatteryIndicator.qml
