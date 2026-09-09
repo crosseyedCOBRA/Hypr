@@ -3077,14 +3077,29 @@ void CWindowManager::compositorRepaintGL() {
     // whole screen). See GLBackgroundTexture's own comment in
     // windowManager.hpp for why this needs to happen every frame now,
     // unlike milestones 1b/2.
+    //
+    // v=0 at the top of the screen, v=1 at the bottom - matching the row
+    // order XGetImage actually fills GLBackgroundTexture's data with (row
+    // 0 = the top of the captured region, standard X11/Xlib image
+    // convention), which is what OpenGL then treats as t=0 once uploaded
+    // via glTexImage2D. Reported live after the first real reboot with
+    // the compositor on: the desktop wallpaper rendered upside down on
+    // every monitor (confirmed with an unambiguous top-red/bottom-blue
+    // gradient test image in a Xephyr sandbox before shipping this fix -
+    // top read back as blue, bottom as red, exactly reversed) - the
+    // original mapping here had v flipped, a mistake introduced when this
+    // quad was first written in milestone 3 and never caught until now,
+    // since every sandbox verification through milestone 6 used either a
+    // plain solid color or a symmetric checkerboard for the desktop
+    // background, neither of which can reveal a vertical flip at all.
     glUseProgramFn(0);
     glDisable(GL_BLEND);
     glBindTexture(GL_TEXTURE_2D, GLBackgroundTexture);
     glBegin(GL_QUADS);
-    glTexCoord2f(0.f, 1.f); glVertex2f(0, 0);
-    glTexCoord2f(1.f, 1.f); glVertex2f(SCREENW, 0);
-    glTexCoord2f(1.f, 0.f); glVertex2f(SCREENW, SCREENH);
-    glTexCoord2f(0.f, 0.f); glVertex2f(0, SCREENH);
+    glTexCoord2f(0.f, 0.f); glVertex2f(0, 0);
+    glTexCoord2f(1.f, 0.f); glVertex2f(SCREENW, 0);
+    glTexCoord2f(1.f, 1.f); glVertex2f(SCREENW, SCREENH);
+    glTexCoord2f(0.f, 1.f); glVertex2f(0, SCREENH);
     glEnd();
 
     // Every window from here on is drawn through the rounded-corner
