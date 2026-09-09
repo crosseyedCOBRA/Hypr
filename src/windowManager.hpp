@@ -104,6 +104,15 @@ public:
     PFNGLUNIFORM2FPROC          glUniform2fFn          = nullptr;
     PFNGLUNIFORM4FPROC          glUniform4fFn          = nullptr;
 
+    // Milestone 5: FBO entry points, for the dual-kawase background-blur
+    // render-to-texture chain - same "not statically declared, resolve
+    // manually" story as every other GLSL-2.0-era function above.
+    PFNGLGENFRAMEBUFFERSPROC        glGenFramebuffersFn        = nullptr;
+    PFNGLBINDFRAMEBUFFERPROC        glBindFramebufferFn        = nullptr;
+    PFNGLFRAMEBUFFERTEXTURE2DPROC   glFramebufferTexture2DFn   = nullptr;
+    PFNGLCHECKFRAMEBUFFERSTATUSPROC glCheckFramebufferStatusFn = nullptr;
+    PFNGLDELETEFRAMEBUFFERSPROC     glDeleteFramebuffersFn     = nullptr;
+
     // Milestone 3: replaces the old plain textured-quad draw with a small
     // GLSL program doing an anti-aliased rounded-rect test (a signed-
     // distance-function test against each fragment's position within the
@@ -130,6 +139,26 @@ public:
     GLint                        GLShadowUniformRadius  = -1;
     GLint                        GLShadowUniformBlur    = -1;
     GLint                        GLShadowUniformColor   = -1;
+
+    // Milestone 5: dual-kawase background blur, applied behind every
+    // window this compositor already tracks as always-on-top (see
+    // `alwaysOnTopWindows` below) - deliberately the same window set, not
+    // a narrower one, for the identical reason that mechanism's own
+    // comment already gives: X11 offers no reliable way to distinguish
+    // specifically Settings/Control Center from Quickshell's other
+    // override-redirect popups (the calendar flyout, tooltips, the Bar
+    // itself), so guessing a narrower heuristic here would be no more
+    // justified than it would have been for always-on-top tracking.
+    // GLBlurDownsampleProgram/GLBlurUpsampleProgram share the exact same
+    // vertex shader as the window/shadow programs above (vLocalPos just
+    // goes unused) - two more programs would be needless duplication for
+    // what's ultimately identical vertex-stage plumbing.
+    GLuint GLBlurDownsampleProgram      = 0;
+    GLint  GLBlurDownsampleUniformTex   = -1;
+    GLint  GLBlurDownsampleUniformHalf  = -1;
+    GLuint GLBlurUpsampleProgram        = 0;
+    GLint  GLBlurUpsampleUniformTex     = -1;
+    GLint  GLBlurUpsampleUniformHalf    = -1;
 
     // A one-time snapshot of the root window's own pre-compositor pixel
     // content (the wallpaper, drawn there by whatever wallpaper tool
@@ -227,6 +256,16 @@ public:
     void                        compositorRepaint();
     void                        compositorRepaintXRender();
     void                        compositorRepaintGL();
+
+    // Milestone 5: captures whatever's already been drawn to the screen
+    // within (x,y,w,h) so far this frame, runs it through the dual-kawase
+    // blur chain, and draws the blurred result back at the same rect
+    // (rounded to match, via the same shader/radius a window's own
+    // content uses) - called from compositorRepaintGL() right before a
+    // blur-behind window's own content, so the window's own (partially
+    // transparent) pixels then blend against a freshly blurred backdrop
+    // instead of whatever was directly beneath it.
+    void                        compositorDrawBlurBehind(float x, float y, float w, float h, float radius, int screenW, int screenH);
 
     // Milestone 2: one-time GLX/GL setup, called from setupManager() right
     // after milestone 1b's own RootPicture setup succeeds. Leaves GLReady

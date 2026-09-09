@@ -2398,6 +2398,57 @@ void main() {
 }
 )glsl";
 
+// Milestone 5: dual-kawase background blur - a real, if modest (3 levels
+// rather than the 5-6 a full implementation might use, an explicit
+// scoping choice, not an oversight - see this milestone's own ROADMAP.md
+// writeup), implementation of the technique popularized by Marius
+// Bjørge's "Bandwidth-Efficient Rendering" (ARM, 2015): alternating
+// downsample/upsample passes through a small chain of progressively
+// halved-resolution render targets, each pass sampling a specific
+// 4-or-8-tap offset pattern rather than a naive box blur, approximating a
+// much larger real Gaussian blur far more cheaply than actually computing
+// one. A standard, widely-reproduced public technique (used by KWin,
+// Godot, and plenty of independent tutorials/blog posts, not picom-
+// specific) - written here from the general public description of the
+// algorithm, per this file's own licensing note on not porting any
+// specific compositor's actual shader source. `halfpixel` is half a
+// source texel's size in the destination's own normalized [0,1] texture
+// space - the specific offset pattern (as opposed to a plain box blur's
+// evenly-spaced grid) is what gives dual-kawase its characteristic soft,
+// natural-looking falloff at a fraction of a real Gaussian's cost.
+static const char* ZARIS_GL_BLUR_DOWNSAMPLE_FRAGMENT_SHADER = R"glsl(
+uniform sampler2D tex;
+uniform vec2 halfpixel;
+varying vec2 vTexCoord;
+
+void main() {
+    vec4 sum = texture2D(tex, vTexCoord) * 4.0;
+    sum += texture2D(tex, vTexCoord - halfpixel);
+    sum += texture2D(tex, vTexCoord + halfpixel);
+    sum += texture2D(tex, vTexCoord + vec2(halfpixel.x, -halfpixel.y));
+    sum += texture2D(tex, vTexCoord - vec2(halfpixel.x, -halfpixel.y));
+    gl_FragColor = sum / 8.0;
+}
+)glsl";
+
+static const char* ZARIS_GL_BLUR_UPSAMPLE_FRAGMENT_SHADER = R"glsl(
+uniform sampler2D tex;
+uniform vec2 halfpixel;
+varying vec2 vTexCoord;
+
+void main() {
+    vec4 sum = texture2D(tex, vTexCoord + vec2(-halfpixel.x * 2.0, 0.0));
+    sum += texture2D(tex, vTexCoord + vec2(-halfpixel.x, halfpixel.y)) * 2.0;
+    sum += texture2D(tex, vTexCoord + vec2(0.0, halfpixel.y * 2.0));
+    sum += texture2D(tex, vTexCoord + vec2(halfpixel.x, halfpixel.y)) * 2.0;
+    sum += texture2D(tex, vTexCoord + vec2(halfpixel.x * 2.0, 0.0));
+    sum += texture2D(tex, vTexCoord + vec2(halfpixel.x, -halfpixel.y)) * 2.0;
+    sum += texture2D(tex, vTexCoord + vec2(0.0, -halfpixel.y * 2.0));
+    sum += texture2D(tex, vTexCoord + vec2(-halfpixel.x, -halfpixel.y)) * 2.0;
+    gl_FragColor = sum / 12.0;
+}
+)glsl";
+
 // Returns 0 (and logs why) on failure rather than throwing/aborting -
 // compositorSetupGL() treats that as just another reason GLReady should
 // stay false, same as every other setup step.
@@ -2485,6 +2536,18 @@ void CWindowManager::compositorSetupGL() {
         !glGetProgramInfoLogFn || !glDeleteProgramFn || !glUseProgramFn || !glGetUniformLocationFn || !glUniform1iFn ||
         !glUniform1fFn || !glUniform2fFn || !glUniform4fFn) {
         Debug::log(ERR, "compositorSetupGL: could not resolve one or more GLSL 2.0 entry points - GL compositing stays disabled.");
+        return;
+    }
+
+    // Milestone 5's FBO entry points, for the blur render-to-texture chain.
+    glGenFramebuffersFn        = (PFNGLGENFRAMEBUFFERSPROC)glXGetProcAddressARB((const GLubyte*)"glGenFramebuffers");
+    glBindFramebufferFn        = (PFNGLBINDFRAMEBUFFERPROC)glXGetProcAddressARB((const GLubyte*)"glBindFramebuffer");
+    glFramebufferTexture2DFn   = (PFNGLFRAMEBUFFERTEXTURE2DPROC)glXGetProcAddressARB((const GLubyte*)"glFramebufferTexture2D");
+    glCheckFramebufferStatusFn = (PFNGLCHECKFRAMEBUFFERSTATUSPROC)glXGetProcAddressARB((const GLubyte*)"glCheckFramebufferStatus");
+    glDeleteFramebuffersFn     = (PFNGLDELETEFRAMEBUFFERSPROC)glXGetProcAddressARB((const GLubyte*)"glDeleteFramebuffers");
+
+    if (!glGenFramebuffersFn || !glBindFramebufferFn || !glFramebufferTexture2DFn || !glCheckFramebufferStatusFn || !glDeleteFramebuffersFn) {
+        Debug::log(ERR, "compositorSetupGL: could not resolve one or more FBO entry points - GL compositing stays disabled.");
         return;
     }
 
@@ -2589,19 +2652,26 @@ void CWindowManager::compositorSetupGL() {
     const GLuint VERTEXSHADER = compileShader(GL_VERTEX_SHADER, ZARIS_GL_VERTEX_SHADER);
     const GLuint FRAGMENTSHADER = VERTEXSHADER ? compileShader(GL_FRAGMENT_SHADER, ZARIS_GL_FRAGMENT_SHADER) : 0;
 
-    // Milestone 4's shadow fragment shader shares this same vertex shader
-    // (see ZARIS_GL_SHADOW_FRAGMENT_SHADER's own comment) - compiled here,
-    // attached to both programs below, and only deleted once both links
-    // are done, rather than right after the first program links it.
-    const GLuint SHADOWFRAGMENTSHADER = (VERTEXSHADER && FRAGMENTSHADER) ? compileShader(GL_FRAGMENT_SHADER, ZARIS_GL_SHADOW_FRAGMENT_SHADER) : 0;
+    // Milestone 4's shadow fragment shader and milestone 5's two blur
+    // fragment shaders all share this same vertex shader (see each one's
+    // own comment) - compiled here, attached to all four programs below,
+    // and only deleted once every link is done, rather than right after
+    // the first program links it.
+    const GLuint SHADOWFRAGMENTSHADER    = (VERTEXSHADER && FRAGMENTSHADER) ? compileShader(GL_FRAGMENT_SHADER, ZARIS_GL_SHADOW_FRAGMENT_SHADER) : 0;
+    const GLuint BLURDOWNFRAGMENTSHADER  = SHADOWFRAGMENTSHADER ? compileShader(GL_FRAGMENT_SHADER, ZARIS_GL_BLUR_DOWNSAMPLE_FRAGMENT_SHADER) : 0;
+    const GLuint BLURUPFRAGMENTSHADER    = BLURDOWNFRAGMENTSHADER ? compileShader(GL_FRAGMENT_SHADER, ZARIS_GL_BLUR_UPSAMPLE_FRAGMENT_SHADER) : 0;
 
-    if (!VERTEXSHADER || !FRAGMENTSHADER || !SHADOWFRAGMENTSHADER) {
+    if (!VERTEXSHADER || !FRAGMENTSHADER || !SHADOWFRAGMENTSHADER || !BLURDOWNFRAGMENTSHADER || !BLURUPFRAGMENTSHADER) {
         if (VERTEXSHADER)
             glDeleteShaderFn(VERTEXSHADER);
         if (FRAGMENTSHADER)
             glDeleteShaderFn(FRAGMENTSHADER);
         if (SHADOWFRAGMENTSHADER)
             glDeleteShaderFn(SHADOWFRAGMENTSHADER);
+        if (BLURDOWNFRAGMENTSHADER)
+            glDeleteShaderFn(BLURDOWNFRAGMENTSHADER);
+        if (BLURUPFRAGMENTSHADER)
+            glDeleteShaderFn(BLURUPFRAGMENTSHADER);
         XFree(CONFIGS);
         GLFBConfigsByVisual.clear();
         return;
@@ -2617,21 +2687,40 @@ void CWindowManager::compositorSetupGL() {
     glAttachShaderFn(GLShadowShaderProgram, SHADOWFRAGMENTSHADER);
     glLinkProgramFn(GLShadowShaderProgram);
 
-    GLint linked = GL_FALSE, shadowLinked = GL_FALSE;
+    GLBlurDownsampleProgram = glCreateProgramFn();
+    glAttachShaderFn(GLBlurDownsampleProgram, VERTEXSHADER);
+    glAttachShaderFn(GLBlurDownsampleProgram, BLURDOWNFRAGMENTSHADER);
+    glLinkProgramFn(GLBlurDownsampleProgram);
+
+    GLBlurUpsampleProgram = glCreateProgramFn();
+    glAttachShaderFn(GLBlurUpsampleProgram, VERTEXSHADER);
+    glAttachShaderFn(GLBlurUpsampleProgram, BLURUPFRAGMENTSHADER);
+    glLinkProgramFn(GLBlurUpsampleProgram);
+
+    GLint linked = GL_FALSE, shadowLinked = GL_FALSE, blurDownLinked = GL_FALSE, blurUpLinked = GL_FALSE;
     glGetProgramivFn(GLShaderProgram, GL_LINK_STATUS, &linked);
     glGetProgramivFn(GLShadowShaderProgram, GL_LINK_STATUS, &shadowLinked);
+    glGetProgramivFn(GLBlurDownsampleProgram, GL_LINK_STATUS, &blurDownLinked);
+    glGetProgramivFn(GLBlurUpsampleProgram, GL_LINK_STATUS, &blurUpLinked);
     glDeleteShaderFn(VERTEXSHADER);
     glDeleteShaderFn(FRAGMENTSHADER);
     glDeleteShaderFn(SHADOWFRAGMENTSHADER);
+    glDeleteShaderFn(BLURDOWNFRAGMENTSHADER);
+    glDeleteShaderFn(BLURUPFRAGMENTSHADER);
 
-    if (!linked || !shadowLinked) {
+    if (!linked || !shadowLinked || !blurDownLinked || !blurUpLinked) {
         char log[512];
-        glGetProgramInfoLogFn(linked ? GLShadowShaderProgram : GLShaderProgram, sizeof(log), NULL, log);
+        const GLuint FAILEDPROGRAM = !linked ? GLShaderProgram : !shadowLinked ? GLShadowShaderProgram : !blurDownLinked ? GLBlurDownsampleProgram : GLBlurUpsampleProgram;
+        glGetProgramInfoLogFn(FAILEDPROGRAM, sizeof(log), NULL, log);
         Debug::log(ERR, "compositorSetupGL: shader link failed: " + std::string(log) + " - GL compositing stays disabled.");
         glDeleteProgramFn(GLShaderProgram);
         glDeleteProgramFn(GLShadowShaderProgram);
-        GLShaderProgram       = 0;
-        GLShadowShaderProgram = 0;
+        glDeleteProgramFn(GLBlurDownsampleProgram);
+        glDeleteProgramFn(GLBlurUpsampleProgram);
+        GLShaderProgram         = 0;
+        GLShadowShaderProgram   = 0;
+        GLBlurDownsampleProgram = 0;
+        GLBlurUpsampleProgram   = 0;
         XFree(CONFIGS);
         GLFBConfigsByVisual.clear();
         return;
@@ -2645,6 +2734,11 @@ void CWindowManager::compositorSetupGL() {
     GLShadowUniformRadius  = glGetUniformLocationFn(GLShadowShaderProgram, "radius");
     GLShadowUniformBlur    = glGetUniformLocationFn(GLShadowShaderProgram, "blur");
     GLShadowUniformColor   = glGetUniformLocationFn(GLShadowShaderProgram, "shadowColor");
+
+    GLBlurDownsampleUniformTex  = glGetUniformLocationFn(GLBlurDownsampleProgram, "tex");
+    GLBlurDownsampleUniformHalf = glGetUniformLocationFn(GLBlurDownsampleProgram, "halfpixel");
+    GLBlurUpsampleUniformTex    = glGetUniformLocationFn(GLBlurUpsampleProgram, "tex");
+    GLBlurUpsampleUniformHalf   = glGetUniformLocationFn(GLBlurUpsampleProgram, "halfpixel");
 
     // One-time snapshot of whatever's currently on the root window - the
     // wallpaper, drawn there before compositing ever started - to redraw
@@ -2692,6 +2786,187 @@ void CWindowManager::compositorSetupGL() {
 
     XFree(CONFIGS);
     GLReady = true;
+}
+
+void CWindowManager::compositorDrawBlurBehind(float x, float y, float w, float h, float radius, int screenW, int screenH) {
+    // Too small to meaningfully blur, and guards the halving loop below
+    // from ever reaching a degenerate 0-sized level.
+    if (w < 4.f || h < 4.f)
+        return;
+
+    // Capture whatever's already been drawn to the screen within this
+    // rect so far this frame (the background, plus every lower-stacked
+    // window already drawn this same frame) - a real GL read of the
+    // buffer this exact draw call sequence is actively rendering into,
+    // which is a completely different situation from milestone 3's own
+    // background-snapshot bug (that one read an on-screen GLXWindow
+    // buffer before anything had ever been drawn to it at all, right
+    // after context creation; this one reads content from earlier in the
+    // very same frame's own draw sequence, well after real drawing into
+    // that buffer has already happened).
+    GLuint captureTex = 0;
+    glGenTextures(1, &captureTex);
+    glBindTexture(GL_TEXTURE_2D, captureTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // glCopyTexImage2D's (x,y) is the LOWER-LEFT corner in window-system
+    // (bottom-left-origin) coordinates - x,y here are top-left/X11-style
+    // like everywhere else in this compositor, so the Y needs flipping
+    // against the screen height.
+    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, (int)x, screenH - (int)(y + h), (int)w, (int)h, 0);
+
+    // A real, if modest (3 levels, not the 5-6 a full implementation
+    // might use - an explicit scoping choice, see this milestone's own
+    // ROADMAP.md writeup), dual-kawase chain: downsample 3 times, then
+    // upsample back up 3 times. Every level's texture/FBO is created and
+    // torn down fresh every call (every blur-behind window, every frame)
+    // - the same "simplicity over performance for now" tradeoff every
+    // other per-frame allocation in this compositor already makes; a
+    // real persistent cache is milestone 6's job.
+    constexpr int LEVELS = 3;
+    int           levelW[LEVELS + 1], levelH[LEVELS + 1];
+    levelW[0] = (int)w;
+    levelH[0] = (int)h;
+
+    for (int i = 1; i <= LEVELS; ++i) {
+        levelW[i] = levelW[i - 1] / 2;
+        levelH[i] = levelH[i - 1] / 2;
+        if (levelW[i] < 1)
+            levelW[i] = 1;
+        if (levelH[i] < 1)
+            levelH[i] = 1;
+    }
+
+    GLuint downTex[LEVELS + 1] = {0};
+    GLuint downFBO[LEVELS + 1] = {0};
+    downTex[0]                 = captureTex;
+    bool ok                    = true;
+
+    for (int i = 1; i <= LEVELS && ok; ++i) {
+        glGenTextures(1, &downTex[i]);
+        glBindTexture(GL_TEXTURE_2D, downTex[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, levelW[i], levelH[i], 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+        glGenFramebuffersFn(1, &downFBO[i]);
+        glBindFramebufferFn(GL_FRAMEBUFFER, downFBO[i]);
+        glFramebufferTexture2DFn(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, downTex[i], 0);
+
+        if (glCheckFramebufferStatusFn(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            ok = false;
+            break;
+        }
+
+        glViewport(0, 0, levelW[i], levelH[i]);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, levelW[i], levelH[i], 0, -1, 1);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        glUseProgramFn(GLBlurDownsampleProgram);
+        glUniform1iFn(GLBlurDownsampleUniformTex, 0);
+        glUniform2fFn(GLBlurDownsampleUniformHalf, 0.5f / (float)levelW[i - 1], 0.5f / (float)levelH[i - 1]);
+        glBindTexture(GL_TEXTURE_2D, downTex[i - 1]);
+
+        glBegin(GL_QUADS);
+        glTexCoord2f(0.f, 0.f); glVertex2f(0, 0);
+        glTexCoord2f(1.f, 0.f); glVertex2f((float)levelW[i], 0);
+        glTexCoord2f(1.f, 1.f); glVertex2f((float)levelW[i], (float)levelH[i]);
+        glTexCoord2f(0.f, 1.f); glVertex2f(0, (float)levelH[i]);
+        glEnd();
+    }
+
+    GLuint upTex[LEVELS] = {0};
+    GLuint upFBO[LEVELS] = {0};
+    GLuint prevTex       = downTex[LEVELS];
+    int    prevW = levelW[LEVELS], prevH = levelH[LEVELS];
+
+    for (int i = LEVELS - 1; i >= 0 && ok; --i) {
+        glGenTextures(1, &upTex[i]);
+        glBindTexture(GL_TEXTURE_2D, upTex[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, levelW[i], levelH[i], 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+        glGenFramebuffersFn(1, &upFBO[i]);
+        glBindFramebufferFn(GL_FRAMEBUFFER, upFBO[i]);
+        glFramebufferTexture2DFn(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, upTex[i], 0);
+
+        if (glCheckFramebufferStatusFn(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            ok = false;
+            break;
+        }
+
+        glViewport(0, 0, levelW[i], levelH[i]);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, levelW[i], levelH[i], 0, -1, 1);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        glUseProgramFn(GLBlurUpsampleProgram);
+        glUniform1iFn(GLBlurUpsampleUniformTex, 0);
+        glUniform2fFn(GLBlurUpsampleUniformHalf, 0.5f / (float)prevW, 0.5f / (float)prevH);
+        glBindTexture(GL_TEXTURE_2D, prevTex);
+
+        glBegin(GL_QUADS);
+        glTexCoord2f(0.f, 0.f); glVertex2f(0, 0);
+        glTexCoord2f(1.f, 0.f); glVertex2f((float)levelW[i], 0);
+        glTexCoord2f(1.f, 1.f); glVertex2f((float)levelW[i], (float)levelH[i]);
+        glTexCoord2f(0.f, 1.f); glVertex2f(0, (float)levelH[i]);
+        glEnd();
+
+        prevTex = upTex[i];
+        prevW   = levelW[i];
+        prevH   = levelH[i];
+    }
+
+    // Restore state for the main pass this was called from the middle of.
+    glBindFramebufferFn(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, screenW, screenH);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, screenW, screenH, 0, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    if (ok) {
+        // The final blurred texture, drawn at the real window rect,
+        // rounded via the exact same shader/radius the window's own
+        // content uses right after this call returns - without that, the
+        // blur would show as a plain square peeking out past the
+        // window's own rounded corners.
+        glUseProgramFn(GLShaderProgram);
+        glUniform1iFn(GLUniformTex, 0);
+        glUniform2fFn(GLUniformWinSize, w, h);
+        glUniform1fFn(GLUniformRadius, radius);
+        glBindTexture(GL_TEXTURE_2D, upTex[0]);
+
+        glBegin(GL_QUADS);
+        glMultiTexCoord2f(GL_TEXTURE0, 0.f, 0.f); glMultiTexCoord2f(GL_TEXTURE1, 0.f, 0.f); glVertex2f(x, y);
+        glMultiTexCoord2f(GL_TEXTURE0, 1.f, 0.f); glMultiTexCoord2f(GL_TEXTURE1, w, 0.f);   glVertex2f(x + w, y);
+        glMultiTexCoord2f(GL_TEXTURE0, 1.f, 1.f); glMultiTexCoord2f(GL_TEXTURE1, w, h);     glVertex2f(x + w, y + h);
+        glMultiTexCoord2f(GL_TEXTURE0, 0.f, 1.f); glMultiTexCoord2f(GL_TEXTURE1, 0.f, h);   glVertex2f(x, y + h);
+        glEnd();
+    }
+
+    for (int i = 1; i <= LEVELS; ++i) {
+        if (downFBO[i])
+            glDeleteFramebuffersFn(1, &downFBO[i]);
+        if (downTex[i])
+            glDeleteTextures(1, &downTex[i]);
+    }
+
+    for (int i = 0; i < LEVELS; ++i) {
+        if (upFBO[i])
+            glDeleteFramebuffersFn(1, &upFBO[i]);
+        if (upTex[i])
+            glDeleteTextures(1, &upTex[i]);
+    }
+
+    glDeleteTextures(1, &captureTex);
 }
 
 void CWindowManager::compositorRepaintGL() {
@@ -2827,6 +3102,23 @@ void CWindowManager::compositorRepaintGL() {
             glMultiTexCoord2f(GL_TEXTURE1, -SHADOWMARGIN, H + SHADOWMARGIN); glVertex2f(X - SHADOWMARGIN, Y + H + SHADOWMARGIN);
             glEnd();
 
+            glUseProgramFn(GLShaderProgram);
+            glUniform1iFn(GLUniformTex, 0);
+        }
+
+        // Milestone 5: background blur, behind every window this
+        // compositor already tracks as always-on-top - see
+        // GLBlurDownsampleProgram's own comment in windowManager.hpp for
+        // why that's the chosen set (X11 offers no reliable way to
+        // narrow it to specifically Settings/Control Center). Drawn after
+        // the shadow (so the blur fills the window's own footprint,
+        // sitting on top of the shadow's soft outer margin, exactly as a
+        // real frosted-glass panel would) and before the window's own
+        // content (so that content's real alpha then blends against this
+        // freshly blurred backdrop instead of whatever was directly
+        // beneath it).
+        if (!isFullscreen && std::find(alwaysOnTopWindows.begin(), alwaysOnTopWindows.end(), WIN) != alwaysOnTopWindows.end()) {
+            compositorDrawBlurBehind(X, Y, W, H, radius, SCREENW, SCREENH);
             glUseProgramFn(GLShaderProgram);
             glUniform1iFn(GLUniformTex, 0);
         }
