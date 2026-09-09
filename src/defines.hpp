@@ -19,6 +19,7 @@
 #include <xcb/composite.h>
 #include <xcb/damage.h>
 #include <xcb/render.h>
+#include <xcb/xcb_renderutil.h>
 
 #include <glib-2.0/glib.h>
 

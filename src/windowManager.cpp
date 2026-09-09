@@ -224,6 +224,38 @@ void CWindowManager::setupManager() {
                 CompositingEnabled = true;
                 Debug::log(LOG, "Compositor enabled: subwindows redirected, Damage event base at " +
                                      std::to_string(DamageEventBase) + ".");
+
+                // Milestone 1b: the root Picture every window gets painted
+                // onto. xcb_render_util_query_formats caches its reply
+                // internally (one round trip, ever), so calling it again
+                // from compositorRepaint() per-window is cheap. Deliberately
+                // NOT VisualType here - that's the 32-bit ARGB visual the WM
+                // itself picked for the windows *it* creates (for alpha
+                // support), not the root window's own visual, which the X
+                // server chose independently (typically the screen's plain
+                // default-depth visual). A Picture's format must match its
+                // drawable's real depth, so using the wrong one here made
+                // CreatePicture silently fail (unchecked) and every
+                // subsequent Composite onto that bad Picture ID fail with
+                // BadPicture - caught via a checked probe while debugging.
+                const auto FORMATS = xcb_render_util_query_formats(DisplayConnection);
+                const auto ROOTVISUALFORMAT = FORMATS ? xcb_render_util_find_visual_format(FORMATS, Screen->root_visual) : nullptr;
+
+                if (!ROOTVISUALFORMAT) {
+                    Debug::log(ERR, "Could not find a PictFormat for the root visual - compositor stays disabled.");
+                    CompositingEnabled = false;
+                } else {
+                    RootPictFormat = ROOTVISUALFORMAT->format;
+                    RootPicture    = xcb_generate_id(DisplayConnection);
+                    const auto ROOTPICCOOKIE = xcb_render_create_picture_checked(DisplayConnection, RootPicture, Screen->root, RootPictFormat, 0, NULL);
+
+                    if (const auto ROOTPICERROR = xcb_request_check(DisplayConnection, ROOTPICCOOKIE); ROOTPICERROR != NULL) {
+                        Debug::log(ERR, "Failed to create the root Picture (X error code " + std::to_string(ROOTPICERROR->error_code) +
+                                             ") - compositor stays disabled.");
+                        free(ROOTPICERROR);
+                        CompositingEnabled = false;
+                    }
+                }
             }
         }
     }
@@ -2166,6 +2198,81 @@ void CWindowManager::reassertAlwaysOnTop() {
 
         ++it;
     }
+}
+
+void CWindowManager::compositorRepaint() {
+    if (!CompositingEnabled)
+        return;
+
+    // Ground-truth, real-time stacking order straight from the X server,
+    // bottom-to-top - not our own `windows` deque, which isn't guaranteed to
+    // mirror true X11 stacking order and doesn't track override-redirect
+    // popups (the Bar, Settings, etc.) at all.
+    const auto TREEREPLY = xcb_query_tree_reply(DisplayConnection, xcb_query_tree(DisplayConnection, Screen->root), NULL);
+
+    if (!TREEREPLY)
+        return;
+
+    const auto CHILDREN   = xcb_query_tree_children(TREEREPLY);
+    const int  CHILDCOUNT = xcb_query_tree_children_length(TREEREPLY);
+
+    // Cached internally after the first call (see setupManager()) - this is
+    // not a fresh round trip every tick.
+    const auto FORMATS = xcb_render_util_query_formats(DisplayConnection);
+
+    for (int i = 0; i < CHILDCOUNT; ++i) {
+        const xcb_window_t WIN = CHILDREN[i];
+
+        const auto ATTRSREPLY = xcb_get_window_attributes_reply(DisplayConnection, xcb_get_window_attributes(DisplayConnection, WIN), NULL);
+
+        if (!ATTRSREPLY)
+            continue;
+
+        if (ATTRSREPLY->map_state != XCB_MAP_STATE_VIEWABLE) {
+            free(ATTRSREPLY);
+            continue;
+        }
+
+        const auto VISUALFORMAT = FORMATS ? xcb_render_util_find_visual_format(FORMATS, ATTRSREPLY->visual) : nullptr;
+
+        free(ATTRSREPLY);
+
+        if (!VISUALFORMAT)
+            continue;
+
+        const auto GEOMREPLY = xcb_get_geometry_reply(DisplayConnection, xcb_get_geometry(DisplayConnection, WIN), NULL);
+
+        if (!GEOMREPLY)
+            continue;
+
+        // Re-fetched fresh every repaint instead of cached long-term: a
+        // Picture tied to a stale pixmap shows garbage the moment the X
+        // server reallocates the backing pixmap on resize. A real cache
+        // (only re-fetching on Damage/Configure) is Milestone 6's job, once
+        // there's an actual performance problem to justify the complexity.
+        const xcb_pixmap_t PIXMAP = xcb_generate_id(DisplayConnection);
+        xcb_composite_name_window_pixmap(DisplayConnection, WIN, PIXMAP);
+
+        const xcb_render_picture_t PICTURE = xcb_generate_id(DisplayConnection);
+        xcb_render_create_picture(DisplayConnection, PICTURE, PIXMAP, VISUALFORMAT->format, 0, NULL);
+
+        // PICT_OP_SRC (overwrite), not OVER (alpha blend): every window is
+        // treated as fully opaque for now, which looks identical to OVER
+        // for the opaque case that covers virtually everything today. Real
+        // blending only starts to matter once later milestones (shadows,
+        // blur) introduce genuine translucent content.
+        xcb_render_composite(DisplayConnection, XCB_RENDER_PICT_OP_SRC, PICTURE, XCB_NONE, RootPicture, 0, 0, 0, 0,
+                              GEOMREPLY->x, GEOMREPLY->y, GEOMREPLY->width, GEOMREPLY->height);
+
+        xcb_render_free_picture(DisplayConnection, PICTURE);
+        xcb_free_pixmap(DisplayConnection, PIXMAP);
+
+        free(GEOMREPLY);
+    }
+
+    free(TREEREPLY);
+
+    xcb_flush(DisplayConnection);
 }
 
 bool CWindowManager::shouldBeFloatedOnInit(int64_t window) {

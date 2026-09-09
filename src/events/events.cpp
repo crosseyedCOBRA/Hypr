@@ -18,6 +18,12 @@ gpointer handle(gpointer data) {
         // set state to let the main thread know to wait.
         g_pWindowManager->animationUtilBusy = true;
 
+        // Milestone 1b: repaint every tick, same as AnimationUtil::move()
+        // above - it's a no-op unless enable_compositor is on. This is the
+        // established hook point for anything that needs to run on a
+        // regular cadence rather than off a specific event.
+        g_pWindowManager->compositorRepaint();
+
         // Don't spam these
         if (lazyUpdateCounter > 10){
             // Update the active window name

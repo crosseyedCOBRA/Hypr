@@ -38,6 +38,14 @@ public:
     int                         DamageEventBase = -1;
     bool                        CompositingEnabled = false;
 
+    // Milestone 1b: the root window's own Picture (the XRender destination
+    // every window gets composited onto) plus the PictFormat matching the
+    // root visual, needed to create it. Both are set up once, right after
+    // the redirect succeeds, and stay valid for the process's lifetime -
+    // the root window itself is never destroyed/recreated.
+    xcb_render_pictformat_t     RootPictFormat = 0;
+    xcb_render_picture_t        RootPicture = 0;
+
     // holds the objects of all active monitors.
     std::vector<SMonitor>       monitors;
 
@@ -105,6 +113,12 @@ public:
     bool                        handleEvent();
     void                        recieveEvent();
     void                        refreshDirtyWindows();
+
+    // Milestone 1b: repaints the whole screen by compositing every mapped
+    // top-level window's redirected pixmap onto the root Picture, in real
+    // X11 stacking order. No-op unless CompositingEnabled. Called once per
+    // tick from the existing GLib tick thread (see Events::handle()).
+    void                        compositorRepaint();
 
     void                        setFocusedWindow(xcb_drawable_t, bool userInitiated = false);
     void                        refocusWindowOnClosed();
