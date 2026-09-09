@@ -495,7 +495,64 @@ PopupWindow {
                     }
                 }
 
-                // The other seven quick-toggle tiles - previously seven
+                // Battery - fixed second, in the slot the Do Not Disturb
+                // tile used to occupy (see ModulesConfig.trayModuleIds'
+                // own comment for why DND's tile was removed and its
+                // toggle moved onto the bar's notification bell instead).
+                // Not part of the reorderable Repeater below - it isn't a
+                // toggle (nothing to switch on/off), it navigates to
+                // Settings' Battery tab on click, the same
+                // SettingsState.requestedCategory mechanism
+                // AudioMixerPanel.qml's own gear button and the Settings
+                // gear itself already use. Battery's own gauge presence in
+                // the CPU/CPU-temp/GPU-temp/Battery cluster further down
+                // this file is untouched - that's a separate, still-open
+                // vertical-layout redesign (see ROADMAP.md), not
+                // duplicated or removed by this tile.
+                Rectangle {
+                    width: root.tileWidth
+                    height: root.tileHeight
+                    radius: Style.radiusS
+                    color: batteryTileArea.containsMouse ? Colors.pillActive : Colors.pill
+                    visible: BatteryService.batteryPresent
+
+                    Behavior on color {
+                        ColorAnimation { duration: Style.animationFast }
+                    }
+
+                    Column {
+                        anchors.centerIn: parent
+                        spacing: 4
+
+                        NIcon {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            icon: BatteryService.batteryIcon
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXL
+                        }
+
+                        NText {
+                            text: "Battery"
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            color: Colors.textMuted
+                            pointSize: Style.fontSizeXS
+                        }
+                    }
+
+                    MouseArea {
+                        id: batteryTileArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: {
+                            SettingsState.requestedCategory = "battery"
+                            SettingsState.targetItem = ControlCenterState.barItem
+                            SettingsState.visible = true
+                            ControlCenterState.visible = false
+                        }
+                    }
+                }
+
+                // The other six quick-toggle tiles - previously seven
                 // near-identical hand-authored Rectangle blocks (DND, Night
                 // Light, Ethernet, Wifi, Clipboard, Bluetooth, plus Stay
                 // Awake now folded in here too), now one Repeater driven by
@@ -536,7 +593,6 @@ PopupWindow {
                                 sourceComponent: {
                                     switch (tileDelegate.modelData) {
                                     case "stayAwake": return stayAwakeIconComponent
-                                    case "dnd": return dndIconComponent
                                     case "nightLight": return nightLightIconComponent
                                     case "network": return networkIconComponent
                                     case "wifi": return wifiIconComponent
@@ -551,7 +607,6 @@ PopupWindow {
                                 text: {
                                     switch (tileDelegate.modelData) {
                                     case "stayAwake": return "Stay Awake"
-                                    case "dnd": return "Do Not Disturb"
                                     case "nightLight": return "Night Light"
                                     case "network": return "Ethernet"
                                     case "wifi": return "Wifi"
@@ -588,15 +643,6 @@ PopupWindow {
                     clickable: false
                     textColor: Colors.textMuted
                     activeColor: Colors.coral
-                }
-            }
-
-            Component {
-                id: dndIconComponent
-                Dnd {
-                    clickable: false
-                    textColor: Colors.textMuted
-                    activeColor: Colors.red
                 }
             }
 

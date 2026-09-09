@@ -72,14 +72,21 @@ QtObject {
     // battery (gauges/a text line, a different fixed layout block
     // entirely), volume (the Audio section, sliders not a toggle tile),
     // and mediaPlayer (the media card) - none of those are interchangeable
-    // same-shaped chips the way these seven are, so a generic reorder
+    // same-shaped chips the way these six are, so a generic reorder
     // wouldn't correctly relocate them in Control Center's actual layout.
-    // The power-profile tile has no modules.json entry either and stays
-    // fixed first in this grid regardless of how these seven are arranged.
-    // A real reorderable surface for the excluded set needs the separate,
-    // not-yet-designed Control Center layout work (see ROADMAP.md's own
-    // still-open items for that).
-    readonly property var trayModuleIds: ["stayAwake", "dnd", "nightLight", "network", "wifi", "clipboard", "bluetooth"]
+    // "dnd" was here too until its tile was removed from Control Center
+    // entirely (its toggle moved onto the bar's notification bell icon
+    // instead, right-click - see NotificationIndicator.qml's own header
+    // comment) - it's still a real bar module (Dnd.qml), just no longer a
+    // Control Center one. The power-profile tile has no modules.json
+    // entry either and stays fixed first in this grid, with Battery now
+    // fixed second (opens Settings' Battery tab on click rather than
+    // toggling anything, so it isn't part of this reorderable set either -
+    // see ControlCenter.qml's own comment) - regardless of how these six
+    // are arranged. A real reorderable surface for the excluded set needs
+    // the separate, not-yet-designed Control Center layout work (see
+    // ROADMAP.md's own still-open items for that).
+    readonly property var trayModuleIds: ["stayAwake", "nightLight", "network", "wifi", "clipboard", "bluetooth"]
 
     property FileView configFile: FileView {
         path: Quickshell.env("HOME") + "/.config/quickshell/modules.json"
