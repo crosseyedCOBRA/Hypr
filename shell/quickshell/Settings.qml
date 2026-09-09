@@ -73,19 +73,26 @@ PopupWindow {
 
     implicitWidth: 680
     // Tall enough that every category's content fits without the
-    // NScrollView ever actually needing to scroll - the Modules tab (the
-    // full per-module Enabled/Screens/In-tray table, 16 rows) is the
-    // tallest at ~850px including its own header/margins, so this leaves a
-    // comfortable margin above that on any real monitor. Matters more now
-    // than it used to: a bar-position-aware popup (BarConfig.popupAnchorY)
-    // that opens upward, above a bottom-positioned bar, needs real
-    // headroom between the bar and the top of the screen to stay fully
-    // visible - a shorter window that scrolled internally would have had
-    // more slack to work with there, but per explicit user preference this
-    // shows everything statically instead; splitting a category further
-    // (like Bar/Modules already were) is the intended fix if a future
-    // addition ever makes one category's content taller than this.
-    implicitHeight: 900
+    // NScrollView ever actually needing to scroll - the Defaults tab (six
+    // Default-app dropdowns added on top of icon/cursor/font theming) is
+    // now the tallest, confirmed live in a Xephyr sandbox after
+    // consolidating what would have been six repeated two-line
+    // descriptions into one shared note above the group (real space
+    // savings, not just a workaround - the six "applies immediately"
+    // descriptions were genuinely redundant). 970 is the tallest this can
+    // safely go: worst case is a bar-position-aware popup
+    // (BarConfig.popupAnchorY) opening upward above a bottom-positioned
+    // bar at its maximum configurable height (96px) plus its 10px gap -
+    // 974px is the actual ceiling on a 1080px-tall monitor before that
+    // specific combination (max bar height + bottom position + a monitor
+    // exactly 1080px tall) would push the popup's top edge off-screen; 970
+    // leaves a few px of margin under that. A shorter window that scrolled
+    // internally would have had more slack to work with, but per explicit
+    // user preference this shows everything statically instead; splitting
+    // a category further (like Bar/Modules already were) is the intended
+    // fix if a future addition ever makes one category's content taller
+    // than this.
+    implicitHeight: 970
 
     anchor.item: SettingsState.targetItem
     // Horizontally centered under the bar, same as CalendarFlyout centers
@@ -381,14 +388,75 @@ PopupWindow {
                                 }
                             }
 
+                            NText {
+                                text: "Default apps"
+                                color: Colors.text
+                                pointSize: Style.fontSizeM
+                                font.weight: Style.fontWeightBold
+                                topPadding: 8
+                            }
+
+                            NText {
+                                text: "Every dropdown below applies immediately (xdg-settings for the browser, xdg-mime for the rest) - no restart needed."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                                bottomPadding: 4
+                            }
+
                             NComboBox {
                                 width: parent.width
                                 label: "Default web browser"
-                                description: "Applied immediately via xdg-settings - no restart needed."
                                 model: DefaultsConfig.availableBrowsers
                                 currentKey: DefaultsConfig.defaultBrowser
                                 placeholder: "Not set"
                                 onSelected: key => DefaultsConfig.setDefaultBrowser(key)
+                            }
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Default file explorer"
+                                model: DefaultsConfig.availableFileExplorers
+                                currentKey: DefaultsConfig.defaultFileExplorer
+                                placeholder: "Not set"
+                                onSelected: key => DefaultsConfig.setDefaultFileExplorer(key)
+                            }
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Default text editor"
+                                model: DefaultsConfig.availableTextEditors
+                                currentKey: DefaultsConfig.defaultTextEditor
+                                placeholder: "Not set"
+                                onSelected: key => DefaultsConfig.setDefaultTextEditor(key)
+                            }
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Default image viewer"
+                                model: DefaultsConfig.availableImageViewers
+                                currentKey: DefaultsConfig.defaultImageViewer
+                                placeholder: "Not set"
+                                onSelected: key => DefaultsConfig.setDefaultImageViewer(key)
+                            }
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Default email client"
+                                model: DefaultsConfig.availableEmailClients
+                                currentKey: DefaultsConfig.defaultEmailClient
+                                placeholder: "Not set"
+                                onSelected: key => DefaultsConfig.setDefaultEmailClient(key)
+                            }
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Default PDF viewer"
+                                model: DefaultsConfig.availablePdfViewers
+                                currentKey: DefaultsConfig.defaultPdfViewer
+                                placeholder: "Not set"
+                                onSelected: key => DefaultsConfig.setDefaultPdfViewer(key)
                             }
 
                             NText {

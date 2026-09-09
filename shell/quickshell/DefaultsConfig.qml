@@ -84,6 +84,11 @@ QtObject {
             property string fontFamily: ""
             property real fontSize: 11
             property string defaultBrowser: ""
+            property string defaultFileExplorer: ""
+            property string defaultTextEditor: ""
+            property string defaultImageViewer: ""
+            property string defaultEmailClient: ""
+            property string defaultPdfViewer: ""
         }
     }
 
@@ -103,6 +108,11 @@ QtObject {
     // its default keeps fontScale at exactly 1 (no change at all).
     readonly property real fontScale: root.fontSize / 11
     readonly property string defaultBrowser: configFile.adapter.defaultBrowser
+    readonly property string defaultFileExplorer: configFile.adapter.defaultFileExplorer
+    readonly property string defaultTextEditor: configFile.adapter.defaultTextEditor
+    readonly property string defaultImageViewer: configFile.adapter.defaultImageViewer
+    readonly property string defaultEmailClient: configFile.adapter.defaultEmailClient
+    readonly property string defaultPdfViewer: configFile.adapter.defaultPdfViewer
 
     // --- icon theme: enumerate installed themes, then apply ---
 
@@ -174,10 +184,87 @@ QtObject {
         })
     }
 
+    // --- the other five Defaults - File Explorer/Text Editor/Email Client
+    // reuse the same DesktopEntries approach as the browser above, keyed
+    // off .desktop's own Categories= (real freedesktop.org menu categories
+    // - "FileManager"/"TextEditor"/"Email", confirmed present on this
+    // machine's own installed apps: thunar.desktop, code-oss.desktop/kate/
+    // vim, Betterbird's own Flatpak entry). Image Viewer/PDF viewer can't
+    // use that same approach - checked Quickshell's own DesktopEntry type
+    // first rather than assuming, and it exposes no MimeType= data at all
+    // (only id/name/categories/keywords/etc.), and there's no dedicated
+    // freedesktop category for "image viewer" or "PDF viewer" the way
+    // there is for FileManager/TextEditor/Email either. Those two instead
+    // get their own Process-based scanner (same shape as
+    // iconThemeScanner/cursorThemeScanner above), grepping installed
+    // .desktop files' real MimeType= lines directly - confirmed live via
+    // plain `grep -l "MimeType=.*application/pdf" ...` first that this
+    // finds real, correct matches on this machine before writing the
+    // scanner around it. ---
+
+    readonly property var availableFileExplorers: {
+        const apps = DesktopEntries.applications.values
+        return apps.filter(function (a) {
+            return a.categories && a.categories.indexOf("FileManager") !== -1
+        }).map(function (a) {
+            return { key: a.id, name: a.name }
+        })
+    }
+
+    readonly property var availableTextEditors: {
+        const apps = DesktopEntries.applications.values
+        return apps.filter(function (a) {
+            return a.categories && a.categories.indexOf("TextEditor") !== -1
+        }).map(function (a) {
+            return { key: a.id, name: a.name }
+        })
+    }
+
+    readonly property var availableEmailClients: {
+        const apps = DesktopEntries.applications.values
+        return apps.filter(function (a) {
+            return a.categories && a.categories.indexOf("Email") !== -1
+        }).map(function (a) {
+            return { key: a.id, name: a.name }
+        })
+    }
+
+    property var availableImageViewers: []
+
+    property Process imageViewerScanner: Process {
+        command: ["sh", "-c", "for f in /usr/share/applications/*.desktop /var/lib/flatpak/exports/share/applications/*.desktop ~/.local/share/flatpak/exports/share/applications/*.desktop; do [ -f \"$f\" ] || continue; grep -qE '^MimeType=.*(image/png|image/jpeg)' \"$f\" || continue; n=$(grep -m1 '^Name=' \"$f\" | cut -d= -f2-); b=$(basename \"$f\" .desktop); echo \"$b|${n:-$b}\"; done | sort -u -t'|' -k2,2"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const lines = this.text.trim().split("\n").filter(function (l) { return l.length > 0 })
+                root.availableImageViewers = lines.map(function (l) {
+                    const parts = l.split("|")
+                    return { key: parts[0], name: parts[1] || parts[0] }
+                })
+            }
+        }
+    }
+
+    property var availablePdfViewers: []
+
+    property Process pdfViewerScanner: Process {
+        command: ["sh", "-c", "for f in /usr/share/applications/*.desktop /var/lib/flatpak/exports/share/applications/*.desktop ~/.local/share/flatpak/exports/share/applications/*.desktop; do [ -f \"$f\" ] || continue; grep -qE '^MimeType=.*application/pdf' \"$f\" || continue; n=$(grep -m1 '^Name=' \"$f\" | cut -d= -f2-); b=$(basename \"$f\" .desktop); echo \"$b|${n:-$b}\"; done | sort -u -t'|' -k2,2"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const lines = this.text.trim().split("\n").filter(function (l) { return l.length > 0 })
+                root.availablePdfViewers = lines.map(function (l) {
+                    const parts = l.split("|")
+                    return { key: parts[0], name: parts[1] || parts[0] }
+                })
+            }
+        }
+    }
+
     Component.onCompleted: {
         iconThemeScanner.running = true
         cursorThemeScanner.running = true
         fontScanner.running = true
+        imageViewerScanner.running = true
+        pdfViewerScanner.running = true
     }
 
     // --- qt6ct.conf / gtk settings.ini / cursor index.theme text-mode FileViews ---
@@ -297,6 +384,56 @@ QtObject {
     }
 
     property Process browserSetter: Process {}
+
+    // xdg-settings only actually covers default-web-browser (and default
+    // URL-scheme handlers) - there's no equivalent xdg-settings subcommand
+    // for a file manager/text editor/image viewer/email client/PDF
+    // viewer. The real, correct mechanism for all five is xdg-mime
+    // default <app>.desktop <mimetype>, associating that one desktop
+    // entry with a specific MIME type directly (inode/directory for a
+    // file manager, text/plain for a text editor, etc.) - confirmed this
+    // is the standard approach real desktop environments use for exactly
+    // this same "default app" concept beyond just the browser case.
+
+    function setDefaultFileExplorer(val) {
+        configFile.adapter.defaultFileExplorer = val
+        fileExplorerSetter.command = ["xdg-mime", "default", val + ".desktop", "inode/directory"]
+        fileExplorerSetter.running = true
+    }
+
+    property Process fileExplorerSetter: Process {}
+
+    function setDefaultTextEditor(val) {
+        configFile.adapter.defaultTextEditor = val
+        textEditorSetter.command = ["xdg-mime", "default", val + ".desktop", "text/plain"]
+        textEditorSetter.running = true
+    }
+
+    property Process textEditorSetter: Process {}
+
+    function setDefaultImageViewer(val) {
+        configFile.adapter.defaultImageViewer = val
+        imageViewerSetter.command = ["sh", "-c", "xdg-mime default '" + val + ".desktop' image/png image/jpeg image/gif image/webp image/bmp image/svg+xml"]
+        imageViewerSetter.running = true
+    }
+
+    property Process imageViewerSetter: Process {}
+
+    function setDefaultEmailClient(val) {
+        configFile.adapter.defaultEmailClient = val
+        emailClientSetter.command = ["xdg-mime", "default", val + ".desktop", "x-scheme-handler/mailto"]
+        emailClientSetter.running = true
+    }
+
+    property Process emailClientSetter: Process {}
+
+    function setDefaultPdfViewer(val) {
+        configFile.adapter.defaultPdfViewer = val
+        pdfViewerSetter.command = ["xdg-mime", "default", val + ".desktop", "application/pdf"]
+        pdfViewerSetter.running = true
+    }
+
+    property Process pdfViewerSetter: Process {}
 
     // A honest limitation, confirmed live rather than assumed: this only
     // does a hard *QML* reload (tears down and rebuilds the whole
