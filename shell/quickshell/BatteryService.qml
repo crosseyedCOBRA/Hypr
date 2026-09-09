@@ -73,6 +73,17 @@ Singleton {
     readonly property real warningThreshold: configFile.adapter.warningThreshold
     readonly property real criticalThreshold: configFile.adapter.criticalThreshold
 
+    // No caller needed these until Settings' new Battery tab - the config
+    // properties/checkBatteryNotification() re-check were already wired
+    // up (battery.json was presumably meant to be hand-edited until now).
+    function setWarningThreshold(val) {
+        configFile.adapter.warningThreshold = val
+    }
+
+    function setCriticalThreshold(val) {
+        configFile.adapter.criticalThreshold = val
+    }
+
     readonly property var laptopBatteries: UPower.devices.values.filter(d => d.isLaptopBattery).sort((x, y) => {
         if (x.nativePath.includes("DisplayDevice"))
             return -1

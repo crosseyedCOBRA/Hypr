@@ -1,5 +1,4 @@
 import QtQuick
-import Quickshell
 
 // Manual "do not disturb" toggle for dunst, via `dunstctl set-paused
 // toggle` - same simple on/off pattern as StayAwake.qml/NightLight.qml.
@@ -24,8 +23,7 @@ Item {
     property bool clickable: true
 
     function toggle() {
-        DndState.paused = !DndState.paused
-        Quickshell.execDetached(["dunstctl", "set-paused", "toggle"])
+        DndState.toggle()
     }
 
     implicitWidth: rowLayout.implicitWidth

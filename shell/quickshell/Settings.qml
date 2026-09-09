@@ -132,6 +132,11 @@ PopupWindow {
         { id: "bar", label: "Bar", icon: "" },
         { id: "dock", label: "Dock", icon: "" },
         { id: "audio", label: "Audio", icon: "" },
+        { id: "notifications", label: "Notifications", icon: "" },
+        { id: "osd", label: "OSD", icon: "" },
+        { id: "nightlight", label: "Night Light", icon: "" },
+        { id: "clipboard", label: "Clipboard", icon: "" },
+        { id: "battery", label: "Battery", icon: "" },
         { id: "profile", label: "Profile", icon: "" },
         { id: "datetime", label: "Date/Time", icon: "" },
         { id: "modules", label: "Modules", icon: "" },
@@ -1657,6 +1662,360 @@ PopupWindow {
 
                             AudioMixer {
                                 width: parent.width
+                            }
+                        }
+
+                        // ==================== Notifications ====================
+                        Column {
+                            width: parent.width
+                            spacing: 12
+                            visible: settingsWindow.activeCategory === "notifications"
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Do Not Disturb"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                ToggleSwitch {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    checked: DndState.paused
+                                    onToggled: DndState.toggle()
+                                }
+                            }
+
+                            NButton {
+                                text: "Clear All Notifications"
+                                fontSize: Style.fontSizeS
+                                backgroundColor: Colors.pill
+                                textColor: Colors.text
+                                onClicked: NotificationHistoryService.clearAll()
+                            }
+
+                            NText {
+                                text: "Per-app/per-type notification filtering isn't built yet - every notification (except OSD-type volume/brightness popups, which never go through the notification daemon at all) currently surfaces the same way."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+                        }
+
+                        // ==================== OSD ====================
+                        Column {
+                            width: parent.width
+                            spacing: 12
+                            visible: settingsWindow.activeCategory === "osd"
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Show on-screen popup"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                ToggleSwitch {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    checked: OSDState.enabled
+                                    onToggled: newChecked => OSDState.setEnabled(newChecked)
+                                }
+                            }
+
+                            NText {
+                                text: "Volume/brightness key presses still work either way - this only controls whether a popup shows on screen."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+                                enabled: OSDState.enabled
+
+                                NText {
+                                    text: "Auto-hide after"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NSlider {
+                                    width: 160
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    from: 500
+                                    to: 5000
+                                    stepSize: 100
+                                    value: OSDState.hideDelayMs
+                                    onMoved: OSDState.setHideDelayMs(Math.round(value))
+                                }
+
+                                NText {
+                                    text: (OSDState.hideDelayMs / 1000).toFixed(1) + "s"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.textMuted
+                                    pointSize: Style.fontSizeS
+                                }
+                            }
+                        }
+
+                        // ==================== Night Light ====================
+                        Column {
+                            width: parent.width
+                            spacing: 12
+                            visible: settingsWindow.activeCategory === "nightlight"
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Automatic schedule"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                ToggleSwitch {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    checked: NightLightService.scheduleEnabled
+                                    onToggled: newChecked => NightLightService.setScheduleEnabled(newChecked)
+                                }
+                            }
+
+                            NText {
+                                text: "When enabled, this switches on/off automatically at the times below instead of needing the bar/Control Center toggle. The manual toggle still works either way and uses this same color temperature."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+
+                            NTextInput {
+                                width: 160
+                                label: "Sunset (starts)"
+                                text: NightLightService.sunset
+                                placeholderText: "18:00"
+                                onEditingFinished: NightLightService.setSunset(text)
+                                onAccepted: NightLightService.setSunset(text)
+                            }
+
+                            NTextInput {
+                                width: 160
+                                label: "Sunrise (ends)"
+                                text: NightLightService.sunrise
+                                placeholderText: "06:00"
+                                onEditingFinished: NightLightService.setSunrise(text)
+                                onAccepted: NightLightService.setSunrise(text)
+                            }
+
+                            NText {
+                                text: "24-hour HH:MM format."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+
+                            Row {
+                                width: parent.width
+                                height: 32
+                                spacing: 12
+
+                                NText {
+                                    text: "Color temperature"
+                                    width: 170
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                }
+
+                                NSlider {
+                                    width: 160
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    from: 2500
+                                    to: 6500
+                                    stepSize: 100
+                                    value: NightLightService.nightTemp
+                                    onMoved: NightLightService.setNightTemp(Math.round(value))
+                                }
+
+                                NText {
+                                    text: NightLightService.nightTemp + "K"
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Colors.textMuted
+                                    pointSize: Style.fontSizeS
+                                }
+                            }
+
+                            NText {
+                                text: "Applied via redshift - lower is warmer/more orange."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+                        }
+
+                        // ==================== Clipboard ====================
+                        Column {
+                            width: parent.width
+                            spacing: 12
+                            visible: settingsWindow.activeCategory === "clipboard"
+
+                            NComboBox {
+                                width: parent.width
+                                label: "Max history entries"
+                                model: [
+                                    { key: "20", name: "20 entries" },
+                                    { key: "50", name: "50 entries" },
+                                    { key: "100", name: "100 entries" },
+                                    { key: "200", name: "200 entries" }
+                                ]
+                                currentKey: "" + ClipboardHistoryService.maxEntries
+                                onSelected: key => ClipboardHistoryService.setMaxEntries(parseInt(key, 10))
+                            }
+
+                            NText {
+                                text: "Oldest entries are dropped once this limit is reached. Currently " + ClipboardHistoryService.items.length + " entr" + (ClipboardHistoryService.items.length === 1 ? "y" : "ies") + " stored."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+
+                            NButton {
+                                text: "Clear History"
+                                fontSize: Style.fontSizeS
+                                backgroundColor: Colors.pill
+                                textColor: Colors.text
+                                onClicked: ClipboardHistoryService.wipeAll()
+                            }
+
+                            NText {
+                                visible: ClipboardHistoryService.dependencyChecked && !ClipboardHistoryService.clipnotifyAvailable
+                                text: "clipnotify isn't installed - clipboard history capture is currently inactive. See DEPENDENCIES.md."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.red
+                                pointSize: Style.fontSizeXS
+                            }
+                        }
+
+                        // ==================== Battery ====================
+                        Column {
+                            width: parent.width
+                            spacing: 12
+                            visible: settingsWindow.activeCategory === "battery"
+
+                            NText {
+                                visible: !BatteryService.batteryPresent
+                                text: "No battery detected on this system."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeS
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 12
+                                visible: BatteryService.batteryPresent
+
+                                NText {
+                                    text: Math.round(BatteryService.batteryPercentage) + "% " + (BatteryService.batteryCharging ? "(charging)" : BatteryService.batteryPluggedIn ? "(plugged in)" : "(on battery)")
+                                    color: Colors.text
+                                    pointSize: Style.fontSizeM
+                                    font.weight: Style.fontWeightBold
+                                }
+
+                                Row {
+                                    width: parent.width
+                                    height: 32
+                                    spacing: 12
+
+                                    NText {
+                                        text: "Warning threshold"
+                                        width: 170
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: Colors.text
+                                        pointSize: Style.fontSizeM
+                                    }
+
+                                    NSlider {
+                                        width: 160
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        from: 5
+                                        to: 50
+                                        stepSize: 1
+                                        value: BatteryService.warningThreshold
+                                        onMoved: BatteryService.setWarningThreshold(Math.round(value))
+                                    }
+
+                                    NText {
+                                        text: Math.round(BatteryService.warningThreshold) + "%"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: Colors.textMuted
+                                        pointSize: Style.fontSizeS
+                                    }
+                                }
+
+                                Row {
+                                    width: parent.width
+                                    height: 32
+                                    spacing: 12
+
+                                    NText {
+                                        text: "Critical threshold"
+                                        width: 170
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: Colors.text
+                                        pointSize: Style.fontSizeM
+                                    }
+
+                                    NSlider {
+                                        width: 160
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        from: 1
+                                        to: 30
+                                        stepSize: 1
+                                        value: BatteryService.criticalThreshold
+                                        onMoved: BatteryService.setCriticalThreshold(Math.round(value))
+                                    }
+
+                                    NText {
+                                        text: Math.round(BatteryService.criticalThreshold) + "%"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: Colors.textMuted
+                                        pointSize: Style.fontSizeS
+                                    }
+                                }
+
+                                NText {
+                                    text: "A notification fires once when battery level crosses below each threshold while unplugged (critical below warning, so keep it the lower number)."
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
+                                    color: Colors.textMuted
+                                    pointSize: Style.fontSizeXS
+                                }
                             }
                         }
                     }

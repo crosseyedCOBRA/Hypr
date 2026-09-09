@@ -1,5 +1,6 @@
 pragma Singleton
 import QtQuick
+import Quickshell
 import Quickshell.Io
 
 // Shared "do not disturb" flag, mirroring StayAwakeState.qml: dunst's pause
@@ -17,6 +18,14 @@ QtObject {
     id: root
 
     property bool paused: false
+
+    // Moved here from being local to Dnd.qml, so Settings' own Notifications
+    // tab can drive the exact same toggle (same "share the mechanism, don't
+    // duplicate it" reasoning as AvatarPickerPanelState.setAvatar()).
+    function toggle() {
+        root.paused = !root.paused
+        Quickshell.execDetached(["dunstctl", "set-paused", "toggle"])
+    }
 
     Component.onCompleted: queryProc.running = true
 

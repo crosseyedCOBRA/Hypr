@@ -35,7 +35,32 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property int maxEntries: 50
+    // Its own small settings file, separate from historyFile below (that
+    // one's entries array is write-heavy/local-only, watchChanges: false;
+    // this one is a real user setting, watchChanges: true like every other
+    // *Config/*Service settings file in this codebase) - added for
+    // Settings' new Clipboard tab, previously a hardcoded literal with no
+    // way to change it at all.
+    FileView {
+        id: settingsFile
+        path: Quickshell.env("HOME") + "/.config/quickshell/clipboard-settings.json"
+        watchChanges: true
+        onFileChanged: reload()
+        onAdapterUpdated: writeAdapter()
+        adapter: JsonAdapter {
+            property int maxEntries: 50
+        }
+    }
+
+    readonly property int maxEntries: settingsFile.adapter.maxEntries
+
+    function setMaxEntries(val) {
+        settingsFile.adapter.maxEntries = val
+        if (root.items.length > val) {
+            root.items = root.items.slice(0, val)
+            root._persist()
+        }
+    }
 
     property var items: [] // [{id, content, preview, contentType, timestamp}]
     property bool clipnotifyAvailable: false

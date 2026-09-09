@@ -56,6 +56,37 @@ Singleton {
     readonly property string sunrise: configFile.adapter.sunrise
     readonly property int nightTemp: configFile.adapter.nightTemp
 
+    // No caller needed these until Settings' new Night Light tab - hand-
+    // editing nightlight.json was the only way to change any of this
+    // before now (see this file's own header comment). Each setter
+    // re-runs applySchedule() so a change takes effect immediately rather
+    // than waiting for the next boundary timer tick.
+    function setScheduleEnabled(val) {
+        configFile.adapter.scheduleEnabled = val
+        applySchedule()
+    }
+
+    function setSunset(val) {
+        configFile.adapter.sunset = val
+        applySchedule()
+    }
+
+    function setSunrise(val) {
+        configFile.adapter.sunrise = val
+        applySchedule()
+    }
+
+    function setNightTemp(val) {
+        configFile.adapter.nightTemp = val
+        // If currently in the night state, re-apply immediately so a
+        // color-temperature change is visible right away rather than only
+        // taking effect at the next sunset - the schedule's on/off timing
+        // itself is unaffected, just the temperature redshift is called
+        // with.
+        if (NightLightState.active)
+            Quickshell.execDetached(["redshift", "-O", String(val)])
+    }
+
     // Ported near-verbatim from Noctalia's NightLightService.qml - pure
     // time-of-day math, no external coupling.
     function timeToMinutes(timeStr) {
