@@ -623,7 +623,7 @@ PopupWindow {
                         }
 
                         NText {
-                            text: "Network"
+                            text: "Ethernet"
                             anchors.horizontalCenter: parent.horizontalCenter
                             color: Colors.textMuted
                             pointSize: Style.fontSizeXS
@@ -641,8 +641,8 @@ PopupWindow {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: bluetoothToggleArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("bluetooth", ControlCenterState.panel)
+                    color: wifiToggleArea.containsMouse ? Colors.pillActive : Colors.pill
+                    visible: ModulesConfig.showInTray("wifi", ControlCenterState.panel)
 
                     Behavior on color {
                         ColorAnimation { duration: Style.animationFast }
@@ -652,8 +652,8 @@ PopupWindow {
                         anchors.centerIn: parent
                         spacing: 4
 
-                        BluetoothIndicator {
-                            id: bluetoothToggle
+                        WifiToggle {
+                            id: wifiToggle
                             clickable: false
                             anchors.horizontalCenter: parent.horizontalCenter
                             textColor: Colors.textMuted
@@ -661,7 +661,7 @@ PopupWindow {
                         }
 
                         NText {
-                            text: "Bluetooth"
+                            text: "Wifi"
                             anchors.horizontalCenter: parent.horizontalCenter
                             color: Colors.textMuted
                             pointSize: Style.fontSizeXS
@@ -669,10 +669,10 @@ PopupWindow {
                     }
 
                     MouseArea {
-                        id: bluetoothToggleArea
+                        id: wifiToggleArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: bluetoothToggle.toggle()
+                        onClicked: wifiToggle.toggle()
                     }
                 }
 
@@ -718,8 +718,8 @@ PopupWindow {
                     width: root.tileWidth
                     height: root.tileHeight
                     radius: Style.radiusS
-                    color: wifiToggleArea.containsMouse ? Colors.pillActive : Colors.pill
-                    visible: ModulesConfig.showInTray("wifi", ControlCenterState.panel)
+                    color: bluetoothToggleArea.containsMouse ? Colors.pillActive : Colors.pill
+                    visible: ModulesConfig.showInTray("bluetooth", ControlCenterState.panel)
 
                     Behavior on color {
                         ColorAnimation { duration: Style.animationFast }
@@ -729,8 +729,8 @@ PopupWindow {
                         anchors.centerIn: parent
                         spacing: 4
 
-                        WifiToggle {
-                            id: wifiToggle
+                        BluetoothIndicator {
+                            id: bluetoothToggle
                             clickable: false
                             anchors.horizontalCenter: parent.horizontalCenter
                             textColor: Colors.textMuted
@@ -738,7 +738,7 @@ PopupWindow {
                         }
 
                         NText {
-                            text: "Wifi"
+                            text: "Bluetooth"
                             anchors.horizontalCenter: parent.horizontalCenter
                             color: Colors.textMuted
                             pointSize: Style.fontSizeXS
@@ -746,10 +746,10 @@ PopupWindow {
                     }
 
                     MouseArea {
-                        id: wifiToggleArea
+                        id: bluetoothToggleArea
                         anchors.fill: parent
                         hoverEnabled: true
-                        onClicked: wifiToggle.toggle()
+                        onClicked: bluetoothToggle.toggle()
                     }
                 }
                 }
