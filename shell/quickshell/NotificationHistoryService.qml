@@ -22,7 +22,63 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    property var notifications: [] // [{id, appName, summary, body, iconPath, urgency, epoch}]
+    // Full history straight from dunst, unfiltered - `notifications` below
+    // is the ignore-list-filtered view every consumer (bell badge, history
+    // panel) actually reads; kept separate so Settings' Notifications tab
+    // can still list every app that's ever shown up (`knownApps`) even
+    // once some of them are being filtered out of view.
+    property var _rawNotifications: [] // [{id, appName, summary, body, iconPath, urgency, epoch}]
+
+    readonly property var notifications: root._rawNotifications.filter(function (n) {
+        return root.ignoredApps.indexOf(n.appName) === -1 && root.ignoredUrgencies.indexOf(n.urgency) === -1
+    })
+
+    // Every distinct app name seen in the current history, ignored or not
+    // - Settings' Notifications tab lists these as toggleable rows rather
+    // than requiring the user to type an exact app name from memory.
+    readonly property var knownApps: {
+        const seen = {}
+        const list = []
+        for (const n of root._rawNotifications) {
+            if (n.appName === "" || seen[n.appName])
+                continue
+            seen[n.appName] = true
+            list.push(n.appName)
+        }
+        return list.sort()
+    }
+
+    // Settings, separate from historyFile below (that one's data is
+    // dunst's own, read-only from here) - same FileView+JsonAdapter
+    // pattern as every other *Service/*Config settings file.
+    property FileView settingsFile: FileView {
+        path: Quickshell.env("HOME") + "/.config/quickshell/notification-settings.json"
+        watchChanges: true
+        onFileChanged: reload()
+        onAdapterUpdated: writeAdapter()
+
+        adapter: JsonAdapter {
+            property var ignoredApps: []
+            property var ignoredUrgencies: []
+        }
+    }
+
+    readonly property var ignoredApps: root.settingsFile.adapter.ignoredApps || []
+    readonly property var ignoredUrgencies: root.settingsFile.adapter.ignoredUrgencies || []
+
+    function setAppIgnored(appName, ignored) {
+        const list = root.ignoredApps.filter(function (a) { return a !== appName })
+        if (ignored)
+            list.push(appName)
+        root.settingsFile.adapter.ignoredApps = list
+    }
+
+    function setUrgencyIgnored(urgency, ignored) {
+        const list = root.ignoredUrgencies.filter(function (u) { return u !== urgency })
+        if (ignored)
+            list.push(urgency)
+        root.settingsFile.adapter.ignoredUrgencies = list
+    }
 
     function refresh() {
         reader.running = true
@@ -71,7 +127,7 @@ Singleton {
                 try {
                     const parsed = JSON.parse(jsonText)
                     const rows = (parsed.data && parsed.data[0]) || []
-                    root.notifications = rows.map(function (n) {
+                    root._rawNotifications = rows.map(function (n) {
                         return {
                             id: n.id ? n.id.data : 0,
                             appName: n.appname ? n.appname.data : "",

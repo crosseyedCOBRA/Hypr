@@ -2168,11 +2168,90 @@ PopupWindow {
                             }
 
                             NText {
-                                text: "Per-app/per-type notification filtering isn't built yet - every notification (except OSD-type volume/brightness popups, which never go through the notification daemon at all) currently surfaces the same way."
+                                text: "Every real notification (except OSD-type volume/brightness popups, which never go through the notification daemon at all) surfaces the same way by default. Turn an urgency level or a specific app off below to hide it from the bell icon and history - dunst still receives it, this only controls what shows here."
                                 width: parent.width
                                 wrapMode: Text.WordWrap
                                 color: Colors.textMuted
                                 pointSize: Style.fontSizeXS
+                            }
+
+                            NText {
+                                text: "Notification urgency"
+                                color: Colors.text
+                                pointSize: Style.fontSizeM
+                                font.weight: Style.fontWeightBold
+                                topPadding: 8
+                            }
+
+                            Row {
+                                width: parent.width
+                                spacing: 24
+
+                                Repeater {
+                                    model: ["LOW", "NORMAL", "CRITICAL"]
+
+                                    Row {
+                                        required property string modelData
+                                        spacing: 8
+
+                                        ToggleSwitch {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            checked: NotificationHistoryService.ignoredUrgencies.indexOf(parent.modelData) === -1
+                                            onToggled: newChecked => NotificationHistoryService.setUrgencyIgnored(parent.modelData, !newChecked)
+                                        }
+
+                                        NText {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: parent.modelData
+                                            color: Colors.text
+                                            pointSize: Style.fontSizeS
+                                        }
+                                    }
+                                }
+                            }
+
+                            NText {
+                                text: "Notification apps"
+                                color: Colors.text
+                                pointSize: Style.fontSizeM
+                                font.weight: Style.fontWeightBold
+                                topPadding: 8
+                            }
+
+                            NText {
+                                visible: NotificationHistoryService.knownApps.length === 0
+                                text: "No apps have sent a notification yet this session - apps appear here as they do."
+                                width: parent.width
+                                wrapMode: Text.WordWrap
+                                color: Colors.textMuted
+                                pointSize: Style.fontSizeXS
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 6
+
+                                Repeater {
+                                    model: NotificationHistoryService.knownApps
+
+                                    Row {
+                                        required property string modelData
+                                        spacing: 8
+
+                                        ToggleSwitch {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            checked: NotificationHistoryService.ignoredApps.indexOf(parent.modelData) === -1
+                                            onToggled: newChecked => NotificationHistoryService.setAppIgnored(parent.modelData, !newChecked)
+                                        }
+
+                                        NText {
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            text: parent.modelData
+                                            color: Colors.text
+                                            pointSize: Style.fontSizeS
+                                        }
+                                    }
+                                }
                             }
                         }
 
