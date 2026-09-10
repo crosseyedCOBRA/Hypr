@@ -104,16 +104,25 @@ PopupWindow {
     // visible padding and a bit of background definition around its
     // Control Center rather than content running edge-to-edge.
     implicitWidth: 440
-    // Fixed at 830 - tall enough for every optional row/dial visible at
-    // once (see the comment above this property). A Calendar section was
+    // Was 830 (tall enough for every optional row/dial visible at once,
+    // see the comment above this property) - reported live as the 5-day
+    // forecast still being cut off a bit even after the tileHeight trim
+    // above reclaimed ~40px for it, so bumped further to 875 for real
+    // breathing room. Still deliberately not the 900 the old Calendar
+    // experiment needed (see below) - this grows *down* from the bar's
+    // own fixed top anchor for a top-positioned bar (`BarConfig.
+    // popupAnchorY`'s "top" branch returns a fixed offset off the bar
+    // itself, independent of implicitHeight, unlike its "bottom" branch)
+    // per an explicit request to grow the panel from the bottom
+    // specifically, not shift its top edge. A Calendar section was
     // briefly added below the gauges cluster (which needed bumping this to
     // 900 plus wrapping everything in a scrolling NScrollView so the taller
     // content wouldn't clip past a 1080px-tall monitor's usable height) but
     // the user reconsidered - Control Center should never require
     // scrolling, full stop - so the Calendar section was pulled back out
     // (it stays in CalendarFlyout.qml, under the bar's clock) rather than
-    // solved with a scrollbar, and this reverts to the original fixed size.
-    implicitHeight: 830
+    // solved with a scrollbar.
+    implicitHeight: 875
 
     anchor.item: ControlCenterState.barItem
     anchor.rect.x: ControlCenterState.barItem ? ControlCenterState.barItem.width - implicitWidth : 0
@@ -289,6 +298,18 @@ PopupWindow {
                         baseSize: 26
                         icon: ""
                         tooltipText: "Settings"
+                        // Reported live as still visibly off-center after
+                        // the sound-output icon's own fix (see
+                        // NIconButton.qml's iconOffsetX comment) - this
+                        // session's own earlier sandbox measurement read
+                        // this glyph (U+F013) as close to centered, but
+                        // that measurement was taken under this machine's
+                        // Xephyr/llvmpipe software-GL sandbox, not
+                        // necessarily identical to how the real GPU-
+                        // accelerated live desktop actually hints/
+                        // rasterizes it - trusting the live, direct report
+                        // over the sandbox measurement here.
+                        iconOffsetX: -3
                         // Settings now opens as a PopupWindow anchored to
                         // the bar's own full-width surface
                         // (ControlCenterState.barItem, set by Bar.qml
@@ -336,6 +357,10 @@ PopupWindow {
                         baseSize: 26
                         icon: ""
                         tooltipText: "Power menu"
+                        // Same live report as the Settings gear just above - see
+                        // its own comment for why this is trusted over this
+                        // session's earlier sandbox measurement.
+                        iconOffsetX: -3
                         onClicked: {
                             PowerMenuPanelState.visible = true
                             ControlCenterState.visible = false
@@ -895,7 +920,17 @@ PopupWindow {
                 Column {
                     id: mediaCard
                     anchors.left: parent.left
-                    width: 230
+                    // Was 230 - widened now that the gauges cluster sits
+                    // flush against the panel's own right edge instead of
+                    // immediately after this card (see the Item's own
+                    // comment above): left at 230 alongside that fix, this
+                    // card would have had a large, obviously dead gap
+                    // between its own right edge and the gauges rather
+                    // than the gauges' *intended* small gap - reported
+                    // live as "theres a lot of dead space there now."
+                    // 290 leaves a deliberate ~52px gap before the 38px-
+                    // wide gauges column (contentWidth 380 - 290 - 38).
+                    width: 290
                     spacing: 8
                     // The "both places at once" exception this card used to
                     // need (Noctalia's own bar shows a compact "now playing"
@@ -1044,7 +1079,7 @@ PopupWindow {
                 Column {
                     id: noMediaCard
                     anchors.left: parent.left
-                    width: 230
+                    width: 290 // matches mediaCard's own width - see its comment
                     spacing: 8
                     visible: ModulesConfig.showInTray("mediaPlayer", ControlCenterState.panel) && !MediaService.currentPlayer
 
