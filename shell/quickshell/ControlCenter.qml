@@ -311,8 +311,9 @@ PopupWindow {
                         // over the sandbox measurement here. First attempt
                         // (-3) overshot per a same-day live follow-up -
                         // "come back to the right a really small amount,
-                        // probably 1-2px" - settled here at -1.5.
-                        iconOffsetX: -1.5
+                        // probably 1-2px" - landed at -1.5, then one more
+                        // half-pixel left per a further live follow-up.
+                        iconOffsetX: -2
                         // Settings now opens as a PopupWindow anchored to
                         // the bar's own full-width surface
                         // (ControlCenterState.barItem, set by Bar.qml
@@ -363,7 +364,7 @@ PopupWindow {
                         // Same live report as the Settings gear just above - see
                         // its own comment for why this is trusted over this
                         // session's earlier sandbox measurement.
-                        iconOffsetX: -1.5
+                        iconOffsetX: -2
                         onClicked: {
                             PowerMenuPanelState.visible = true
                             ControlCenterState.visible = false
