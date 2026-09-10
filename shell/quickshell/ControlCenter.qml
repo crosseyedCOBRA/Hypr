@@ -308,8 +308,11 @@ PopupWindow {
                         // necessarily identical to how the real GPU-
                         // accelerated live desktop actually hints/
                         // rasterizes it - trusting the live, direct report
-                        // over the sandbox measurement here.
-                        iconOffsetX: -3
+                        // over the sandbox measurement here. First attempt
+                        // (-3) overshot per a same-day live follow-up -
+                        // "come back to the right a really small amount,
+                        // probably 1-2px" - settled here at -1.5.
+                        iconOffsetX: -1.5
                         // Settings now opens as a PopupWindow anchored to
                         // the bar's own full-width surface
                         // (ControlCenterState.barItem, set by Bar.qml
@@ -360,7 +363,7 @@ PopupWindow {
                         // Same live report as the Settings gear just above - see
                         // its own comment for why this is trusted over this
                         // session's earlier sandbox measurement.
-                        iconOffsetX: -3
+                        iconOffsetX: -1.5
                         onClicked: {
                             PowerMenuPanelState.visible = true
                             ControlCenterState.visible = false
