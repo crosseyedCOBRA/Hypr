@@ -27,6 +27,26 @@ Item {
     property color colorBorderHover: Colors.mOutline
     property real customRadius: -1 // -1 means use default (iRadiusL), otherwise use this value
 
+    // Manual per-instance nudge, in pixels, for a specific glyph's own
+    // real ink-vs-layout-box asymmetry - defaults to 0 (no change) for
+    // every other icon. anchors.fill's own centering (see below) already
+    // handles the general case correctly via real text layout, but some
+    // Nerd Font glyphs still have visibly uneven left/right or top/bottom
+    // *ink* within their own character cell regardless (confirmed
+    // empirically, not guessed: a dedicated Xephyr-sandbox test harness
+    // rendering each candidate glyph at its exact real on-screen size,
+    // 8x magnified, with a crosshair marking the button's true geometric
+    // center, measured Control Center's volume/sound-output icon
+    // (U+F028) at a real, substantial rightward ink offset - reported
+    // live as "the settings, power and sound output icons are all off-
+    // center." The other two measured as already close to centered in
+    // that same test (both there and in the live screenshot, once
+    // re-examined with proper interpolation rather than a blocky nearest-
+    // neighbor zoom that was misleadingly exaggerating them) so they're
+    // deliberately left alone here rather than nudged on a guess.
+    property real iconOffsetX: 0
+    property real iconOffsetY: 0
+
     property alias border: visualButton.border
     property alias radius: visualButton.radius
     property alias color: visualButton.color
@@ -81,6 +101,17 @@ Item {
             // approach renders visibly more centered for exactly that
             // glyph, not just in theory.
             anchors.fill: parent
+            // Symmetric opposite margins (rather than plain x/y positioning,
+            // which would fight anchors.fill's own sizing) shift the fill
+            // rect's own center by iconOffsetX/Y while leaving its size -
+            // and therefore the font.pointSize this glyph renders at -
+            // completely unchanged. See iconOffsetX's own comment above for
+            // why this is 0 (a no-op) for every icon except where a real,
+            // measured asymmetry has been found.
+            anchors.leftMargin: root.iconOffsetX
+            anchors.rightMargin: -root.iconOffsetX
+            anchors.topMargin: root.iconOffsetY
+            anchors.bottomMargin: -root.iconOffsetY
             icon: root.icon
             pointSize: Style.toOdd(visualButton.width * 0.48)
             color: root.enabled && root.hovering ? colorFgHover : colorFg

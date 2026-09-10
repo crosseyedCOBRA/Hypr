@@ -136,7 +136,17 @@ PopupWindow {
     readonly property int labelWidth: 80
     readonly property int contentWidth: 380
     readonly property int tileWidth: 150
-    readonly property int tileHeight: 64
+    // Was 64 - trimmed to reclaim the ~40px the 5-day forecast row below
+    // (WeatherWidget's icon+temp lines, not just its day-label line) needs
+    // to actually fit inside this panel's own fixed 830px height without
+    // clipping - confirmed live via a taller-than-needed Xephyr test screen
+    // that the clipping was this panel's own fixed height budget, not
+    // screen size, so reclaiming space here (5 toggle-grid rows × 8px) was
+    // the fix rather than growing implicitHeight, which the comment on
+    // that property explicitly warns against reintroducing (a taller fixed
+    // panel risked needing the scrolling behavior Control Center is
+    // deliberately never supposed to have).
+    readonly property int tileHeight: 56
 
     // Hidden property sources for the CPU/temp gauges below - reuse
     // CpuLoad.qml/HwmonSensor.qml's own already-proven live-polling logic
@@ -387,8 +397,20 @@ PopupWindow {
                         spacing: 6
 
                         NIconButton {
+                            readonly property bool muted: root.pwSink && root.pwSink.ready && root.pwSink.audio.muted
                             baseSize: 22
-                            icon: (root.pwSink && root.pwSink.ready && root.pwSink.audio.muted) ? "󰖁" : ""
+                            icon: muted ? "󰖁" : ""
+                            // U+F028's own real ink sits measurably right of
+                            // its character cell's center (confirmed via a
+                            // dedicated Xephyr test harness, see
+                            // NIconButton.qml's iconOffsetX comment) -
+                            // reported live as this "sound output" icon
+                            // looking off-center. Scoped to the unmuted
+                            // glyph specifically, the one actually measured;
+                            // the muted glyph (a different codepoint,
+                            // U+F0581) wasn't verified to have the same
+                            // issue, so it's left at 0 rather than guessed.
+                            iconOffsetX: muted ? 0 : -5
                             anchors.verticalCenter: parent.verticalCenter
                             onClicked: {
                                 if (root.pwSink)
@@ -857,12 +879,22 @@ PopupWindow {
                 }
             }
 
-            Row {
+            // Was a plain Row (media card, then whichever gauges column
+            // immediately follows it with a fixed 14px gap) - switched to
+            // explicit left/right anchoring instead so the gauges cluster
+            // sits flush against the panel's own right edge, matching the
+            // Noctalia reference layout, rather than hugging the media
+            // card's own right edge with ~100px of dead space beyond it
+            // (contentWidth 380 - mediaCard's 230 - the gauges' own ~38px
+            // width left a gap that wide). Reported live as "bump the 4
+            // circular readings more to the right."
+            Item {
                 width: root.contentWidth
-                spacing: 14
+                height: Math.max(mediaCard.visible ? mediaCard.height : 0, noMediaCard.visible ? noMediaCard.height : 0, gaugesColumn.height)
 
                 Column {
                     id: mediaCard
+                    anchors.left: parent.left
                     width: 230
                     spacing: 8
                     // The "both places at once" exception this card used to
@@ -1011,6 +1043,7 @@ PopupWindow {
 
                 Column {
                     id: noMediaCard
+                    anchors.left: parent.left
                     width: 230
                     spacing: 8
                     visible: ModulesConfig.showInTray("mediaPlayer", ControlCenterState.panel) && !MediaService.currentPlayer
@@ -1047,7 +1080,9 @@ PopupWindow {
                 }
 
                 Column {
+                    id: gaugesColumn
                     spacing: 6
+                    anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
 
                     NCircularGauge {
