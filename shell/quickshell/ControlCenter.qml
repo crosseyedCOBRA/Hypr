@@ -584,6 +584,33 @@ PopupWindow {
 
                         NIcon {
                             anchors.horizontalCenter: parent.horizontalCenter
+                            // Reported live: this tile always shows
+                            // "balanced" in practice (power-profiles-daemon
+                            // isn't installed on this machine, see this
+                            // whole block's own header comment, so
+                            // currentProfile never actually leaves its
+                            // default) and that glyph (U+F24E, "balance-
+                            // scale") sits visibly right of center. Measured
+                            // via a dedicated Xephyr test harness at 8x the
+                            // real size: a genuine ~6px rightward ink
+                            // offset, not a guess. Scoped to the one glyph
+                            // actually measured, via horizontalCenterOffset
+                            // (this Column-anchored NIcon has no anchors.fill
+                            // to margin-nudge the way NIconButton's own
+                            // glyphs do, but Qt's anchor system already has
+                            // a purpose-built offset for exactly this next
+                            // to a plain anchors.horizontalCenter) - the
+                            // other two profile icons weren't verified to
+                            // have the same issue, so they're left at 0
+                            // rather than guessed.
+                            // Matches profileIcon()/profileLabel()'s own
+                            // fallback condition, not a literal === "balanced"
+                            // check - currentProfile actually defaults to ""
+                            // (power-profiles-daemon isn't installed on this
+                            // machine, see this whole block's own header
+                            // comment), which is what displays as "Balanced"
+                            // in practice, not the literal string "balanced".
+                            anchors.horizontalCenterOffset: (PowerProfileState.currentProfile !== "power-saver" && PowerProfileState.currentProfile !== "performance") ? -6 : 0
                             icon: PowerProfileState.profileIcon(PowerProfileState.currentProfile)
                             color: Colors.textMuted
                             pointSize: Style.fontSizeXL
